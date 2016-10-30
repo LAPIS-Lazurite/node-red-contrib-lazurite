@@ -1,0 +1,142 @@
+<!-- 
+ *  file: lazurite.html
+ *
+ *  Copyright (C) 2016 Lapis Semiconductor Co., Ltd.
+!-->
+
+<script type="text/x-red" data-template-name="lazurite-rx">
+    <div class="form-row">
+        <label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
+        <input type="lazurite-channel" id="node-input-channel"></input>
+    </div>
+    <div class="form-row">
+        <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval</label>
+        <input type="text" id="node-input-interval">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="lazurite-rx">
+    <p>Recieve data of Lazurite-Gateway.</p>
+    <p>Outputs a message with the properties:
+      <li>msg.payload</li>
+    </p>
+    <p><b>msg.payload</b> is only payload. header is abandoned.</p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-rx',{
+        category: 'Lazurite_Gateway',
+        paletteLabel: 'Lazurite Rx',
+        color:"#3FADB5",
+        align: 'left',
+        inputs:0,
+        outputs:1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name || "lazurite Rx";
+        },
+        labelStyle: function() {
+            return this.text?"node_label_italic":"";
+        },
+        defaults: {
+            channel: {value:"", required:true, type:"lazurite-channel"},
+            interval: {value:"1000", required:true},
+            name   : {value:""},
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-tx">
+    <div class="form-row">
+        <label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
+        <input type="lazurite-channel" id="node-input-channel"></input>
+    </div>
+    <div class="form-row">
+        <label for="node-input-rxaddr"><i class="fa fa-dot-circle-o"></i> rxaddr</label>
+        <input type="text" id="node-input-rxaddr" placeholder="16bit short address of receiver.">
+    </div>
+    <div class="form-row">
+        <label for="node-input-rxpanid"><i class="fa fa-user"></i> rxpanid</label>
+        <input type="text" id="node-input-rxpanid" placeholder="panid of receiver.">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="lazurite-tx">
+    <p>Send data of Lazurite-Gateway.</p>
+    <p>Outputs a message with the properties:
+      <li>msg.payload</li>
+    </p>
+    <p><b>msg.payload</b> is only payload. header is abandoned.</p>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-tx',{
+        category: 'Lazurite_Gateway',
+        paletteLabel: 'Lazurite Tx',
+        color:"#3FADB5",
+        align: 'right',
+        inputs:1,
+        outputs:1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name || "lazurite Tx";
+        },
+        labelStyle: function() {
+            return this.text?"node_label_italic":"";
+        },
+        defaults: {
+            channel:   {value:"", required:true, type:"lazurite-channel"},
+            rxaddr: {value:"0xffff", required:true},
+            rxpanid: {value:"0xffff", required:true},
+            name: {value:""},
+        }
+    });
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-channel',{
+        category: 'config',
+        defaults: {
+            ch: {value:36,required:true,validate:RED.validators.number()},
+            panid: {value:"0xabcd",required:true},
+            rate: {value:100,required:true,validate:RED.validators.number()},
+            pwr: {value:20,required:true,validate:RED.validators.number()},
+        },
+        label: function() {
+            return "ch:" + this.ch + " panid:" + this.panid;
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-channel">
+    <div class="form-row">
+        <label for="node-config-input-ch"><i class="fa fa-dot-circle-o"></i> ch</label>
+        <input type="text" id="node-config-input-ch" placeholder="RF frequency.">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-panid"><i class="fa fa-user"></i> panid</label>
+        <input type="text" id="node-config-input-panid" placeholder="PANID.">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-rate"><i class="fa fa-list-ul"></i> rate</label>
+        <select id="node-config-input-rate">
+            <option value=50>50 kbps</option>
+            <option value=100>100 kbps</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-pwr"><i class="fa fa-rss"></i> pwr</label>
+        <select id="node-config-input-pwr">
+            <option value=1>1 mW</option>
+            <option value=20>20 mW</option>
+        </select>
+    </div>
+    <div class="form-tips">in case of 100kbps, ch is 24-31, 33-60.<br>in case of 50kbps, ch is 24-61.</div>
+</script>
