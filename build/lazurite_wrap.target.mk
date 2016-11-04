@@ -3,10 +3,6 @@
 TOOLSET := target
 TARGET := lazurite_wrap
 DEFS_Debug := \
-	'-DNODE_GYP_MODULE_NAME=lazurite_wrap' \
-	'-DUSING_UV_SHARED=1' \
-	'-DUSING_V8_SHARED=1' \
-	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
 	'-DBUILDING_NODE_EXTENSION' \
@@ -32,16 +28,11 @@ CFLAGS_CC_Debug := \
 	-fno-exceptions
 
 INCS_Debug := \
-	-I/home/pi/.node-gyp/0.10.29/include/node \
-	-I/home/pi/.node-gyp/0.10.29/src \
-	-I/home/pi/.node-gyp/0.10.29/deps/uv/include \
-	-I/home/pi/.node-gyp/0.10.29/deps/v8/include
+	-I/usr/include/nodejs/src \
+	-I/usr/include/nodejs/deps/uv/include \
+	-I/usr/include/nodejs/deps/v8/include
 
 DEFS_Release := \
-	'-DNODE_GYP_MODULE_NAME=lazurite_wrap' \
-	'-DUSING_UV_SHARED=1' \
-	'-DUSING_V8_SHARED=1' \
-	'-DV8_DEPRECATION_WARNINGS=1' \
 	'-D_LARGEFILE_SOURCE' \
 	'-D_FILE_OFFSET_BITS=64' \
 	'-DBUILDING_NODE_EXTENSION'
@@ -67,10 +58,9 @@ CFLAGS_CC_Release := \
 	-fno-exceptions
 
 INCS_Release := \
-	-I/home/pi/.node-gyp/0.10.29/include/node \
-	-I/home/pi/.node-gyp/0.10.29/src \
-	-I/home/pi/.node-gyp/0.10.29/deps/uv/include \
-	-I/home/pi/.node-gyp/0.10.29/deps/v8/include
+	-I/usr/include/nodejs/src \
+	-I/usr/include/nodejs/deps/uv/include \
+	-I/usr/include/nodejs/deps/v8/include
 
 OBJS := \
 	$(obj).target/$(TARGET)/lazurite_wrap.o

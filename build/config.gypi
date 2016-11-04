@@ -35,7 +35,7 @@
     "v8_no_strict_aliasing": 1,
     "v8_use_arm_eabi_hardfloat": "true",
     "v8_use_snapshot": "false",
-    "nodedir": "/home/pi/.node-gyp/0.10.29",
+    "nodedir": "/usr/include/nodejs",
     "copy_dev_lib": "true",
     "standalone_static_library": 1
   }

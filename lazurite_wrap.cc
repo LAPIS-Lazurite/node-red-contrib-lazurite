@@ -38,6 +38,7 @@ bool opened = false;
 bool initialized = false;
 bool began = false;
 bool enabled = false;
+bool latest=false;
 
 const char* ToCString(const String::Utf8Value& value) {
 	return *value ? *value : "<string conversion failed>";
@@ -128,6 +129,12 @@ Handle<Value> lazurite_begin(const Arguments& args) {
 	return scope.Close(Boolean::New(true));
 }
 
+Handle<Value> lazurite_setRxMode(const Arguments& args) {
+	HandleScope scope;
+	latest = args[0]->BooleanValue();
+	return scope.Close(Boolean::New(true));
+}
+
 Handle<Value> lazurite_rxEnable(const Arguments& args) {
 	HandleScope scope;
 
@@ -171,50 +178,111 @@ Handle<Value> lazurite_read(const Arguments& args) {
 		return scope.Close(Undefined());
 	}
 
+	char tmpdata[256];
 	char data[256];
 	char str[256];
 	SUBGHZ_MAC mac;
-
-	uint16_t size;
-
-	memset(data,0,sizeof(data));
-	memset(str,0,sizeof(str));
-
 	Local<Object> obj = Object::New();
 
-	if(readfunc(data,&size) > 0 ) {
-		int rssi;
-		time_t sec,nsec;
-		decmac(&mac,data,size);
-		getrxtime(&sec,&nsec);
-		rssi=getrxrssi();
+	uint16_t size=0;
+	bool data_valid=false;
 
-		Local<Array> rx_addr = Array::New(4);
-		Local<Array> tx_addr = Array::New(4);
-		for(int i=0;i<4;i++)
+	memset(tmpdata,0,sizeof(tmpdata));
+
+	if(latest)
+	{
+		while(readfunc(tmpdata,&size)>0)
 		{
-			int tmp;
-			tmp = (unsigned char)mac.rx_addr[i*2+1];
-			tmp = (tmp << 8) + (unsigned char)mac.rx_addr[i*2];
-			rx_addr->Set(i,Integer::New(tmp));
-			tmp = (unsigned char)mac.tx_addr[i*2+1];
-			tmp = (tmp << 8) + (unsigned char)mac.tx_addr[i*2];
-			tx_addr->Set(i,Integer::New(tmp));
+			data_valid=true;
+			memcpy(data,tmpdata,sizeof(data));
+			memset(tmpdata,0,sizeof(tmpdata));
+		}
+		if(data_valid ) {
+			int rssi;
+			time_t sec,nsec;
+			decmac(&mac,data,size);
+			getrxtime(&sec,&nsec);
+			rssi=getrxrssi();
+
+			Local<Array> rx_addr = Array::New(4);
+			Local<Array> tx_addr = Array::New(4);
+			for(int i=0;i<4;i++)
+			{
+				int tmp;
+				tmp = (unsigned char)mac.rx_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.rx_addr[i*2];
+				rx_addr->Set(i,Integer::New(tmp));
+				tmp = (unsigned char)mac.tx_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.tx_addr[i*2];
+				tx_addr->Set(i,Integer::New(tmp));
+			}
+
+			snprintf(str,mac.payload_len, "%s", data+mac.payload_offset);
+			obj->Set(String::NewSymbol("header"),Integer::New(mac.header));
+			obj->Set(String::NewSymbol("rx_panid"),Integer::New(mac.rx_panid));
+			obj->Set(String::NewSymbol("rx_addr"),rx_addr);
+			obj->Set(String::NewSymbol("tx_panid"),Integer::New(mac.tx_panid));
+			obj->Set(String::NewSymbol("tx_addr"),tx_addr);
+			obj->Set(String::NewSymbol("sec"),Uint32::New(sec));
+			obj->Set(String::NewSymbol("nsec"),Uint32::New(nsec));
+			obj->Set(String::NewSymbol("payload"),String::New(str));
+			obj->Set(String::NewSymbol("rssi"),Integer::New(rssi));
+			obj->Set(String::NewSymbol("length"),Integer::New(mac.payload_len));
+			//return scope.Close(String::New(str));
+		} else {
+			obj->Set(String::NewSymbol("length"),Integer::New(0));
 		}
 
-		snprintf(str,mac.payload_len, "%s", data+mac.payload_offset);
-		obj->Set(String::NewSymbol("header"),Integer::New(mac.header));
-		obj->Set(String::NewSymbol("rx_panid"),Integer::New(mac.rx_panid));
-		obj->Set(String::NewSymbol("rx_addr"),rx_addr);
-		obj->Set(String::NewSymbol("tx_panid"),Integer::New(mac.tx_panid));
-		obj->Set(String::NewSymbol("tx_addr"),tx_addr);
-		obj->Set(String::NewSymbol("sec"),Uint32::New(sec));
-		obj->Set(String::NewSymbol("nsec"),Uint32::New(nsec));
-		obj->Set(String::NewSymbol("payload"),String::New(str));
-		obj->Set(String::NewSymbol("rssi"),Integer::New(rssi));
-		//return scope.Close(String::New(str));
+	} else {
+		int tag = 0;
+		Local<Array>packet_array = Array::New();
+
+		while(readfunc(data,&size)>0)
+		{
+			int rssi;
+			time_t sec,nsec;
+			Local<Object>packet = Object::New();
+
+			decmac(&mac,data,size);
+			getrxtime(&sec,&nsec);
+			rssi=getrxrssi();
+
+			Local<Array> rx_addr = Array::New(4);
+			Local<Array> tx_addr = Array::New(4);
+			for(int i=0;i<4;i++)
+			{
+				int tmp;
+				tmp = (unsigned char)mac.rx_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.rx_addr[i*2];
+				rx_addr->Set(i,Integer::New(tmp));
+				tmp = (unsigned char)mac.tx_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.tx_addr[i*2];
+				tx_addr->Set(i,Integer::New(tmp));
+			}
+
+			snprintf(str,mac.payload_len, "%s", data+mac.payload_offset);
+
+			packet->Set(String::NewSymbol("tag"),Integer::New(tag));
+
+			packet->Set(String::NewSymbol("header"),Integer::New(mac.header));
+			packet->Set(String::NewSymbol("rx_panid"),Integer::New(mac.rx_panid));
+			packet->Set(String::NewSymbol("rx_addr"),rx_addr);
+			packet->Set(String::NewSymbol("tx_panid"),Integer::New(mac.tx_panid));
+			packet->Set(String::NewSymbol("tx_addr"),tx_addr);
+			packet->Set(String::NewSymbol("sec"),Uint32::New(sec));
+			packet->Set(String::NewSymbol("nsec"),Uint32::New(nsec));
+			packet->Set(String::NewSymbol("payload"),String::New(str));
+			packet->Set(String::NewSymbol("rssi"),Integer::New(rssi));
+			packet->Set(String::NewSymbol("length"),Integer::New(mac.payload_len));
+
+			packet_array->Set(tag,packet);
+			tag++;
+		}
+
+		obj->Set(String::NewSymbol("packet"),packet_array);
+		obj->Set(String::NewSymbol("length"),Integer::New(tag));
 	}
-	obj->Set(String::NewSymbol("length"),Integer::New(size));
+
 	return scope.Close(obj);
 }
 
@@ -298,6 +366,7 @@ Handle<Value> dlclose(const Arguments& args) {
 void init(Handle<Object> target) {
 	NODE_SET_METHOD(target, "dlopen", dlopen);
 	NODE_SET_METHOD(target, "lazurite_init", lazurite_init);
+	NODE_SET_METHOD(target, "lazurite_setRxMode", lazurite_setRxMode);
 	NODE_SET_METHOD(target, "lazurite_begin", lazurite_begin);
 	NODE_SET_METHOD(target, "lazurite_rxEnable", lazurite_rxEnable);
 	NODE_SET_METHOD(target, "lazurite_rxDisable", lazurite_rxDisable);

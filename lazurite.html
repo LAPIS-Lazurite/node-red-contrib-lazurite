@@ -1,5 +1,4 @@
-<!-- 
- *  file: lazurite.html
+<!-- *  file: lazurite.html
  *
  *  Copyright (C) 2016 Lapis Semiconductor Co., Ltd.
 !-->
@@ -11,7 +10,13 @@
     </div>
     <div class="form-row">
         <label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval</label>
-        <input type="text" id="node-input-interval">
+        <input type="checkbox" id="node-input-enbinterval" style="width:20px;"> Enable</input>
+        <input type="text" id="node-input-interval" style="width:80px; margin-left:20px;"></input>
+        <label style="width:40px;">msec</label>
+    </div>
+    <div class="form-row">
+        <label for="node-input-latestpacket"><i class="fa fa-tag"></i> format</label>
+        <input type="checkbox" id="node-input-latestpacket" style="width:20px;"> receive only latest packet</input>
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -21,10 +26,44 @@
 
 <script type="text/x-red" data-help-name="lazurite-rx">
     <p>Recieve data of Lazurite-Gateway.</p>
-    <p>Outputs a message with the properties:
-      <li>msg.payload</li>
-    </p>
-    <p><b>msg.payload</b> is only payload. header is abandoned.</p>
+
+    <p><li><b>Interval</b></li></P>
+    <p>check receiving data by this interval, when enabling</p>
+    <p><li><b>Input node</b></li></P>
+    <p>just trigger to check receiving data</p>
+    <p><li><b>format</b></li></P>
+    <p>When checked, the latest packet is thrown. Previous data are abandoned. When not checked, all data are thrown in an array named "packet". tag is order of packet. The number of memorized packets depend on kernel driver.</p>
+	<p></p>
+
+    <p>Outputs a message with the properties:</p>
+
+
+    <p><li>msg.header</li></P>
+    <p><b>msg.header</b> is mac header of receiving packet.</p>
+
+    <p><li>msg.rx_panid</li></p>
+    <p><b>msg.rx_panid</b> is panid of receiver.</p>
+
+    <p><li>msg.rx_addr</li></p>
+    <p><b>msg.rx_addr</b> is address of receiver. data format is 16bit x 4 in an array</p>
+
+    <p><li>msg.tx_panid</li></p>
+    <p><b>msg.tx_panid</b> is panid of tranceiver.</p>
+
+    <p><li>msg.tx_addr</li></p>
+    <p><b>msg.tx_addr</b> is addr of tranceiver. data format is 16bit x 4 in an array</p>
+
+    <p><li>msg.sec</li></p>
+    <p><b>msg.sec</b> is receiving time stamped in kernel driver.</p>
+
+    <p><li>msg.nsec</li></p>
+    <p><b>msg.nsec</b> is receiving time of nano sec stamped in kernel driver.</p>
+
+    <p><li>msg.payload</li></p>
+    <p><b>msg.payload</b> is payload of receiving data.</p>
+
+    <p><li>msg.length</li></p>
+    <p><b>msg.length</b> is length of payload.</p>
 </script>
 
 <script type="text/javascript">
@@ -33,7 +72,7 @@
         paletteLabel: 'Lazurite Rx',
         color:"#3FADB5",
         align: 'left',
-        inputs:0,
+        inputs:1,
         outputs:1,
         icon: "lazurite.png",
         label: function() {
@@ -45,6 +84,8 @@
         defaults: {
             channel: {value:"", required:true, type:"lazurite-channel"},
             interval: {value:"1000", required:true},
+            enbinterval: {value:true},
+            latestpacket: {value:false},
             name   : {value:""},
         }
     });
@@ -60,7 +101,7 @@
         <input type="text" id="node-input-rxaddr" placeholder="16bit short address of receiver.">
     </div>
     <div class="form-row">
-        <label for="node-input-rxpanid"><i class="fa fa-user"></i> rxpanid</label>
+        label for="node-input-rxpanid"><i class="fa fa-user"></i> rxpanid</label>
         <input type="text" id="node-input-rxpanid" placeholder="panid of receiver.">
     </div>
     <div class="form-row">
@@ -115,7 +156,7 @@
     });
 </script>
 
-<script type="text/x-red" data-template-name="lazurite-channel">
+<script type="text/x-red" vata-template-name="lazurite-channel">
     <div class="form-row">
         <label for="node-config-input-ch"><i class="fa fa-dot-circle-o"></i> ch</label>
         <input type="text" id="node-config-input-ch" placeholder="RF frequency.">
