@@ -1,4 +1,4 @@
-#node-red-lazurite
+#node-red-contrib-lazurite
 
 R/W data of Lazurite-Gateway.
 
