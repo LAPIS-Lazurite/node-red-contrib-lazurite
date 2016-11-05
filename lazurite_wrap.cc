@@ -199,17 +199,19 @@ Handle<Value> lazurite_read(const Arguments& args) {
 	Local<Object> obj = Object::New();
 
 	uint16_t size=0;
+	uint16_t tmpsize=0;
 	bool data_valid=false;
 
 	memset(tmpdata,0,sizeof(tmpdata));
 
 	if(latest)
 	{
-		while(readfunc(tmpdata,&size)>0)
+		while(readfunc(tmpdata,&tmpsize)>0)
 		{
 			data_valid=true;
 			memcpy(data,tmpdata,sizeof(data));
 			memset(tmpdata,0,sizeof(tmpdata));
+			size=tmpsize;
 		}
 		if(data_valid ) {
 			int rssi;
