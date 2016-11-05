@@ -17,7 +17,6 @@
     "url": "https://github.com/LAPIS-Lazurite/node-red-contrib-lazurite.git"
   },
   "author": "Naotaka Saito",
-  "license": "GPLv3",
   "gypfile": true,
   "bugs": {
     "url": "https://github.com/LAPIS-Lazurite/node-red-contrib-lazurite/issues"
@@ -25,5 +24,6 @@
   "keywords": [
     "node-red",
     "Lazurite"
-  ]
+  ],
+  "license": "Apache-2.0"
 }
