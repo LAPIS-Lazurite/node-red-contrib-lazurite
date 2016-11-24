@@ -131,7 +131,9 @@
     <p>Outputs a message with the properties:
       <li>msg.payload</li>
     </p>
-    <p><b>msg.payload</b> is only payload. header is abandoned.</p>
+    <p><b>msg.payload</b> is payload to be sent.</p>
+    <p><b>msg.rx_panid</b> is panid of receiver. If it is not set, rx_panid in GUI is in use.</p>
+    <p><b>msg.rx_addr</b> is 4 integers array of receiver address. currentry msg.rx_addr[0] is valid. If it is not set, rx_addr in GUI is in use.</p>
 </script>
 
 <script type="text/javascript">
