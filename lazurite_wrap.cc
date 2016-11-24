@@ -233,7 +233,7 @@ Handle<Value> lazurite_read(const Arguments& args) {
 				tx_addr->Set(i,Integer::New(tmp));
 			}
 
-			snprintf(str,mac.payload_len, "%s", data+mac.payload_offset);
+			snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
 			obj->Set(String::NewSymbol("header"),Integer::New(mac.header));
 			obj->Set(String::NewSymbol("rx_panid"),Integer::New(mac.rx_panid));
 			obj->Set(String::NewSymbol("rx_addr"),rx_addr);
@@ -276,7 +276,7 @@ Handle<Value> lazurite_read(const Arguments& args) {
 				tx_addr->Set(i,Integer::New(tmp));
 			}
 
-			snprintf(str,mac.payload_len, "%s", data+mac.payload_offset);
+			snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
 
 			packet->Set(String::NewSymbol("tag"),Integer::New(tag));
 

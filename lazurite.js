@@ -34,8 +34,6 @@ module.exports = function(RED) {
 
 	function connect(node) {
 		if(!lib.dlopen()) { Warn("dlopen fail"); return; }
-		console.log("node.latestpacket = " + node.latestpacket);
-		if(!lib.lazurite_setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 		if(!lib.lazurite_init()) { Warn("lazurite_init fail"); return; }
 		if(!lib.lazurite_begin(node.ch, node.panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		node.status({fill:"green",shape:"dot",text:"connected"},true);
@@ -90,14 +88,16 @@ module.exports = function(RED) {
 		this.pwr   = this.channel ? this.channel.pwr             : 20;
 		this.interval   = config.interval ? config.interval        : 1000;
 		this.name  = config.name;
-		this.enbinterval  = config.enbinterval ? config.enbinterval: false;
-		this.latestpacket  = config.latestpacket ? config.latestpacket: false;
+		this.enbinterval  = config.enbinterval ? true : false;
+		this.latestpacket  = config.latestpacket ? true : false;
 		//console.log(config);
 		//console.log(this);
 
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		//console.log(node);
 		connect(node);
+		if(!lib.lazurite_setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
@@ -147,7 +147,21 @@ module.exports = function(RED) {
 		connect(node);
 
 		node.on('input', function(msg) {
-				if(!lib.lazurite_send(node.rxpanid, node.rxaddr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+				//console.log(msg);
+				var rxpanid;
+				var rxaddr;
+				//console.log(msg.rx_addr);
+				if(typeof msg.rxpanid != "undefined") {
+					rxaddr = msg.rx_panid;
+				} else {
+					rxaddr = node.rxpanid;
+				}
+				if(typeof msg.rx_addr != "undefined") {
+					rxaddr = msg.rx_addr[0];
+				} else {
+					rxaddr = node.rxaddr;
+				}
+				if(!lib.lazurite_send(rxpanid, rxaddr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
 				node.send(msg);
 				});
 		node.on('close', function(done) {
