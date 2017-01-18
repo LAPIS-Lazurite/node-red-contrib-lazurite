@@ -151,10 +151,10 @@ module.exports = function(RED) {
 				var rxpanid;
 				var rxaddr;
 				//console.log(msg.rx_addr);
-				if(typeof msg.rxpanid != "undefined") {
-					rxaddr = msg.rx_panid;
+				if(typeof msg.rx_panid != "undefined") {
+					rxpanid = msg.rx_panid;
 				} else {
-					rxaddr = node.rxpanid;
+					rxpanid = node.rxpanid;
 				}
 				if(typeof msg.rx_addr != "undefined") {
 					rxaddr = msg.rx_addr[0];
