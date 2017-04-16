@@ -114,17 +114,17 @@ module.exports = function(RED) {
 		}
 
 		node.on('input', function(msg) {
-			var data = lib.lazurite_read();
-			if(data['length'] > 0) {
+				var data = lib.lazurite_read();
+				if(data['length'] > 0) {
 				var msg = data;
 				node.send(msg);
-			}
-		});
+				}
+				});
 		node.on('close', function(done) {
-			readStream.pause();
-			disconnect(node);
-			done();
-		});
+				readStream.pause();
+				disconnect(node);
+				done();
+				});
 	}
 	RED.nodes.registerType("lazurite-rx",LazuriteRxNode);
 
@@ -136,8 +136,8 @@ module.exports = function(RED) {
 		this.panid    = this.channel  ? parseInt(this.channel.panid)   : 0xabcd;
 		this.rate     = this.channel  ? this.channel.rate              : 100;
 		this.pwr      = this.channel  ? this.channel.pwr               : 20;
-		this.dst_addr   = parseInt(config.dst_addr);
-		this.dst_panid  = parseInt(config.dst_panid);
+		this.rxaddr   = parseInt(config.rxaddr);
+		this.rxpanid  = parseInt(config.rxpanid);
 		this.name     = config.name;
 
 		this.enable   = false;
@@ -147,27 +147,27 @@ module.exports = function(RED) {
 		connect(node);
 
 		node.on('input', function(msg) {
-			//console.log(msg);
-			var dst_panid;
-			var dst_addr;
-			//console.log(msg.rx_addr);
-			if(typeof msg.dst_panid != "undefined") {
-					dst_panid = msg.dst_panid;
-			} else {
-				dst_addr = node.dst_panid;
-			}
-			if(typeof msg.dst_addr != "undefined") {
-				dst_addr = msg.dst_addr[0];
-			} else {
-				dst_addr = node.dst_addr;
-			}
-			if(!lib.lazurite_send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-			node.send(msg);
-		});
+				//console.log(msg);
+				var rxpanid;
+				var rxaddr;
+				//console.log(msg.rx_addr);
+				if(typeof msg.rx_panid != "undefined") {
+					rxpanid = msg.rx_panid;
+				} else {
+					rxpanid = node.rxpanid;
+				}
+				if(typeof msg.rx_addr != "undefined") {
+					rxaddr = msg.rx_addr[0];
+				} else {
+					rxaddr = node.rxaddr;
+				}
+				if(!lib.lazurite_send(rxpanid, rxaddr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+				node.send(msg);
+				});
 		node.on('close', function(done) {
-			disconnect(node);
-			done();
-		});
+				disconnect(node);
+				done();
+				});
 	}
 	RED.nodes.registerType("lazurite-tx",LazuriteTxNode);
 

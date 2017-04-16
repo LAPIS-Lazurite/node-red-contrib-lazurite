@@ -316,8 +316,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /usr/share/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/pi/node_modules/node-red-contrib-lazurite/build/config.gypi -I/usr/share/node-gyp/addon.gypi -I/usr/include/nodejs/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/usr/include/nodejs" "-Dmodule_root_dir=/home/pi/node_modules/node-red-contrib-lazurite" binding.gyp
-Makefile: $(srcdir)/../../../../usr/share/node-gyp/addon.gypi $(srcdir)/../../../../usr/include/nodejs/common.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp
+cmd_regen_makefile = cd $(srcdir); /usr/share/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/pi/.node-red/node_modules/node-red-contrib-lazurite/build/config.gypi -I/usr/share/node-gyp/addon.gypi -I/usr/include/nodejs/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/usr/include/nodejs" "-Dmodule_root_dir=/home/pi/.node-red/node_modules/node-red-contrib-lazurite" binding.gyp
+Makefile: $(srcdir)/../../../../../usr/include/nodejs/common.gypi $(srcdir)/build/config.gypi $(srcdir)/binding.gyp $(srcdir)/../../../../../usr/share/node-gyp/addon.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included

@@ -1,0 +1,164 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+AR.host	build/Makefile	/^AR.host ?= ar$/;"	m
+AR.target	build/Makefile	/^AR.target ?= $(AR)$/;"	m
+BUILDTYPE	build/Makefile	/^BUILDTYPE ?= Release$/;"	m
+CC.host	build/Makefile	/^CC.host ?= gcc$/;"	m
+CC.target	build/Makefile	/^CC.target ?= $(CC)$/;"	m
+CFLAGS.host	build/Makefile	/^CFLAGS.host ?=$/;"	m
+CFLAGS.target	build/Makefile	/^CFLAGS.target ?= $(CFLAGS)$/;"	m
+CFLAGS_CC_Debug	build/lazurite_wrap.target.mk	/^CFLAGS_CC_Debug := \\$/;"	m
+CFLAGS_CC_Release	build/lazurite_wrap.target.mk	/^CFLAGS_CC_Release := \\$/;"	m
+CFLAGS_C_Debug	build/lazurite_wrap.target.mk	/^CFLAGS_C_Debug :=$/;"	m
+CFLAGS_C_Release	build/lazurite_wrap.target.mk	/^CFLAGS_C_Release :=$/;"	m
+CFLAGS_Debug	build/lazurite_wrap.target.mk	/^CFLAGS_Debug := \\$/;"	m
+CFLAGS_Release	build/lazurite_wrap.target.mk	/^CFLAGS_Release := \\$/;"	m
+CXX.host	build/Makefile	/^CXX.host ?= g++$/;"	m
+CXX.target	build/Makefile	/^CXX.target ?= $(CXX)$/;"	m
+CXXFLAGS.host	build/Makefile	/^CXXFLAGS.host ?=$/;"	m
+CXXFLAGS.target	build/Makefile	/^CXXFLAGS.target ?= $(CXXFLAGS) $(CPPFLAGS)$/;"	m
+DEFS_Debug	build/lazurite_wrap.target.mk	/^DEFS_Debug := \\$/;"	m
+DEFS_Release	build/lazurite_wrap.target.mk	/^DEFS_Release := \\$/;"	m
+DEPFLAGS	build/Makefile	/^DEPFLAGS = -MMD -MF $(depfile).raw$/;"	m
+GYP_CFLAGS	build/lazurite_wrap.target.mk	/^$(OBJS): GYP_CFLAGS := $(DEFS_$(BUILDTYPE)) $(INCS_$(BUILDTYPE))  $(CFLAGS_$(BUILDTYPE)) $(CFLAGS_C_$(BUILDTYPE))$/;"	m
+GYP_CXXFLAGS	build/lazurite_wrap.target.mk	/^$(OBJS): GYP_CXXFLAGS := $(DEFS_$(BUILDTYPE)) $(INCS_$(BUILDTYPE))  $(CFLAGS_$(BUILDTYPE)) $(CFLAGS_CC_$(BUILDTYPE))$/;"	m
+GYP_LDFLAGS	build/lazurite_wrap.target.mk	/^$(obj).target\/lazurite_wrap.node: GYP_LDFLAGS := $(LDFLAGS_$(BUILDTYPE))$/;"	m
+INCS_Debug	build/lazurite_wrap.target.mk	/^INCS_Debug := \\$/;"	m
+INCS_Release	build/lazurite_wrap.target.mk	/^INCS_Release := \\$/;"	m
+Info	lazurite.js	/^	function Info(message){$/;"	f	function:module.exports
+LDFLAGS.host	build/Makefile	/^LDFLAGS.host ?=$/;"	m
+LDFLAGS.target	build/Makefile	/^LDFLAGS.target ?= $(LDFLAGS)$/;"	m
+LDFLAGS_Debug	build/lazurite_wrap.target.mk	/^LDFLAGS_Debug := \\$/;"	m
+LDFLAGS_Release	build/lazurite_wrap.target.mk	/^LDFLAGS_Release := \\$/;"	m
+LIBS	build/lazurite_wrap.target.mk	/^$(obj).target\/lazurite_wrap.node: LIBS := $(LIBS)$/;"	m
+LIBS	build/lazurite_wrap.target.mk	/^LIBS :=$/;"	m
+LINK	build/Makefile	/^LINK ?= flock $(builddir)\/linker.lock $(CXX.target)$/;"	m
+LINK.host	build/Makefile	/^LINK.host ?= $(CXX.host)$/;"	m
+LINK.target	build/Makefile	/^LINK.target ?= $(LINK)$/;"	m
+LazuriteChannelNode	lazurite.js	/^	function LazuriteChannelNode(n) {$/;"	c	class:module.exports
+LazuriteRxNode	lazurite.js	/^	function LazuriteRxNode(config) {$/;"	c	class:module.exports
+LazuriteTxNode	lazurite.js	/^	function LazuriteTxNode(config) {$/;"	c	class:module.exports
+MAKEFLAGS	build/Makefile	/^MAKEFLAGS=-r$/;"	m
+OBJS	build/lazurite_wrap.target.mk	/^OBJS := \\$/;"	m
+ReadStream	lazurite.js	/^	ReadStream.prototype.resume = function() {$/;"	c
+ReadStream	lazurite.js	/^	function ReadStream(node) {$/;"	c	class:module.exports
+SUBGHZ_MAC	liblazurite.h	/^		}SUBGHZ_MAC;$/;"	t	typeref:struct:lazurite::__anon1
+TARGET	build/lazurite_wrap.target.mk	/^TARGET := lazurite_wrap$/;"	m
+TOOLSET	build/Makefile	/^TOOLSET := target$/;"	m
+TOOLSET	build/lazurite_wrap.target.mk	/^$(OBJS): TOOLSET := $(TOOLSET)$/;"	m
+TOOLSET	build/lazurite_wrap.target.mk	/^$(builddir)\/lazurite_wrap.node: TOOLSET := $(TOOLSET)$/;"	m
+TOOLSET	build/lazurite_wrap.target.mk	/^$(obj).target\/lazurite_wrap.node: TOOLSET := $(TOOLSET)$/;"	m
+TOOLSET	build/lazurite_wrap.target.mk	/^TOOLSET := target$/;"	m
+ToCString	lazurite_wrap.cc	/^const char* ToCString(const String::Utf8Value& value) {$/;"	f
+Warn	lazurite.js	/^	function Warn(message){$/;"	f	function:module.exports
+_LIBLAZURITE_H_	liblazurite.h	33;"	d
+abs_builddir	build/Makefile	/^abs_builddir := $(abspath $(builddir))$/;"	m
+abs_obj	build/Makefile	/^abs_obj := $(abspath $(obj))$/;"	m
+abs_srcdir	build/Makefile	/^abs_srcdir := $(abspath $(srcdir))$/;"	m
+ack_req	liblazurite.h	/^			uint8_t ack_req;	\/*!< ack request *\/$/;"	m	struct:lazurite::__anon1
+addr_type	liblazurite.h	/^			uint8_t addr_type;	\/*!< address type *\/$/;"	m	struct:lazurite::__anon1
+all_deps	build/Makefile	/^all_deps :=$/;"	m
+began	lazurite_wrap.cc	/^bool began = false;$/;"	v
+beginfunc	lazurite_wrap.cc	/^int (*beginfunc)(uint8_t, uint16_t, uint8_t,uint8_t);$/;"	v
+builddir	build/Makefile	/^builddir ?= $(builddir_name)\/$(BUILDTYPE)$/;"	m
+builddir_name	build/Makefile	/^builddir_name ?= .$/;"	m
+closefunc	lazurite_wrap.cc	/^int (*closefunc)(void);$/;"	v
+cmd_alink	build/Makefile	/^cmd_alink = rm -f $@ && $(AR.$(TOOLSET)) crs $@ $(filter %.o,$^)$/;"	m
+cmd_alink_thin	build/Makefile	/^cmd_alink_thin = rm -f $@ && $(AR.$(TOOLSET)) crsT $@ $(filter %.o,$^)$/;"	m
+cmd_cc	build/Makefile	/^cmd_cc = $(CC.$(TOOLSET)) $(GYP_CFLAGS) $(DEPFLAGS) $(CFLAGS.$(TOOLSET)) -c -o $@ $<$/;"	m
+cmd_copy	build/Makefile	/^cmd_copy = ln -f "$<" "$@" 2>\/dev\/null || (rm -rf "$@" && cp -af "$<" "$@")$/;"	m
+cmd_cxx	build/Makefile	/^cmd_cxx = $(CXX.$(TOOLSET)) $(GYP_CXXFLAGS) $(DEPFLAGS) $(CXXFLAGS.$(TOOLSET)) -c -o $@ $<$/;"	m
+cmd_link	build/Makefile	/^cmd_link = $(LINK.$(TOOLSET)) $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -o $@ -Wl,--start-group $(LD_INPUTS) -Wl,--end-group $(LIBS)$/;"	m
+cmd_regen_makefile	build/Makefile	/^cmd_regen_makefile = cd $(srcdir); \/usr\/share\/node-gyp\/gyp\/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I\/home\/pi\/.node-red\/node_modules\/node-red-contrib-lazurite\/build\/config.gypi -I\/usr\/share\/node-gyp\/addon.gypi -I\/usr\/include\/nodejs\/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=\/usr\/include\/nodejs" "-Dmodule_root_dir=\/home\/pi\/.node-red\/node_modules\/node-red-contrib-lazurite" binding.gyp$/;"	m
+cmd_solink	build/Makefile	/^cmd_solink = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -o $@ -Wl,--whole-archive $(LD_INPUTS) -Wl,--no-whole-archive $(LIBS)$/;"	m
+cmd_solink_module	build/Makefile	/^cmd_solink_module = $(LINK.$(TOOLSET)) -shared $(GYP_LDFLAGS) $(LDFLAGS.$(TOOLSET)) -Wl,-soname=$(@F) -o $@ -Wl,--start-group $(filter-out FORCE_DO_CMD, $^) -Wl,--end-group $(LIBS)$/;"	m
+cmd_touch	build/Makefile	/^cmd_touch = touch $@$/;"	m
+command_changed	build/Makefile	/^command_changed = $(or $(subst $(cmd_$(1)),,$(cmd_$(call replace_spaces,$@))),\\$/;"	m
+connect	lazurite.js	/^	function connect(node) {$/;"	f	function:module.exports
+d_files	build/Makefile	/^d_files := $(wildcard $(foreach f,$(all_deps),$(depsdir)\/$(f).d))$/;"	m
+decmac	lazurite_wrap.cc	/^int (*decmac)(SUBGHZ_MAC*,void*, uint16_t);$/;"	v
+depfile	build/Makefile	/^depfile = $(depsdir)\/$(call replace_spaces,$@).d$/;"	m
+depsdir	build/Makefile	/^depsdir := $(builddir)\/.deps$/;"	m
+destroy	lazurite.js	/^	ReadStream.prototype.destroy = function() {};$/;"	m	class:ReadStream
+destroySoon	lazurite.js	/^	ReadStream.prototype.destroySoon = function() {};$/;"	m	class:ReadStream
+dirx	build/Makefile	/^dirx = $(call unreplace_spaces,$(dir $(call replace_spaces,$1)))$/;"	m
+disablefunc	lazurite_wrap.cc	/^int (*disablefunc)(void);$/;"	v
+disconnect	lazurite.js	/^	function disconnect(node) {$/;"	f	function:module.exports
+dlclose	lazurite_wrap.cc	/^Handle<Value> dlclose(const Arguments& args) {$/;"	f
+dlopen	lazurite_wrap.cc	/^Handle<Value> dlopen(const Arguments& args) {$/;"	f
+do_cmd	build/Makefile	/^define do_cmd$/;"	m
+do_postbuilds	build/Makefile	/^define do_postbuilds$/;"	m
+dst_addr	liblazurite.h	/^			uint8_t  dst_addr[8];	\/*!< rx address *\/$/;"	m	struct:lazurite::__anon1
+dst_addr_type	liblazurite.h	/^			uint8_t dst_addr_type;	\/*!< tx address type none\/8bit\/16bit\/64bit *\/$/;"	m	struct:lazurite::__anon1
+dst_panid	liblazurite.h	/^			uint16_t dst_panid;	\/*!< rx panid *\/$/;"	m	struct:lazurite::__anon1
+empty	build/Makefile	/^empty :=$/;"	m
+enabled	lazurite_wrap.cc	/^bool enabled = false;$/;"	v
+enablefunc	lazurite_wrap.cc	/^int (*enablefunc)(void);$/;"	v
+escape_quotes	build/Makefile	/^escape_quotes = $(subst ','\\'',$(1))$/;"	m
+escape_vars	build/Makefile	/^escape_vars = $(subst $$,$$$$,$(1))$/;"	m
+exact_echo	build/Makefile	/^exact_echo = printf '%s\\n' '$(call escape_quotes,$(1))'$/;"	m
+find	lazurite_wrap.cc	/^funcptr find(void* handle, const char * name) {$/;"	f
+fixup_dep	build/Makefile	/^define fixup_dep$/;"	m
+frame_type	liblazurite.h	/^			uint8_t frame_type;	\/*!< frame type *\/$/;"	m	struct:lazurite::__anon1
+frame_ver	liblazurite.h	/^			uint8_t frame_ver;	\/*!< framce version *\/$/;"	m	struct:lazurite::__anon1
+funcptr	lazurite_wrap.cc	/^typedef void (*funcptr)(void);$/;"	t	file:
+getrxrssi	lazurite_wrap.cc	/^int (*getrxrssi)(void);$/;"	v
+getrxtime	lazurite_wrap.cc	/^int (*getrxtime)(time_t*, time_t*);$/;"	v
+handle	lazurite_wrap.cc	/^void *handle;$/;"	v
+header	liblazurite.h	/^			uint16_t header;	\/*!< header *\/$/;"	m	struct:lazurite::__anon1
+ielist	liblazurite.h	/^			uint8_t ielist;	\/*!< ielist *\/$/;"	m	struct:lazurite::__anon1
+init	lazurite_wrap.cc	/^void init(Handle<Object> target) {$/;"	f
+initfunc	lazurite_wrap.cc	/^int (*initfunc)(void);$/;"	v
+initialized	lazurite_wrap.cc	/^bool initialized = false;$/;"	v
+latest	lazurite_wrap.cc	/^bool latest=false;$/;"	v
+lazurite	liblazurite.h	/^namespace lazurite$/;"	n
+lazurite_begin	lazurite_wrap.cc	/^Handle<Value> lazurite_begin(const Arguments& args) {$/;"	f
+lazurite_close	lazurite_wrap.cc	/^Handle<Value> lazurite_close(const Arguments& args) {$/;"	f
+lazurite_init	lazurite_wrap.cc	/^Handle<Value> lazurite_init(const Arguments& args) {$/;"	f
+lazurite_read	lazurite_wrap.cc	/^Handle<Value> lazurite_read(const Arguments& args) {$/;"	f
+lazurite_remove	lazurite_wrap.cc	/^Handle<Value> lazurite_remove(const Arguments& args) {$/;"	f
+lazurite_rxDisable	lazurite_wrap.cc	/^Handle<Value> lazurite_rxDisable(const Arguments& args) {$/;"	f
+lazurite_rxEnable	lazurite_wrap.cc	/^Handle<Value> lazurite_rxEnable(const Arguments& args) {$/;"	f
+lazurite_send	lazurite_wrap.cc	/^Handle<Value> lazurite_send(const Arguments& args) {$/;"	f
+lazurite_setRxMode	lazurite_wrap.cc	/^Handle<Value> lazurite_setRxMode(const Arguments& args) {$/;"	f
+module.exports	lazurite.js	/^module.exports = function(RED) {$/;"	f
+obj	build/Makefile	/^obj := $(builddir)\/obj$/;"	m
+opened	lazurite_wrap.cc	/^bool opened = false;$/;"	v
+panid_comp	liblazurite.h	/^			uint8_t panid_comp;	\/*!< panid comp *\/$/;"	m	struct:lazurite::__anon1
+pause	lazurite.js	/^	ReadStream.prototype.pause = function() {$/;"	m	class:ReadStream
+payload_len	liblazurite.h	/^			uint16_t payload_len;	\/*!<  length of payload *\/$/;"	m	struct:lazurite::__anon1
+payload_offset	liblazurite.h	/^			uint16_t payload_offset;	\/*!< pointer of payload *\/$/;"	m	struct:lazurite::__anon1
+pending	liblazurite.h	/^			uint8_t pending;	\/*!< pending *\/$/;"	m	struct:lazurite::__anon1
+pipe	lazurite.js	/^	ReadStream.prototype.pipe = function(dest) {};$/;"	m	class:ReadStream
+prereq_changed	build/Makefile	/^prereq_changed = $(filter-out FORCE_DO_CMD,$(filter-out $|,$?))$/;"	m
+quiet	build/Makefile	/^  quiet=$/;"	m
+quiet	build/Makefile	/^  quiet=quiet_$/;"	m
+quiet_cmd_alink	build/Makefile	/^quiet_cmd_alink = AR($(TOOLSET)) $@$/;"	m
+quiet_cmd_alink_thin	build/Makefile	/^quiet_cmd_alink_thin = AR($(TOOLSET)) $@$/;"	m
+quiet_cmd_cc	build/Makefile	/^quiet_cmd_cc = CC($(TOOLSET)) $@$/;"	m
+quiet_cmd_copy	build/Makefile	/^quiet_cmd_copy = COPY $@$/;"	m
+quiet_cmd_cxx	build/Makefile	/^quiet_cmd_cxx = CXX($(TOOLSET)) $@$/;"	m
+quiet_cmd_link	build/Makefile	/^quiet_cmd_link = LINK($(TOOLSET)) $@$/;"	m
+quiet_cmd_regen_makefile	build/Makefile	/^quiet_cmd_regen_makefile = ACTION Regenerating $@$/;"	m
+quiet_cmd_solink	build/Makefile	/^quiet_cmd_solink = SOLINK($(TOOLSET)) $@$/;"	m
+quiet_cmd_solink_module	build/Makefile	/^quiet_cmd_solink_module = SOLINK_MODULE($(TOOLSET)) $@$/;"	m
+quiet_cmd_touch	build/Makefile	/^quiet_cmd_touch = TOUCH $@$/;"	m
+readfunc	lazurite_wrap.cc	/^int (*readfunc)(char*, uint16_t*);$/;"	v
+removefunc	lazurite_wrap.cc	/^int (*removefunc)(void);$/;"	v
+replace_spaces	build/Makefile	/^replace_spaces = $(subst $(space),?,$1)$/;"	m
+resume	lazurite.js	/^	ReadStream.prototype.resume = function() {$/;"	m	class:ReadStream
+sec_enb	liblazurite.h	/^			uint8_t sec_enb;	\/*!< security enable *\/$/;"	m	struct:lazurite::__anon1
+sendfunc	lazurite_wrap.cc	/^int (*sendfunc)(uint16_t, uint16_t, const void*, uint16_t);$/;"	v
+seq_comp	liblazurite.h	/^			uint8_t seq_comp;	\/*!< sequence compression *\/$/;"	m	struct:lazurite::__anon1
+seq_num	liblazurite.h	/^			uint8_t seq_num;	\/*!< sequence number *\/$/;"	m	struct:lazurite::__anon1
+setEncoding	lazurite.js	/^	ReadStream.prototype.setEncoding = function(encoding) {};$/;"	m	class:ReadStream
+space	build/Makefile	/^space := $(empty) $(empty)$/;"	m
+src_addr	liblazurite.h	/^			uint8_t  src_addr[8];	\/*!< tx address *\/$/;"	m	struct:lazurite::__anon1
+src_addr_type	liblazurite.h	/^			uint8_t src_addr_type;	\/*!< rx address type none\/8bit\/16bit\/64bit *\/$/;"	m	struct:lazurite::__anon1
+src_panid	liblazurite.h	/^			uint16_t src_panid;	\/*!< tx panid *\/$/;"	m	struct:lazurite::__anon1
+srcdir	build/Makefile	/^srcdir := ..$/;"	m
+unreplace_spaces	build/Makefile	/^unreplace_spaces = $(subst ?,$(space),$1)$/;"	m

@@ -220,25 +220,25 @@ Handle<Value> lazurite_read(const Arguments& args) {
 			getrxtime(&sec,&nsec);
 			rssi=getrxrssi();
 
-			Local<Array> rx_addr = Array::New(4);
-			Local<Array> tx_addr = Array::New(4);
+			Local<Array> dst_addr = Array::New(4);
+			Local<Array> src_addr = Array::New(4);
 			for(int i=0;i<4;i++)
 			{
 				int tmp;
-				tmp = (unsigned char)mac.rx_addr[i*2+1];
-				tmp = (tmp << 8) + (unsigned char)mac.rx_addr[i*2];
-				rx_addr->Set(i,Integer::New(tmp));
-				tmp = (unsigned char)mac.tx_addr[i*2+1];
-				tmp = (tmp << 8) + (unsigned char)mac.tx_addr[i*2];
-				tx_addr->Set(i,Integer::New(tmp));
+				tmp = (unsigned char)mac.dst_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.dst_addr[i*2];
+				dst_addr->Set(i,Integer::New(tmp));
+				tmp = (unsigned char)mac.src_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.src_addr[i*2];
+				src_addr->Set(i,Integer::New(tmp));
 			}
 
 			snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
 			obj->Set(String::NewSymbol("header"),Integer::New(mac.header));
-			obj->Set(String::NewSymbol("rx_panid"),Integer::New(mac.rx_panid));
-			obj->Set(String::NewSymbol("rx_addr"),rx_addr);
-			obj->Set(String::NewSymbol("tx_panid"),Integer::New(mac.tx_panid));
-			obj->Set(String::NewSymbol("tx_addr"),tx_addr);
+			obj->Set(String::NewSymbol("dst_panid"),Integer::New(mac.dst_panid));
+			obj->Set(String::NewSymbol("dst_addr"),dst_addr);
+			obj->Set(String::NewSymbol("src_panid"),Integer::New(mac.src_panid));
+			obj->Set(String::NewSymbol("src_addr"),src_addr);
 			obj->Set(String::NewSymbol("sec"),Uint32::New(sec));
 			obj->Set(String::NewSymbol("nsec"),Uint32::New(nsec));
 			obj->Set(String::NewSymbol("payload"),String::New(str));
@@ -263,17 +263,17 @@ Handle<Value> lazurite_read(const Arguments& args) {
 			getrxtime(&sec,&nsec);
 			rssi=getrxrssi();
 
-			Local<Array> rx_addr = Array::New(4);
-			Local<Array> tx_addr = Array::New(4);
+			Local<Array> dst_addr = Array::New(4);
+			Local<Array> src_addr = Array::New(4);
 			for(int i=0;i<4;i++)
 			{
 				int tmp;
-				tmp = (unsigned char)mac.rx_addr[i*2+1];
-				tmp = (tmp << 8) + (unsigned char)mac.rx_addr[i*2];
-				rx_addr->Set(i,Integer::New(tmp));
-				tmp = (unsigned char)mac.tx_addr[i*2+1];
-				tmp = (tmp << 8) + (unsigned char)mac.tx_addr[i*2];
-				tx_addr->Set(i,Integer::New(tmp));
+				tmp = (unsigned char)mac.dst_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.dst_addr[i*2];
+				dst_addr->Set(i,Integer::New(tmp));
+				tmp = (unsigned char)mac.src_addr[i*2+1];
+				tmp = (tmp << 8) + (unsigned char)mac.src_addr[i*2];
+				src_addr->Set(i,Integer::New(tmp));
 			}
 
 			snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
@@ -281,10 +281,10 @@ Handle<Value> lazurite_read(const Arguments& args) {
 			packet->Set(String::NewSymbol("tag"),Integer::New(tag));
 
 			packet->Set(String::NewSymbol("header"),Integer::New(mac.header));
-			packet->Set(String::NewSymbol("rx_panid"),Integer::New(mac.rx_panid));
-			packet->Set(String::NewSymbol("rx_addr"),rx_addr);
-			packet->Set(String::NewSymbol("tx_panid"),Integer::New(mac.tx_panid));
-			packet->Set(String::NewSymbol("tx_addr"),tx_addr);
+			packet->Set(String::NewSymbol("dst_panid"),Integer::New(mac.dst_panid));
+			packet->Set(String::NewSymbol("dst_addr"),dst_addr);
+			packet->Set(String::NewSymbol("src_panid"),Integer::New(mac.src_panid));
+			packet->Set(String::NewSymbol("src_addr"),src_addr);
 			packet->Set(String::NewSymbol("sec"),Uint32::New(sec));
 			packet->Set(String::NewSymbol("nsec"),Uint32::New(nsec));
 			packet->Set(String::NewSymbol("payload"),String::New(str));
@@ -313,11 +313,11 @@ Handle<Value> lazurite_send(const Arguments& args) {
 		return scope.Close(Boolean::New(false));
 	}
 
-	uint16_t rxpanid = args[0]->NumberValue();;
-	uint16_t rxaddr  = args[1]->NumberValue();;
+	uint16_t dst_panid = args[0]->NumberValue();;
+	uint16_t dst_addr  = args[1]->NumberValue();;
 	String::Utf8Value payload(args[2]->ToString());
 
-	int result = sendfunc(rxpanid, rxaddr, ToCString(payload), payload.length());
+	int result = sendfunc(dst_panid, dst_addr, ToCString(payload), payload.length());
 	if(result < 0) {
 		fprintf (stderr, "tx error = %d\n",result);
 		return scope.Close(Boolean::New(false));

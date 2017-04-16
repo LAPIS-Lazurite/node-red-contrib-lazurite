@@ -57,17 +57,17 @@
     <p><li>msg.header</li></P>
     <p><b>msg.header</b> is mac header of receiving packet.</p>
 
-    <p><li>msg.rx_panid</li></p>
-    <p><b>msg.rx_panid</b> is panid of receiver.</p>
+    <p><li>msg.dst_panid</li></p>
+    <p><b>msg.dst_panid</b> is panid of receiver.</p>
 
-    <p><li>msg.rx_addr</li></p>
-    <p><b>msg.rx_addr</b> is address of receiver. data format is 16bit x 4 in an array</p>
+    <p><li>msg.dst_addr</li></p>
+    <p><b>msg.dst_addr</b> is address of receiver. data format is 16bit x 4 in an array</p>
 
-    <p><li>msg.tx_panid</li></p>
-    <p><b>msg.tx_panid</b> is panid of tranceiver.</p>
+    <p><li>msg.src_panid</li></p>
+    <p><b>msg.src_panid</b> is panid of tranceiver.</p>
 
-    <p><li>msg.tx_addr</li></p>
-    <p><b>msg.tx_addr</b> is addr of tranceiver. data format is 16bit x 4 in an array</p>
+    <p><li>msg.src_addr</li></p>
+    <p><b>msg.src_addr</b> is addr of tranceiver. data format is 16bit x 4 in an array</p>
 
     <p><li>msg.sec</li></p>
     <p><b>msg.sec</b> is receiving time stamped in kernel driver.</p>
@@ -113,12 +113,12 @@
         <input type="lazurite-channel" id="node-input-channel"></input>
     </div>
     <div class="form-row">
-        <label for="node-input-rxaddr"><i class="fa fa-dot-circle-o"></i> rxaddr</label>
-        <input type="text" id="node-input-rxaddr" placeholder="16bit short address of receiver.">
+        <label for="node-input-dst_addr"><i class="fa fa-dot-circle-o"></i> dst addr</label>
+        <input type="text" id="node-input-dst_addr" placeholder="16bit short address of receiver.">
     </div>
     <div class="form-row">
-        <label for="node-input-rxpanid"><i class="fa fa-user"></i> rxpanid</label>
-        <input type="text" id="node-input-rxpanid" placeholder="panid of receiver.">
+        <label for="node-input-dst_panid"><i class="fa fa-user"></i> dst panid</label>
+        <input type="text" id="node-input-dst_panid" placeholder="panid of receiver.">
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -132,8 +132,8 @@
       <li>msg.payload</li>
     </p>
     <p><b>msg.payload</b> is payload to be sent.</p>
-    <p><b>msg.rx_panid</b> is panid of receiver. If it is not set, rx_panid in GUI is in use.</p>
-    <p><b>msg.rx_addr</b> is 4 integers array of receiver address. currentry msg.rx_addr[0] is valid. If it is not set, rx_addr in GUI is in use.</p>
+    <p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
+    <p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
 </script>
 
 <script type="text/javascript">
@@ -153,8 +153,8 @@
         },
         defaults: {
             channel:   {value:"", required:true, type:"lazurite-channel"},
-            rxaddr: {value:"0xffff", required:true},
-            rxpanid: {value:"0xffff", required:true},
+            dst_addr: {value:"0xffff", required:true},
+            dst_panid: {value:"0xffff", required:true},
             name: {value:""},
         }
     });
