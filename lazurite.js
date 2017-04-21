@@ -150,11 +150,10 @@ module.exports = function(RED) {
 			//console.log(msg);
 			var dst_panid;
 			var dst_addr;
-			//console.log(msg.rx_addr);
 			if(typeof msg.dst_panid != "undefined") {
 					dst_panid = msg.dst_panid;
 			} else {
-				dst_addr = node.dst_panid;
+				dst_panid = node.dst_panid;
 			}
 			if(typeof msg.dst_addr != "undefined") {
 				dst_addr = msg.dst_addr[0];
