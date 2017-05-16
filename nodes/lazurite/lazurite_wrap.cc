@@ -45,6 +45,11 @@ int (*decmac)(SUBGHZ_MAC*,void*, uint16_t);
 int (*getrxrssi)(void);
 int (*getrxtime)(time_t*, time_t*);
 int (*sendfunc)(uint16_t, uint16_t, const void*, uint16_t);
+int (*sendfunc64le)(uint8_t*, const void*, uint16_t);
+int (*sendfunc64be)(uint8_t*, const void*, uint16_t);
+int (*setackreq)(bool);
+int (*setbroadcast)(bool);
+int (*setmyaddress)(uint16_t);
 int (*closefunc)(void);
 int (*removefunc)(void);
 
@@ -88,6 +93,11 @@ Handle<Value> dlopen(const Arguments& args) {
 		getrxtime    = (int (*)(time_t*, time_t*))find(handle, "lazurite_getRxTime");
 		getrxrssi    = (int (*)(void))find(handle, "lazurite_getRxRssi");
 		sendfunc     = (int (*)(uint16_t, uint16_t, const void*, uint16_t))find(handle, "lazurite_send");
+		sendfunc64be = (int (*)(uint8_t*, const void*, uint16_t))find(handle, "lazurite_send64be");
+		sendfunc64le = (int (*)(uint8_t*, const void*, uint16_t))find(handle, "lazurite_send64le");
+		setackreq    = (int (*)(bool))find(handle, "lazurite_setAckReq");
+		setbroadcast = (int (*)(bool))find(handle, "lazurite_setBroadcastEnb");
+		setmyaddress = (int (*)(uint16_t))find(handle, "lazurite_setMyAddress");
 		closefunc    = (int (*)(void))dlsym(handle, "lazurite_close");
 		removefunc   = (int (*)(void))dlsym(handle, "lazurite_remove");
 		opened = true;
@@ -324,7 +334,129 @@ Handle<Value> lazurite_send(const Arguments& args) {
 	}
 	return scope.Close(Boolean::New(true));
 }
+Handle<Value> lazurite_send64be(const Arguments& args) {
+	HandleScope scope;
+	if(args.Length() < 2) {
+		fprintf (stderr, "Wrong number of arguments\n");
+		return scope.Close(Boolean::New(false));
+	}
+	if(!sendfunc64le) {
+		fprintf (stderr, "lazurite_send64be fail.\n");
+		return scope.Close(Boolean::New(false));
+	}
+    Local<Array> arr = Local<Array>::Cast(args[0]);
+    if(arr->Length() != 8) {
+		fprintf (stderr, "lazurite_send64be address.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	uint8_t dst_addr[8];
+	dst_addr[0] = arr->Get(0)->NumberValue();
+	dst_addr[1] = arr->Get(1)->NumberValue();
+	dst_addr[2] = arr->Get(2)->NumberValue();
+	dst_addr[3] = arr->Get(3)->NumberValue();
+	dst_addr[4] = arr->Get(4)->NumberValue();
+	dst_addr[5] = arr->Get(5)->NumberValue();
+	dst_addr[6] = arr->Get(6)->NumberValue();
+	dst_addr[7] = arr->Get(7)->NumberValue();
 
+	String::Utf8Value payload(args[1]->ToString());
+
+	int result = sendfunc64be(dst_addr, ToCString(payload), payload.length());
+	if(result < 0) {
+		fprintf (stderr, "tx64be error = %d\n",result);
+		return scope.Close(Boolean::New(false));
+	}
+	return scope.Close(Boolean::New(true));
+}
+
+Handle<Value> lazurite_send64le(const Arguments& args) {
+	HandleScope scope;
+	if(args.Length() < 2) {
+		fprintf (stderr, "Wrong number of arguments\n");
+		return scope.Close(Boolean::New(false));
+	}
+	if(!sendfunc64le) {
+		fprintf (stderr, "lazurite_send64le fail.\n");
+		return scope.Close(Boolean::New(false));
+	}
+    Local<Array> arr = Local<Array>::Cast(args[0]);
+    if(arr->Length() != 8) {
+		fprintf (stderr, "lazurite_send64le address.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	uint8_t dst_addr[8];
+	dst_addr[0] = arr->Get(0)->NumberValue();
+	dst_addr[1] = arr->Get(1)->NumberValue();
+	dst_addr[2] = arr->Get(2)->NumberValue();
+	dst_addr[3] = arr->Get(3)->NumberValue();
+	dst_addr[4] = arr->Get(4)->NumberValue();
+	dst_addr[5] = arr->Get(5)->NumberValue();
+	dst_addr[6] = arr->Get(6)->NumberValue();
+	dst_addr[7] = arr->Get(7)->NumberValue();
+
+	String::Utf8Value payload(args[1]->ToString());
+
+	int result = sendfunc64le(dst_addr, ToCString(payload), payload.length());
+	if(result < 0) {
+		fprintf (stderr, "tx64le error = %d\n",result);
+		return scope.Close(Boolean::New(false));
+	}
+	return scope.Close(Boolean::New(true));
+}
+
+Handle<Value> lazurite_setAckReq(const Arguments& args) {
+	HandleScope scope;
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+		return scope.Close(Boolean::New(false));
+	}
+	if(!setackreq) {
+		fprintf (stderr, "lazurite_setAckReq fail.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	bool ackreq = args[0]->BooleanValue();;
+	if(setackreq(ackreq) != 0){
+		fprintf (stderr, "lazurite_setAckReq exe error.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	return scope.Close(Boolean::New(true));
+}
+
+Handle<Value> lazurite_setBroadcastEnb(const Arguments& args) {
+	HandleScope scope;
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+		return scope.Close(Boolean::New(false));
+	}
+	if(!setbroadcast) {
+		fprintf (stderr, "lazurite_setBroadcastEnb fail.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	bool broadcast = args[0]->BooleanValue();;
+	if(setbroadcast(broadcast) != 0){
+		fprintf (stderr, "lazurite_setBroadcastEnb exe error.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	return scope.Close(Boolean::New(true));
+}
+
+Handle<Value> lazurite_setMyAddress(const Arguments& args) {
+	HandleScope scope;
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+		return scope.Close(Boolean::New(false));
+	}
+	if(!setmyaddress) {
+		fprintf (stderr, "lazurite_setMyAddress fail.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	uint16_t myaddress = args[0]->NumberValue();;
+	if(setmyaddress(myaddress) != 0){
+		fprintf (stderr, "lazurite_setMyAddress exe error.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	return scope.Close(Boolean::New(true));
+}
 
 Handle<Value> lazurite_close(const Arguments& args) {
 	HandleScope scope;
@@ -388,6 +520,11 @@ void init(Handle<Object> target) {
 	NODE_SET_METHOD(target, "lazurite_rxDisable", lazurite_rxDisable);
 	NODE_SET_METHOD(target, "lazurite_read", lazurite_read);
 	NODE_SET_METHOD(target, "lazurite_send", lazurite_send);
+	NODE_SET_METHOD(target, "lazurite_send64le", lazurite_send64le);
+	NODE_SET_METHOD(target, "lazurite_send64be", lazurite_send64be);
+	NODE_SET_METHOD(target, "lazurite_setAckReq", lazurite_setAckReq);
+	NODE_SET_METHOD(target, "lazurite_setBroadcastEnb", lazurite_setBroadcastEnb);
+	NODE_SET_METHOD(target, "lazurite_setMyAddress", lazurite_setMyAddress);
 	NODE_SET_METHOD(target, "lazurite_close", lazurite_close);
 	NODE_SET_METHOD(target, "lazurite_remove", lazurite_remove);
 	NODE_SET_METHOD(target, "dlclose", dlclose);

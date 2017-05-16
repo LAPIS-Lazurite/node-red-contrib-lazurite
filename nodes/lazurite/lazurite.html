@@ -21,6 +21,10 @@
 
 <script type="text/x-red" data-template-name="lazurite-rx">
     <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
         <label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
         <input type="lazurite-channel" id="node-input-channel"></input>
     </div>
@@ -35,8 +39,8 @@
         <input type="checkbox" id="node-input-latestpacket" style="width:20px;"> receive only latest packet</input>
     </div>
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-        <input type="text" id="node-input-name">
+        <label for="node-input-broadcastenb"><i class="fa fa-chain"></i> Broadcast</label>
+        <input type="checkbox" id="node-input-broadcastenb" style="width:20px;"> enable</input>
     </div>
 </script>
 
@@ -84,7 +88,7 @@
 
 <script type="text/javascript">
     RED.nodes.registerType('lazurite-rx',{
-        category: 'Lazurite_Gateway',
+        category: 'Lazurite',
         paletteLabel: 'Lazurite Rx',
         color:"#3FADB5",
         align: 'left',
@@ -102,8 +106,18 @@
             interval: {value:"1000", required:true},
             enbinterval: {value:true},
             latestpacket: {value:false},
-            name   : {value:""},
-        }
+            broadcastenb: {value:true},
+            name   : {value:""}
+        },
+		oneditprepare: function() {
+			if(lazurite_rf_param != false) {
+				$("#node-input-channel").val(lazurite_rf_param);
+			}
+		},
+		oneditsave: function() {
+			console.log($("#node-input-channel").val());
+			lazurite_rf_param = $("#node-input-channel").val();
+		}
     });
 </script>
 
@@ -124,21 +138,15 @@
         <label for="node-input-dst_addr"><i class="fa fa-dot-circle-o"></i> dst addr</label>
         <input type="text" id="node-input-dst_addr" placeholder="16bit short address of receiver.">
     </div>
-</script>
-
-<script type="text/x-red" data-help-name="lazurite-tx">
-    <p>Send data of Lazurite-Gateway.</p>
-    <p>Outputs a message with the properties:
-      <li>msg.payload</li>
-    </p>
-    <p><b>msg.payload</b> is payload to be sent.</p>
-    <p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
-    <p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
+    <div class="form-row">
+        <label for="node-input-ackreq"><i class="fa fa-chain"></i> Ack</label>
+        <input type="checkbox" id="node-input-ackreq" style="width:20px;"> enable</input>
+    </div>
 </script>
 
 <script type="text/javascript">
     RED.nodes.registerType('lazurite-tx',{
-        category: 'Lazurite_Gateway',
+        category: 'Lazurite',
         paletteLabel: 'Lazurite Tx',
         color:"#3FADB5",
         align: 'right',
@@ -155,23 +163,29 @@
             channel:   {value:"", required:true, type:"lazurite-channel"},
             dst_addr: {value:"0xffff", required:true},
             dst_panid: {value:"0xffff", required:true},
-            name: {value:""},
-        }
+            ackreq: {value:true},
+            name: {value:""}
+        },
+		oneditprepare: function() {
+			if(lazurite_rf_param != false) {
+				$("#node-input-channel").val(lazurite_rf_param);
+			}
+		},
+		oneditsave: function() {
+			console.log($("#node-input-channel").val());
+			lazurite_rf_param = $("#node-input-channel").val();
+		}
     });
 </script>
-<script type="text/javascript">
-    RED.nodes.registerType('lazurite-channel',{
-        category: 'config',
-        defaults: {
-            ch: {value:36,required:true,validate:RED.validators.number()},
-            panid: {value:"0xabcd",required:true},
-            rate: {value:100,required:true,validate:RED.validators.number()},
-            pwr: {value:20,required:true,validate:RED.validators.number()},
-        },
-        label: function() {
-            return "ch:" + this.ch + " panid:" + this.panid;
-        }
-    });
+
+<script type="text/x-red" data-help-name="lazurite-tx">
+    <p>Send data of Lazurite-Gateway.</p>
+    <p>Outputs a message with the properties:
+      <li>msg.payload</li>
+    </p>
+    <p><b>msg.payload</b> is payload to be sent.</p>
+    <p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
+    <p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
 </script>
 
 <script type="text/x-red" data-template-name="lazurite-channel">
@@ -197,5 +211,30 @@
             <option value=20>20 mW</option>
         </select>
     </div>
+    <div class="form-row">
+        <label for="node-config-input-myaddr"><i class="fa fa-map-marker"></i> My Address</label>
+        <input type="checkbox" id="node-config-input-defaultaddress" style="width:20px;"> default</input>
+        <input type="text" id="node-config-input-myaddr" placeholder="my address" style="width:80px; margin-left:20px;"></input>
+    </div>
     <div class="form-tips">in case of 100kbps, ch is 24-31, 33-60.<br>in case of 50kbps, ch is 24-61.</div>
 </script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-channel',{
+        category: 'config',
+        defaults: {
+            ch: {value:36,required:true,validate:RED.validators.number()},
+            panid: {value:"0xabcd",required:true},
+            rate: {value:100,required:true,validate:RED.validators.number()},
+            pwr: {value:20,required:true,validate:RED.validators.number()},
+            defaultaddress: {value:true,required:true},
+            myaddr: {value:"0", required:true }
+        },
+        label: function() {
+            return "ch:" + this.ch + " panid:" + this.panid;
+        },
+		oneditprepare: function() {
+		}
+    });
+</script>
+

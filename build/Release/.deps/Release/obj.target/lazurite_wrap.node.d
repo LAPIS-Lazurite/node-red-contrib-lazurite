@@ -1,1 +1,1 @@
-cmd_Release/obj.target/lazurite_wrap.node := flock ./Release/linker.lock g++ -shared -pthread -rdynamic  -Wl,-soname=lazurite_wrap.node -o Release/obj.target/lazurite_wrap.node -Wl,--start-group Release/obj.target/lazurite_wrap/lazurite_wrap.o -Wl,--end-group 
+cmd_Release/obj.target/lazurite_wrap.node := flock ./Release/linker.lock g++ -shared -pthread -rdynamic  -Wl,-soname=lazurite_wrap.node -o Release/obj.target/lazurite_wrap.node -Wl,--start-group Release/obj.target/lazurite_wrap/nodes/lazurite/lazurite_wrap.o -Wl,--end-group 

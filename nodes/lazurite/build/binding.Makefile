@@ -3,4 +3,4 @@
 export builddir_name ?= build/./.
 .PHONY: all
 all:
-	$(MAKE) patlamp_wrap lazurite_wrap
+	$(MAKE) lazurite_wrap

@@ -314,11 +314,6 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
                  $(join ^,lazurite_wrap.target.mk)))),)
   include lazurite_wrap.target.mk
 endif
-ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
-    $(findstring $(join ^,$(prefix)),\
-                 $(join ^,patlamp_wrap.target.mk)))),)
-  include patlamp_wrap.target.mk
-endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
 cmd_regen_makefile = cd $(srcdir); /usr/share/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "--toplevel-dir=." -I/home/pi/.node-red/node_modules/node-red-contrib-lazurite/build/config.gypi -I/usr/share/node-gyp/addon.gypi -I/usr/include/nodejs/common.gypi "--depth=." "-Goutput_dir=." "--generator-output=build" "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/usr/include/nodejs" "-Dmodule_root_dir=/home/pi/.node-red/node_modules/node-red-contrib-lazurite" binding.gyp

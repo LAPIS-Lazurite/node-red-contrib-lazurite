@@ -63,7 +63,7 @@ INCS_Release := \
 	-I/usr/include/nodejs/deps/v8/include
 
 OBJS := \
-	$(obj).target/$(TARGET)/nodes/lazurite/lazurite_wrap.o
+	$(obj).target/$(TARGET)/lazurite_wrap.o
 
 # Add to the list of files we specially track dependencies for.
 all_deps += $(OBJS)

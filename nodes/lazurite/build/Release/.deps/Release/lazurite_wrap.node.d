@@ -1,0 +1,1 @@
+cmd_Release/lazurite_wrap.node := ln -f "Release/obj.target/lazurite_wrap.node" "Release/lazurite_wrap.node" 2>/dev/null || (rm -rf "Release/lazurite_wrap.node" && cp -af "Release/obj.target/lazurite_wrap.node" "Release/lazurite_wrap.node")

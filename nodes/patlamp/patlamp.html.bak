@@ -1,0 +1,54 @@
+<!-- log file -->
+<script type="text/x-red" data-template-name="patlamp">
+	<div class="form-row">
+		<label for="node-input-name"><i class="icon-tag"></i> Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-mapFilePath"><i class="icon-tag"></i> MAP file</label>
+		<input type="text" id="node-input-mapFilePath" placeholder="please input file path of map file">
+	</div>
+	<div class="form-row">
+		<label for="node-input-reportInterval"><i class="fa fa-clock-o"></i> Report</label>
+		<input type="text" id="node-input-reportInterval" placeholder="report interval" style = "width:80px;">
+		<label for="node-input-reportIntervalUnit"></i>sec</label>
+	</div>
+	<div class="form-row">
+		<label for="node-input-detectInterval"><i class="fa fa-clock-o"></i> Detect</label>
+		<input type="text" id="node-input-detectInterval" placeholder="detect interval" style = "width:80px;">
+		<label for="node-input-reportIntervalUnit"></i>msec</label>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="patlamp">
+	<p>A simple node that converts the message payloads into all lower-case characters</p>
+</script>
+
+<script type="text/javascript">
+	RED.nodes.registerType("patlamp",{
+		category: 'function',
+		color: '#a6bbcf',
+		defaults: {
+			name: {value:""},
+			mapFilePath: {
+				value:"",
+				required: true
+			},
+			reportInterval: {value: 10,
+				validate:RED.validators.number(),
+				required:true
+			},
+			detectInterval: {value: 500,
+				validate:RED.validators.number(),
+				required:true
+			}
+		},
+		inputs:0,
+		outputs:1,
+		icon: "file.png",
+		label: function() {
+			return this.name||"patlamp";
+		}
+	});
+</script>
+

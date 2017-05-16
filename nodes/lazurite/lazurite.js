@@ -18,11 +18,25 @@
  * limitations under the License.
  */
 
+var lazurite_rf_param=false;
+
 module.exports = function(RED) {
 
 	var lib = require('./build/Release/lazurite_wrap');
 	var stream = require('stream');
 	var util = require('util');
+
+	function rf_init(txparam,rxparam) {
+		if(txparam != null){
+			rfparam.tx = txparam;
+			rfparam.ch = 36
+		}
+		if(rxparam != null){
+			rfparam.rx = rxparam;
+		}
+	}
+	function rf_update(param) {
+	}
 
 	function Warn(message){
 		RED.log.warn("LazuriteInNode: " + message);
@@ -82,13 +96,18 @@ module.exports = function(RED) {
 		RED.nodes.createNode(this,config);
 
 		this.channel = RED.nodes.getNode(config.channel);
-		this.ch    = this.channel ? this.channel.ch              : 36;
-		this.panid = this.channel ? parseInt(this.channel.panid) : 0xabcd;
-		this.rate  = this.channel ? this.channel.rate            : 100;
-		this.pwr   = this.channel ? this.channel.pwr             : 20;
+
+		console.log("RX::");
+		console.log(this);
+
+		this.ch    = this.channel ? this.channel.config.ch              : 36;
+		this.panid = this.channel ? parseInt(this.channel.config.panid) : 0xabcd;
+		this.rate  = this.channel ? this.channel.config.rate            : 100;
+		this.pwr   = this.channel ? this.channel.config.pwr             : 20;
+
 		this.interval   = config.interval ? config.interval        : 1000;
 		this.name  = config.name;
-		this.enbinterval  = config.enbinterval ? true : false;
+		this.enbinterval  = this.channel.config.enbinterval;
 		this.latestpacket  = config.latestpacket ? true : false;
 		//console.log(config);
 		//console.log(this);
@@ -132,16 +151,20 @@ module.exports = function(RED) {
 		RED.nodes.createNode(this,config);
 
 		this.channel  = RED.nodes.getNode(config.channel);
-		this.ch       = this.channel  ? this.channel.ch                : 36;
-		this.panid    = this.channel  ? parseInt(this.channel.panid)   : 0xabcd;
-		this.rate     = this.channel  ? this.channel.rate              : 100;
-		this.pwr      = this.channel  ? this.channel.pwr               : 20;
+
+		console.log("TX::")
+		console.log(this)
+		
+		this.ch       = this.channel  ? this.channel.config.ch                : 36;
+		this.panid    = this.channel  ? parseInt(this.channel.config.panid)   : 0xabcd;
+		this.rate     = this.channel  ? this.channel.config.rate              : 100;
+		this.pwr      = this.channel  ? this.channel.config.pwr               : 20;
+
 		this.dst_addr   = parseInt(config.dst_addr);
 		this.dst_panid  = parseInt(config.dst_panid);
 		this.name     = config.name;
-
 		this.enable   = false;
-
+		
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
@@ -170,12 +193,24 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("lazurite-tx",LazuriteTxNode);
 
-	function LazuriteChannelNode(n) {
-		RED.nodes.createNode(this,n);
+	function LazuriteChannelNode(config) {
+		RED.nodes.createNode(this,config);
+		this.config = {
+			ch: config.ch,
+			panid: config.panid,
+			rate: config.rate,
+			pwr: config.pwr,
+			defaultaddress: config.defaultaddress,
+			myaddr: config.myaddr
+		}
+		console.log("CH:");
+		console.log(config);
+		/*
 		this.ch = n.ch;
 		this.panid = n.panid;
 		this.rate = n.rate;
 		this.pwr = n.pwr;
+		*/
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
 }
