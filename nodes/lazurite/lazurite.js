@@ -193,6 +193,58 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("lazurite-tx",LazuriteTxNode);
 
+	function LazuriteTx64Node(config) {
+		RED.nodes.createNode(this,config);
+
+		if(latest_rfparam_id==""){
+			this.channel  = RED.nodes.getNode(config.channel);
+		} else {
+			this.channel  = RED.nodes.getNode(latest_rfparam_id);
+		}
+
+		this.ch       = this.channel  ? this.channel.config.ch                : 36;
+		this.panid    = this.channel  ? this.channel.config.panid             : 0xabcd;
+		this.rate     = this.channel  ? this.channel.config.rate              : 100;
+		this.pwr      = this.channel  ? this.channel.config.pwr               : 20;
+
+		this.dst_addr   = parseInt("0x"+config.dst_addr);
+		this.name     = config.name;
+		this.enable   = false;
+		this.ackreq   = config.ackreq;
+
+		console.log(this);
+
+		var node = this;
+
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		connect(node);
+		setAckReq(node);
+
+		node.on('input', function(msg) {
+			//console.log(msg);
+			var dst_panid;
+			var dst_addr;
+			if(typeof msg.dst_panid != "undefined") {
+					dst_panid = msg.dst_panid;
+			} else {
+				dst_panid = node.dst_panid;
+			}
+			if(typeof msg.dst_addr != "undefined") {
+				dst_addr = msg.dst_addr[0];
+			} else {
+				dst_addr = node.dst_addr;
+			}
+			if(!lib.lazurite_send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+			node.send(msg);
+		});
+		node.on('close', function(done) {
+			disconnect(node);
+			done();
+		});
+	}
+	RED.nodes.registerType("lazurite-tx64",LazuriteTx64Node);
+
+
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
 		this.config = {
@@ -206,6 +258,17 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
     RED.httpAdmin.post("/lazurite-tx/:id/:state", RED.auth.needsPermission("lazurite-tx.write"), function(req,res) {
+        var node = RED.nodes.getNode(req.params.id);
+        var state = req.params.state;
+        if (node !== null && typeof node !== "undefined" ) {
+			console.log(state)
+			latest_rfparam_id = state;
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(404);
+        }
+    });
+    RED.httpAdmin.post("/lazurite-tx64/:id/:state", RED.auth.needsPermission("lazurite-tx64.write"), function(req,res) {
         var node = RED.nodes.getNode(req.params.id);
         var state = req.params.state;
         if (node !== null && typeof node !== "undefined" ) {

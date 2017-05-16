@@ -43,49 +43,6 @@
         <input type="checkbox" id="node-input-broadcastenb" style="width:20px;"> enable</input>
     </div>
 </script>
-
-<script type="text/x-red" data-help-name="lazurite-rx">
-    <p>Recieve data of Lazurite-Gateway.</p>
-
-    <p><li><b>Interval</b></li></P>
-    <p>check receiving data by this interval, when enabling</p>
-    <p><li><b>Input node</b></li></P>
-    <p>just trigger to check receiving data</p>
-    <p><li><b>format</b></li></P>
-    <p>When checked, the latest packet is thrown. Previous data are abandoned. When not checked, all data are thrown in an array named "packet". tag is order of packet. The number of memorized packets depend on kernel driver.</p>
-	<p></p>
-
-    <p>Outputs a message with the properties:</p>
-
-
-    <p><li>msg.header</li></P>
-    <p><b>msg.header</b> is mac header of receiving packet.</p>
-
-    <p><li>msg.dst_panid</li></p>
-    <p><b>msg.dst_panid</b> is panid of receiver.</p>
-
-    <p><li>msg.dst_addr</li></p>
-    <p><b>msg.dst_addr</b> is address of receiver. data format is 16bit x 4 in an array</p>
-
-    <p><li>msg.src_panid</li></p>
-    <p><b>msg.src_panid</b> is panid of tranceiver.</p>
-
-    <p><li>msg.src_addr</li></p>
-    <p><b>msg.src_addr</b> is addr of tranceiver. data format is 16bit x 4 in an array</p>
-
-    <p><li>msg.sec</li></p>
-    <p><b>msg.sec</b> is receiving time stamped in kernel driver.</p>
-
-    <p><li>msg.nsec</li></p>
-    <p><b>msg.nsec</b> is receiving time of nano sec stamped in kernel driver.</p>
-
-    <p><li>msg.payload</li></p>
-    <p><b>msg.payload</b> is payload of receiving data.</p>
-
-    <p><li>msg.length</li></p>
-    <p><b>msg.length</b> is length of payload.</p>
-</script>
-
 <script type="text/javascript">
     RED.nodes.registerType('lazurite-rx',{
         category: 'Lazurite',
@@ -128,6 +85,47 @@
 		}
     });
 </script>
+<script type="text/x-red" data-help-name="lazurite-rx">
+    <p>Recieve data of Lazurite-Gateway.</p>
+
+    <p><li><b>Interval</b></li></P>
+    <p>check receiving data by this interval, when enabling</p>
+    <p><li><b>Input node</b></li></P>
+    <p>just trigger to check receiving data</p>
+    <p><li><b>format</b></li></P>
+    <p>When checked, the latest packet is thrown. Previous data are abandoned. When not checked, all data are thrown in an array named "packet". tag is order of packet. The number of memorized packets depend on kernel driver.</p>
+	<p></p>
+
+    <p>Outputs a message with the properties:</p>
+
+
+    <p><li>msg.header</li></P>
+    <p><b>msg.header</b> is mac header of receiving packet.</p>
+
+    <p><li>msg.dst_panid</li></p>
+    <p><b>msg.dst_panid</b> is panid of receiver.</p>
+
+    <p><li>msg.dst_addr</li></p>
+    <p><b>msg.dst_addr</b> is address of receiver. data format is 16bit x 4 in an array</p>
+
+    <p><li>msg.src_panid</li></p>
+    <p><b>msg.src_panid</b> is panid of tranceiver.</p>
+
+    <p><li>msg.src_addr</li></p>
+    <p><b>msg.src_addr</b> is addr of tranceiver. data format is 16bit x 4 in an array</p>
+
+    <p><li>msg.sec</li></p>
+    <p><b>msg.sec</b> is receiving time stamped in kernel driver.</p>
+
+    <p><li>msg.nsec</li></p>
+    <p><b>msg.nsec</b> is receiving time of nano sec stamped in kernel driver.</p>
+
+    <p><li>msg.payload</li></p>
+    <p><b>msg.payload</b> is payload of receiving data.</p>
+
+    <p><li>msg.length</li></p>
+    <p><b>msg.length</b> is length of payload.</p>
+</script>
 
 <script type="text/x-red" data-template-name="lazurite-tx">
     <div class="form-row">
@@ -151,7 +149,6 @@
         <input type="checkbox" id="node-input-ackreq" style="width:20px;"> enable</input>
     </div>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('lazurite-tx',{
         category: 'Lazurite',
@@ -193,7 +190,6 @@
 		}
     });
 </script>
-
 <script type="text/x-red" data-help-name="lazurite-tx">
     <p>Send data of Lazurite-Gateway.</p>
     <p>Outputs a message with the properties:
@@ -203,6 +199,76 @@
     <p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
     <p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
 </script>
+
+
+<script type="text/x-red" data-template-name="lazurite-tx64">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
+        <input type="lazurite-channel" id="node-input-channel"></input>
+    </div>
+    <div class="form-row">
+        <label for="node-input-dst_addr"><i class="fa fa-dot-circle-o"></i> dst addr</label>
+        <input type="text" id="node-input-dst_addr" placeholder="16bit short address of receiver.">
+    </div>
+    <div class="form-row">
+        <label for="node-input-ackreq"><i class="fa fa-chain"></i> Ack</label>
+        <input type="checkbox" id="node-input-ackreq" style="width:20px;"> enable</input>
+    </div>
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-tx64',{
+        category: 'Lazurite',
+        paletteLabel: 'Lazurite TX64',
+        color:"#3FADB5",
+        align: 'right',
+        inputs:1,
+        outputs:1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name || "lazurite TX64";
+        },
+        labelStyle: function() {
+            return this.text?"node_label_italic":"";
+        },
+        defaults: {
+            channel:   {value:"", required:true, type:"lazurite-channel"},
+            dst_addr: {value:"001D129000047FBE", required:true},
+            ackreq: {value:true},
+            name: {value:""}
+        },
+		oneditprepare: function() {
+			if(lazurite_rf_param != false) {
+				$("#node-input-channel").val(lazurite_rf_param);
+			}
+		},
+		oneditsave: function() {
+			console.log($("#node-input-channel").val());
+			lazurite_rf_param = $("#node-input-channel").val();
+			$.ajax({
+				url: "lazurite-tx/"+this.id+"/"+lazurite_rf_param,
+				type: "POST",
+				success: function(resp, textStatus, xhr) {
+				},
+				error: function(jqXHR,textStatus,errorThrown) {
+				}
+			});
+		}
+    });
+</script>
+<script type="text/x-red" data-help-name="lazurite-tx64">
+    <p>Send data of Lazurite-Gateway.</p>
+    <p>Outputs a message with the properties:
+      <li>msg.payload</li>
+    </p>
+    <p><b>msg.payload</b> is payload to be sent.</p>
+    <p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
+    <p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
+</script>
+
 
 <script type="text/x-red" data-template-name="lazurite-channel">
     <div class="form-row">
@@ -234,7 +300,6 @@
     </div>
     <div class="form-tips">in case of 100kbps, ch is 24-31, 33-60.<br>in case of 50kbps, ch is 24-61.</div>
 </script>
-
 <script type="text/javascript">
     RED.nodes.registerType('lazurite-channel',{
         category: 'config',
