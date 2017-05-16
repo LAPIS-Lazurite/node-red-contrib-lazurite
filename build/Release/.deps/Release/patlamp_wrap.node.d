@@ -1,1 +1,0 @@
-cmd_Release/patlamp_wrap.node := ln -f "Release/obj.target/patlamp_wrap.node" "Release/patlamp_wrap.node" 2>/dev/null || (rm -rf "Release/patlamp_wrap.node" && cp -af "Release/obj.target/patlamp_wrap.node" "Release/patlamp_wrap.node")

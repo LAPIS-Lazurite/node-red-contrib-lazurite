@@ -18,25 +18,12 @@
  * limitations under the License.
  */
 
-var lazurite_rf_param=false;
-
 module.exports = function(RED) {
 
-	var lib = require('./build/Release/lazurite_wrap');
+	var lib = require('../../build/Release/lazurite_wrap');
 	var stream = require('stream');
 	var util = require('util');
-
-	function rf_init(txparam,rxparam) {
-		if(txparam != null){
-			rfparam.tx = txparam;
-			rfparam.ch = 36
-		}
-		if(rxparam != null){
-			rfparam.rx = rxparam;
-		}
-	}
-	function rf_update(param) {
-	}
+	var latest_rfparam_id="";
 
 	function Warn(message){
 		RED.log.warn("LazuriteInNode: " + message);
@@ -46,9 +33,19 @@ module.exports = function(RED) {
 		RED.log.info("LazuriteInNode: " + message);
 	}
 
+	function setAckReq(node) {
+			if(!lib.lazurite_setAckReq(node.ackreq)) { Warn("lazurite_setAckReq fail"); return; }
+	}
+	function setBroadcast(node) {
+			if(!lib.lazurite_setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
+	}
 	function connect(node) {
 		if(!lib.dlopen()) { Warn("dlopen fail"); return; }
 		if(!lib.lazurite_init()) { Warn("lazurite_init fail"); return; }
+		console.log(node);
+		if(node.channel.config.defaultaddress==false) {
+			if(!lib.lazurite_setMyAddress(node.channel.config.myaddr)) { Warn("lazurite_setMyAddress fail"); return; }
+		}
 		if(!lib.lazurite_begin(node.ch, node.panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		node.status({fill:"green",shape:"dot",text:"connected"},true);
 	}
@@ -94,28 +91,25 @@ module.exports = function(RED) {
 
 	function LazuriteRxNode(config) {
 		RED.nodes.createNode(this,config);
-
 		this.channel = RED.nodes.getNode(config.channel);
-
-		console.log("RX::");
-		console.log(this);
 
 		this.ch    = this.channel ? this.channel.config.ch              : 36;
 		this.panid = this.channel ? parseInt(this.channel.config.panid) : 0xabcd;
 		this.rate  = this.channel ? this.channel.config.rate            : 100;
 		this.pwr   = this.channel ? this.channel.config.pwr             : 20;
 
-		this.interval   = config.interval ? config.interval        : 1000;
+		this.interval   = parseInt(config.interval);
 		this.name  = config.name;
-		this.enbinterval  = this.channel.config.enbinterval;
-		this.latestpacket  = config.latestpacket ? true : false;
-		//console.log(config);
-		//console.log(this);
+		this.enbinterval  = config.enbinterval;
+		this.broadcastenb  = config.broadcastenb;
 
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
-		//console.log(node);
+
+		console.log(this);
+
 		connect(node);
+		setBroadcast(node);
 		if(!lib.lazurite_setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 
 		if(this.enbinterval) {
@@ -150,13 +144,14 @@ module.exports = function(RED) {
 	function LazuriteTxNode(config) {
 		RED.nodes.createNode(this,config);
 
-		this.channel  = RED.nodes.getNode(config.channel);
+		if(latest_rfparam_id==""){
+			this.channel  = RED.nodes.getNode(config.channel);
+		} else {
+			this.channel  = RED.nodes.getNode(latest_rfparam_id);
+		}
 
-		console.log("TX::")
-		console.log(this)
-		
 		this.ch       = this.channel  ? this.channel.config.ch                : 36;
-		this.panid    = this.channel  ? parseInt(this.channel.config.panid)   : 0xabcd;
+		this.panid    = this.channel  ? this.channel.config.panid             : 0xabcd;
 		this.rate     = this.channel  ? this.channel.config.rate              : 100;
 		this.pwr      = this.channel  ? this.channel.config.pwr               : 20;
 
@@ -164,10 +159,15 @@ module.exports = function(RED) {
 		this.dst_panid  = parseInt(config.dst_panid);
 		this.name     = config.name;
 		this.enable   = false;
-		
+		this.ackreq   = config.ackreq;
+
+		console.log(this);
+
 		var node = this;
+
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
+		setAckReq(node);
 
 		node.on('input', function(msg) {
 			//console.log(msg);
@@ -197,20 +197,34 @@ module.exports = function(RED) {
 		RED.nodes.createNode(this,config);
 		this.config = {
 			ch: config.ch,
-			panid: config.panid,
+			panid: parseInt(config.panid),
 			rate: config.rate,
 			pwr: config.pwr,
 			defaultaddress: config.defaultaddress,
-			myaddr: config.myaddr
+			myaddr: parseInt(config.myaddr)
 		}
-		console.log("CH:");
-		console.log(config);
-		/*
-		this.ch = n.ch;
-		this.panid = n.panid;
-		this.rate = n.rate;
-		this.pwr = n.pwr;
-		*/
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
+    RED.httpAdmin.post("/lazurite-tx/:id/:state", RED.auth.needsPermission("lazurite-tx.write"), function(req,res) {
+        var node = RED.nodes.getNode(req.params.id);
+        var state = req.params.state;
+        if (node !== null && typeof node !== "undefined" ) {
+			console.log(state)
+			latest_rfparam_id = state;
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(404);
+        }
+    });
+    RED.httpAdmin.post("/lazurite-rx/:id/:state", RED.auth.needsPermission("lazurite-rx.write"), function(req,res) {
+        var node = RED.nodes.getNode(req.params.id);
+        var state = req.params.state;
+        if (node !== null && typeof node !== "undefined" ) {
+			console.log(state)
+			latest_rfparam_id = state;
+            res.sendStatus(200);
+        } else {
+            res.sendStatus(404);
+        }
+    });
 }

@@ -1,3 +1,4 @@
+
 module.exports = function(RED) {
 	var lib;
 	var opened = false;
@@ -11,7 +12,7 @@ module.exports = function(RED) {
 	function connect(node) {
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		if(!opened) {
-			lib = require('./build/Release/patlamp_wrap');
+			lib = require('../../build/Release/patlamp_wrap');
 			if(!lib.dlopen(node.libFile)) { Warn("dlopen fail"); return false; }
 			if(!lib.patlamp_init()) { Warn("patlamp_init fail"); return false; }
 			node.status({fill:"green",shape:"dot",text:"connected"},true);
@@ -36,7 +37,7 @@ module.exports = function(RED) {
 	    return ("0" + value).slice(-2)
 	}
 	function patlamp_open() {
-		if(!opened) lib = require('./build/Release/patlamp_wrap');
+		if(!opened) lib = require('../../build/Release/patlamp_wrap');
 	}
 	function patlamp_init(node) {
 		lib.patlamp_setMapfile(node.mapFile);
@@ -196,6 +197,7 @@ module.exports = function(RED) {
 		});
 	}
 
+    // the auth header attached. So do not use RED.auth.needsPermission here.
 	RED.nodes.registerType("patlamp-cam",patlamp_cam);
 	RED.nodes.registerType("patlamp-photo",patlamp_photo);
 	RED.nodes.registerType("patlamp-csv",patlamp_csv);
@@ -216,6 +218,4 @@ module.exports = function(RED) {
             res.sendStatus(404);
         }
     });
-
-    // the auth header attached. So do not use RED.auth.needsPermission here.
 }
