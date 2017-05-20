@@ -409,6 +409,12 @@ namespace lazurite
 		 ******************************************************************************/
 		int lazurite_setBroadcastEnb(bool on);
 
+		/******************************************************************************/
+		/*! @brief set AES Key 
+		@param[in]     set pointer of 128bit AES key
+		@exception      none
+		******************************************************************************/
+		int lazurite_setKey(uint8_t *key);
 #ifdef __cplusplus
 	};
 };

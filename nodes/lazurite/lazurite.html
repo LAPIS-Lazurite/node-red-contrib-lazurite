@@ -211,8 +211,11 @@
         <input type="lazurite-channel" id="node-input-channel"></input>
     </div>
     <div class="form-row">
-        <label for="node-input-dst_addr"><i class="fa fa-dot-circle-o"></i> dst addr</label>
-        <input type="text" id="node-input-dst_addr" placeholder="16bit short address of receiver.">
+        <label for="node-input-dst_addr0"><i class="fa fa-dot-circle-o"></i> dst addr</label>
+        <input type="text" id="node-input-dst_addr0" placeholder="001D" style="width:50px">
+        <input type="text" id="node-input-dst_addr1" placeholder="1290" style="width:50px">
+        <input type="text" id="node-input-dst_addr2" placeholder="0004" style="width:50px">
+        <input type="text" id="node-input-dst_addr3" placeholder="0000" style="width:50px">
     </div>
     <div class="form-row">
         <label for="node-input-ackreq"><i class="fa fa-chain"></i> Ack</label>
@@ -236,7 +239,10 @@
         },
         defaults: {
             channel:   {value:"", required:true, type:"lazurite-channel"},
-            dst_addr: {value:"001D129000047FBE", required:true},
+            dst_addr0: {value:"001D", required:true},
+            dst_addr1: {value:"1290", required:true},
+            dst_addr2: {value:"0004", required:true},
+            dst_addr3: {value:"0000", required:true},
             ackreq: {value:true},
             name: {value:""}
         },
@@ -298,6 +304,10 @@
         <input type="checkbox" id="node-config-input-defaultaddress" style="width:20px;"> default</input>
         <input type="text" id="node-config-input-myaddr" placeholder="my address" style="width:80px; margin-left:20px;"></input>
     </div>
+    <div class="form-row">
+        <label for="node-config-input-key"><i class="fa fa-key"></i> AES key</label>
+        <input type="text" id="node-config-input-key" placeholder="128bit AES key"></input>
+    </div>
     <div class="form-tips">in case of 100kbps, ch is 24-31, 33-60.<br>in case of 50kbps, ch is 24-61.</div>
 </script>
 <script type="text/javascript">
@@ -309,7 +319,8 @@
             rate: {value:100,required:true,validate:RED.validators.number()},
             pwr: {value:20,required:true,validate:RED.validators.number()},
             defaultaddress: {value:true,required:true},
-            myaddr: {value:"0", required:true }
+            myaddr: {value:"0", required:true },
+            key: {value:""}
         },
         label: function() {
 			if(this.defaultaddress == true){

@@ -42,9 +42,11 @@ module.exports = function(RED) {
 	function connect(node) {
 		if(!lib.dlopen()) { Warn("dlopen fail"); return; }
 		if(!lib.lazurite_init()) { Warn("lazurite_init fail"); return; }
-		console.log(node);
 		if(node.channel.config.defaultaddress==false) {
 			if(!lib.lazurite_setMyAddress(node.channel.config.myaddr)) { Warn("lazurite_setMyAddress fail"); return; }
+		}
+		if(node.channel.config.key!=undefined) {
+			if(!lib.lazurite_setKey(node.channel.config.key)) { Warn("lazurite_setKey fail"); return; }
 		}
 		if(!lib.lazurite_begin(node.ch, node.panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		node.status({fill:"green",shape:"dot",text:"connected"},true);
@@ -92,26 +94,19 @@ module.exports = function(RED) {
 	function LazuriteRxNode(config) {
 		RED.nodes.createNode(this,config);
 		this.channel = RED.nodes.getNode(config.channel);
-
 		this.ch    = this.channel ? this.channel.config.ch              : 36;
 		this.panid = this.channel ? parseInt(this.channel.config.panid) : 0xabcd;
 		this.rate  = this.channel ? this.channel.config.rate            : 100;
 		this.pwr   = this.channel ? this.channel.config.pwr             : 20;
-
 		this.interval   = parseInt(config.interval);
 		this.name  = config.name;
 		this.enbinterval  = config.enbinterval;
 		this.broadcastenb  = config.broadcastenb;
-
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
-
-		console.log(this);
-
 		connect(node);
 		setBroadcast(node);
 		if(!lib.lazurite_setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
-
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
 			readStream.on('data', function(data) {
@@ -143,34 +138,25 @@ module.exports = function(RED) {
 
 	function LazuriteTxNode(config) {
 		RED.nodes.createNode(this,config);
-
 		if(latest_rfparam_id==""){
 			this.channel  = RED.nodes.getNode(config.channel);
 		} else {
 			this.channel  = RED.nodes.getNode(latest_rfparam_id);
 		}
-
 		this.ch       = this.channel  ? this.channel.config.ch                : 36;
 		this.panid    = this.channel  ? this.channel.config.panid             : 0xabcd;
 		this.rate     = this.channel  ? this.channel.config.rate              : 100;
 		this.pwr      = this.channel  ? this.channel.config.pwr               : 20;
-
 		this.dst_addr   = parseInt(config.dst_addr);
 		this.dst_panid  = parseInt(config.dst_panid);
 		this.name     = config.name;
 		this.enable   = false;
 		this.ackreq   = config.ackreq;
-
-		console.log(this);
-
 		var node = this;
-
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-		setAckReq(node);
 
 		node.on('input', function(msg) {
-			//console.log(msg);
 			var dst_panid;
 			var dst_addr;
 			if(typeof msg.dst_panid != "undefined") {
@@ -183,6 +169,7 @@ module.exports = function(RED) {
 			} else {
 				dst_addr = node.dst_addr;
 			}
+			setAckReq(node);
 			if(!lib.lazurite_send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
 			node.send(msg);
 		});
@@ -195,46 +182,50 @@ module.exports = function(RED) {
 
 	function LazuriteTx64Node(config) {
 		RED.nodes.createNode(this,config);
-
 		if(latest_rfparam_id==""){
 			this.channel  = RED.nodes.getNode(config.channel);
 		} else {
 			this.channel  = RED.nodes.getNode(latest_rfparam_id);
 		}
-
 		this.ch       = this.channel  ? this.channel.config.ch                : 36;
 		this.panid    = this.channel  ? this.channel.config.panid             : 0xabcd;
 		this.rate     = this.channel  ? this.channel.config.rate              : 100;
 		this.pwr      = this.channel  ? this.channel.config.pwr               : 20;
-
-		this.dst_addr   = parseInt("0x"+config.dst_addr);
 		this.name     = config.name;
 		this.enable   = false;
 		this.ackreq   = config.ackreq;
-
-		console.log(this);
-
+		this.dst_addr = [
+			parseInt("0x"+config.dst_addr0.substr(0,2)),
+			parseInt("0x"+config.dst_addr0.substr(2,2)),
+			parseInt("0x"+config.dst_addr1.substr(0,2)),
+			parseInt("0x"+config.dst_addr1.substr(2,2)),
+			parseInt("0x"+config.dst_addr2.substr(0,2)),
+			parseInt("0x"+config.dst_addr2.substr(2,2)),
+			parseInt("0x"+config.dst_addr3.substr(0,2)),
+			parseInt("0x"+config.dst_addr3.substr(2,2))];
 		var node = this;
-
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-		setAckReq(node);
 
 		node.on('input', function(msg) {
-			//console.log(msg);
 			var dst_panid;
 			var dst_addr;
-			if(typeof msg.dst_panid != "undefined") {
-					dst_panid = msg.dst_panid;
-			} else {
-				dst_panid = node.dst_panid;
-			}
 			if(typeof msg.dst_addr != "undefined") {
-				dst_addr = msg.dst_addr[0];
+				// convert from little endian to big endian
+				dst_addr = new Array(8);
+				dst_addr[0] = msg.dst_addr[3] >> 8;
+				dst_addr[1] = msg.dst_addr[3] & 0x00ff;
+				dst_addr[2] = msg.dst_addr[2] >> 8;
+				dst_addr[3] = msg.dst_addr[2] & 0x00ff;
+				dst_addr[4] = msg.dst_addr[1] >> 8;
+				dst_addr[5] = msg.dst_addr[1] & 0x00ff;
+				dst_addr[6] = msg.dst_addr[0] >> 8;
+				dst_addr[7] = msg.dst_addr[0] & 0x00ff;
 			} else {
 				dst_addr = node.dst_addr;
 			}
-			if(!lib.lazurite_send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+			setAckReq(node);
+			if(!lib.lazurite_send64be(dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
 			node.send(msg);
 		});
 		node.on('close', function(done) {
@@ -247,13 +238,22 @@ module.exports = function(RED) {
 
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
+		if (config.key.length == 32){
+			var key = [];
+			for (var i = 0; i < 16 ; i++) {
+				key.push(parseInt("0x"+config.key.substr(i*2,2)));
+			}
+		} else {
+			var key = undefined;
+		}
 		this.config = {
 			ch: config.ch,
 			panid: parseInt(config.panid),
 			rate: config.rate,
 			pwr: config.pwr,
 			defaultaddress: config.defaultaddress,
-			myaddr: parseInt(config.myaddr)
+			myaddr: parseInt(config.myaddr),
+			key: key
 		}
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
@@ -261,7 +261,6 @@ module.exports = function(RED) {
         var node = RED.nodes.getNode(req.params.id);
         var state = req.params.state;
         if (node !== null && typeof node !== "undefined" ) {
-			console.log(state)
 			latest_rfparam_id = state;
             res.sendStatus(200);
         } else {
@@ -272,7 +271,6 @@ module.exports = function(RED) {
         var node = RED.nodes.getNode(req.params.id);
         var state = req.params.state;
         if (node !== null && typeof node !== "undefined" ) {
-			console.log(state)
 			latest_rfparam_id = state;
             res.sendStatus(200);
         } else {
@@ -283,7 +281,6 @@ module.exports = function(RED) {
         var node = RED.nodes.getNode(req.params.id);
         var state = req.params.state;
         if (node !== null && typeof node !== "undefined" ) {
-			console.log(state)
 			latest_rfparam_id = state;
             res.sendStatus(200);
         } else {

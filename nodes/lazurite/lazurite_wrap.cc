@@ -50,6 +50,7 @@ int (*sendfunc64be)(uint8_t*, const void*, uint16_t);
 int (*setackreq)(bool);
 int (*setbroadcast)(bool);
 int (*setmyaddress)(uint16_t);
+int (*setaeskey)(uint8_t*);
 int (*closefunc)(void);
 int (*removefunc)(void);
 
@@ -98,6 +99,7 @@ Handle<Value> dlopen(const Arguments& args) {
 		setackreq    = (int (*)(bool))find(handle, "lazurite_setAckReq");
 		setbroadcast = (int (*)(bool))find(handle, "lazurite_setBroadcastEnb");
 		setmyaddress = (int (*)(uint16_t))find(handle, "lazurite_setMyAddress");
+		setaeskey    = (int (*)(uint8_t*))find(handle, "lazurite_setKey");
 		closefunc    = (int (*)(void))dlsym(handle, "lazurite_close");
 		removefunc   = (int (*)(void))dlsym(handle, "lazurite_remove");
 		opened = true;
@@ -458,6 +460,32 @@ Handle<Value> lazurite_setMyAddress(const Arguments& args) {
 	return scope.Close(Boolean::New(true));
 }
 
+Handle<Value> lazurite_setKey(const Arguments& args) {
+	HandleScope scope;
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+		return scope.Close(Boolean::New(false));
+	}
+	if(!setaeskey) {
+		fprintf (stderr, "lazurite_setKey fail.\n");
+		return scope.Close(Boolean::New(false));
+	}
+    Local<Array> arr = Local<Array>::Cast(args[0]);
+    if(arr->Length() != 16) {
+		fprintf (stderr, "lazurite_setKey length error.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	uint8_t key[16];
+	for(int i=0;i<16;i++) {
+		key[i] = arr->Get(i)->NumberValue();
+	}
+	if(setaeskey(key) != 0){
+		fprintf (stderr, "lazurite_setKey error.\n");
+		return scope.Close(Boolean::New(false));
+	}
+	return scope.Close(Boolean::New(true));
+}
+
 Handle<Value> lazurite_close(const Arguments& args) {
 	HandleScope scope;
 	if(began) {
@@ -525,6 +553,7 @@ void init(Handle<Object> target) {
 	NODE_SET_METHOD(target, "lazurite_setAckReq", lazurite_setAckReq);
 	NODE_SET_METHOD(target, "lazurite_setBroadcastEnb", lazurite_setBroadcastEnb);
 	NODE_SET_METHOD(target, "lazurite_setMyAddress", lazurite_setMyAddress);
+	NODE_SET_METHOD(target, "lazurite_setKey", lazurite_setKey);
 	NODE_SET_METHOD(target, "lazurite_close", lazurite_close);
 	NODE_SET_METHOD(target, "lazurite_remove", lazurite_remove);
 	NODE_SET_METHOD(target, "dlclose", dlclose);
