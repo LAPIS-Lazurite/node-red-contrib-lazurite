@@ -10,7 +10,8 @@
   "node-red": {
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
-      "patlamp": "nodes/patlamp/patlamp.js"
+      "patlamp": "nodes/patlamp/patlamp.js",
+      "node-mng": "nodes/node_manager/node_manager.js"
     }
   },
   "repository": {
