@@ -1,5 +1,5 @@
 /**
- * Copyright 2013, 2015 IBM Corp.
+ * Copyright 2017 Lapis Semiconducor Ltd,.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,14 @@
  **/
 
 module.exports = function(RED) {
+	var sensors = {
+		"none": require('./sensors/none'),
+		"07.button": require('./sensors/button'),
+		"07.env": require('./sensors/env'),
+		"07.prox": require('./sensors/prox'),
+		"07.hall": require('./sensors/hall'),
+		"05.CT": require('./sensors/ct'),
+	};
 	var rules;
 	var mode;
 	function sensor_decode(val) {
@@ -23,7 +31,12 @@ module.exports = function(RED) {
     function NodeManager(config) {
 		mode = config.mode;
 		rules = config.rules;
+		console.log(sensors);
+		var num = 0;
 		rules.forEach( function(val,index,ar){
+			num += sensors[val.sensor].size;
+			val.num = num-1;
+			val.index = index;
 			if(val.src.length == 16) {
 				val.addr = [
 					parseInt("0x"+val.src.substr(12,4)),
@@ -37,6 +50,7 @@ module.exports = function(RED) {
 				val.bit = 16;
 			}
 		});
+		console.log(rules);
         this.on('input', function (msg) {
 			if (Array.isArray(msg.payload)) {
 				msg.payload.forEach( function(val,index,ar) { sensor_decode(val);});
