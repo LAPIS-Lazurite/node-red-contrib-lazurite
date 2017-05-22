@@ -102,6 +102,7 @@ module.exports = function(RED) {
 		this.name  = config.name;
 		this.enbinterval  = config.enbinterval;
 		this.broadcastenb  = config.broadcastenb;
+		this.latestpacket  = config.latestpacket;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);

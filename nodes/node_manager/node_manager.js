@@ -15,9 +15,34 @@
  **/
 
 module.exports = function(RED) {
-    function NodeManager(n) {
-
+	var rules;
+	var mode;
+	function sensor_decode(val) {
+		console.log(val);
+	}
+    function NodeManager(config) {
+		mode = config.mode;
+		rules = config.rules;
+		rules.forEach( function(val,index,ar){
+			if(val.src.length == 16) {
+				val.addr = [
+					parseInt("0x"+val.src.substr(12,4)),
+					parseInt("0x"+val.src.substr(8,4)),
+					parseInt("0x"+val.src.substr(4,4)),
+					parseInt("0x"+val.src.substr(0,4))
+				];
+				val.bit = 64;
+			} else {
+				val.addr = [parseInt(val.src),0,0,0];
+				val.bit = 16;
+			}
+		});
         this.on('input', function (msg) {
+			if (Array.isArray(msg.payload)) {
+				msg.payload.forEach( function(val,index,ar) { sensor_decode(val);});
+			} else {
+				sensor_decode(msg);
+			}
         });
     }
     RED.nodes.registerType("node-manager", NodeManager);
