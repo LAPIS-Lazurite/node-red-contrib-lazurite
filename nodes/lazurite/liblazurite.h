@@ -414,7 +414,7 @@ namespace lazurite
 		@param[in]     set pointer of 128bit AES key
 		@exception      none
 		******************************************************************************/
-		int lazurite_setKey(uint8_t *key);
+		int lazurite_setKey(char *key);
 #ifdef __cplusplus
 	};
 };

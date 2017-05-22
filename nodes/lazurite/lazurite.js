@@ -45,7 +45,7 @@ module.exports = function(RED) {
 		if(node.channel.config.defaultaddress==false) {
 			if(!lib.lazurite_setMyAddress(node.channel.config.myaddr)) { Warn("lazurite_setMyAddress fail"); return; }
 		}
-		if(node.channel.config.key!=undefined) {
+		if(node.channel.config.key.length==32) {
 			if(!lib.lazurite_setKey(node.channel.config.key)) { Warn("lazurite_setKey fail"); return; }
 		}
 		if(!lib.lazurite_begin(node.ch, node.panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
@@ -238,14 +238,13 @@ module.exports = function(RED) {
 
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
-		if (config.key.length == 32){
-			var key = [];
-			for (var i = 0; i < 16 ; i++) {
-				key.push(parseInt("0x"+config.key.substr(i*2,2)));
+		var key = "";
+		if(typeof config.key == 'string') {
+			if (config.key.length == 32) {
+				key = config.key;
 			}
-		} else {
-			var key = undefined;
 		}
+		console.log(key.length);
 		this.config = {
 			ch: config.ch,
 			panid: parseInt(config.panid),

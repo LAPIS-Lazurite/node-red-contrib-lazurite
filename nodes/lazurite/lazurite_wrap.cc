@@ -50,7 +50,7 @@ int (*sendfunc64be)(uint8_t*, const void*, uint16_t);
 int (*setackreq)(bool);
 int (*setbroadcast)(bool);
 int (*setmyaddress)(uint16_t);
-int (*setaeskey)(uint8_t*);
+int (*setaeskey)(const void*);
 int (*closefunc)(void);
 int (*removefunc)(void);
 
@@ -99,7 +99,7 @@ Handle<Value> dlopen(const Arguments& args) {
 		setackreq    = (int (*)(bool))find(handle, "lazurite_setAckReq");
 		setbroadcast = (int (*)(bool))find(handle, "lazurite_setBroadcastEnb");
 		setmyaddress = (int (*)(uint16_t))find(handle, "lazurite_setMyAddress");
-		setaeskey    = (int (*)(uint8_t*))find(handle, "lazurite_setKey");
+		setaeskey    = (int (*)(const void*))find(handle, "lazurite_setKey");
 		closefunc    = (int (*)(void))dlsym(handle, "lazurite_close");
 		removefunc   = (int (*)(void))dlsym(handle, "lazurite_remove");
 		opened = true;
@@ -470,16 +470,12 @@ Handle<Value> lazurite_setKey(const Arguments& args) {
 		fprintf (stderr, "lazurite_setKey fail.\n");
 		return scope.Close(Boolean::New(false));
 	}
-    Local<Array> arr = Local<Array>::Cast(args[0]);
-    if(arr->Length() != 16) {
+	String::Utf8Value key(args[0]->ToString());
+    if(key.length() != 32) {
 		fprintf (stderr, "lazurite_setKey length error.\n");
 		return scope.Close(Boolean::New(false));
 	}
-	uint8_t key[16];
-	for(int i=0;i<16;i++) {
-		key[i] = arr->Get(i)->NumberValue();
-	}
-	if(setaeskey(key) != 0){
+	if(setaeskey(ToCString(key)) != 0){
 		fprintf (stderr, "lazurite_setKey error.\n");
 		return scope.Close(Boolean::New(false));
 	}
