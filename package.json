@@ -11,7 +11,8 @@
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
       "patlamp": "nodes/patlamp/patlamp.js",
-      "node-mng": "nodes/node_manager/node_manager.js"
+      "node-mng": "nodes/node_manager/node_manager.js",
+      "google-spreadsheet": "nodes/node_manager/google_spreadsheet.js"
     }
   },
   "repository": {
@@ -27,5 +28,9 @@
     "node-red",
     "Lazurite"
   ],
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "google-auth-library": "^0.10.0",
+    "googleapis": "^19.0.0"
+  }
 }

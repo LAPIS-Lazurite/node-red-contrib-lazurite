@@ -23,6 +23,7 @@
 		<label for="node-input-mode"><i class="fa fa-search-plus"></i> mode</label>
 		<select id="node-input-mode">
 			<option value="dashboard" selected>dashboard</option>
+			<option value="spreadsheet">spreadsheet</option>
 			<option value="other">other</option>
 		</select>
 	</div>
@@ -45,7 +46,7 @@
         category: 'Lazurite',
         defaults: {
             name: {value:""},
-            mode: {value:"dashboard"},
+            mode: {value:"dashboard",required: true},
             rules: {value:[{src:"0xFFFF", sensor:"none"}]},
             outputs: {value:1}
         },
@@ -57,6 +58,32 @@
         },
         oneditprepare: function() {
             var node = this;
+			var mode = $("#node-input-mode").val();
+			/*
+			var sensor_details = {
+				"none": {name: ["none"], unit: [""], size: 1},
+				"07.button": {
+					name : ["button"],
+					unit : ["none"],
+					size : 1},
+				"07.env":{
+					name: ["temprature","presssure","humidity","brightness"],
+					unit: ["degree","Pa","%","lux"],
+					size: 4},
+				"07.prox": {
+					name: ["prox"],
+					unit: [""],
+					size: 1},
+				"07.hall": {
+					name: ["hall"],
+					unit: [""],
+					size: 1},
+				"05.CT": {
+					name: ["ct"],
+					unit: ["mA"],
+					size: 1}
+			};
+			*/
             var sensors = [
                 {v:"none",t:"none"},
                 {v:"07.button",t:"07.button"},
@@ -65,7 +92,6 @@
                 {v:"07.hall",t:"07.hall"},
                 {v:"05.CT",t:"05.CT"}
             ];
-
             function resizeRule(rule) {
                 var sensorField = rule.find("select");
                 var type = sensorField.val()||"";
@@ -75,6 +101,7 @@
             $("#node-input-rule-container").css('min-height','250px').css('min-width','450px').editableList({
                 addItem: function(container,i,opt) {
                     var rule = opt;
+					var mode = $("#node-input-mode").val();
                     var row = $('<div/>').appendTo(container);
                     var srcAddrField = $('<input/>',{class:"node-input-src-addr",type:"text",style:"width:160px;margin-left: 5px;",placeholder:"SRC ADDR"}).appendTo(row);
                     var sensorField= $('<select/>',{style:"width:120px; margin-left: 10px; text-align: center;"}).appendTo(row);
@@ -83,7 +110,26 @@
                     }
 					srcAddrField.val(rule.src);
 					sensorField.val(rule.sensor);
+					/*
+                    var label;
+					label= $('<label for="node-input-sensor0">').text(sensor_details[rule.sensor].name[0]);
+					label.appendTo(row2);
+                    $('<input/>',{class:"node-input-sensor0",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
+					label= $('<label for="node-input-sensor1">').text(sensor_details[rule.sensor].name[1]);
+					label.appendTo(row3);
+                    $('<input/>',{class:"node-input-sensor1",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
+					label= $('<label for="node-input-sensor2">').text(sensor_details[rule.sensor].name[2]);
+					label.appendTo(row4);
+                    $('<input/>',{class:"node-input-sensor2",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
+					label= $('<label for="node-input-sensor3">').text(sensor_details[rule.sensor].name[3]);
+					label.appendTo(row5);
+                    $('<input/>',{class:"node-input-sensor3",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
+					sensorField.change(function(){
+						var type = sensorField.val();
+					});
+					*/
                 },
+
                 removeItem: function(opt) {
                     var rules = $("#node-input-rule-container").editableList('items');
                     rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
@@ -129,10 +175,16 @@
             });
 			if(node.rules.length != undefined) {
 				if(node.rules.length != undefined) {
-					if(data == "dashboard") {
-            			this.outputs = sensor_num;
-					} else {
-            			this.outputs = node.rules.length;
+					switch(data){ 
+						case "dashboard": 
+							this.outputs = sensor_num;
+							break;
+						case "spreadsheet": 
+							this.outputs = 1;
+							break;
+						default:
+							this.outputs = node.rules.length;
+							break;
 					}
 				}
 			}

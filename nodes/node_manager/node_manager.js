@@ -15,25 +15,34 @@
  **/
 
 module.exports = function(RED) {
-	var sensors = {
-		"none": require('./sensors/none'),
-		"07.button": require('./sensors/button'),
-		"07.env": require('./sensors/env'),
-		"07.prox": require('./sensors/prox'),
-		"07.hall": require('./sensors/hall'),
-		"05.CT": require('./sensors/ct'),
-	};
 	var rules;
 	var mode;
-	function sensor_decode(val) {
-		console.log(val);
+	var cloud = require('./lib/cloud')
+	var sensors = require('./lib/sensors')
+	function isAddressMatch(addr1,addr2){
+		for (var i = 0; i < 4 ; i++){
+			if(addr1[i] != addr2[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	function sensor_decode(rcv) {
+		for (var i=0 ; i < rules.length ; i++) {
+			if(isAddressMatch(rules[i].addr,rcv.src_addr)) {
+				var data = cloud[mode](rcv,rules[i]);
+				return data;
+			}
+		}
+		return false;
 	}
     function NodeManager(config) {
-		mode = config.mode;
+		RED.nodes.createNode(this,config);
+		var node = this;
 		rules = config.rules;
-		console.log(sensors);
+		mode = config.mode;
 		var num = 0;
-		rules.forEach( function(val,index,ar){
+		rules.forEach(function(val,index,ar){
 			num += sensors[val.sensor].size;
 			val.num = num-1;
 			val.index = index;
@@ -49,11 +58,17 @@ module.exports = function(RED) {
 				val.addr = [parseInt(val.src),0,0,0];
 				val.bit = 16;
 			}
+			val.sensor = sensors[val.sensor];
 		});
-		console.log(rules);
-        this.on('input', function (msg) {
+		
+        node.on('input', function (msg) {
 			if (Array.isArray(msg.payload)) {
-				msg.payload.forEach( function(val,index,ar) { sensor_decode(val);});
+				for (var i = 0; i < msg.payload.length ; i++) {
+					var data = sensor_decode(msg.payload[i]);
+					if(data != false) {
+						node.send(data);
+					}
+				}
 			} else {
 				sensor_decode(msg);
 			}
