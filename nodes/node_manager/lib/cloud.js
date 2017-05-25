@@ -1,5 +1,5 @@
 module.exports = {
-	spreadsheet: function(rcv,node) {
+	alltoone: function(rcv,node) {
 		var output = {}
 		output.payload =[];
 		output.contents =[];
@@ -28,9 +28,9 @@ module.exports = {
 		output.unit.push("");
 		return output;
 	},
-	dashboard: function(rcv,rules,sensors) {
+	eachsensor: function(rcv,rules,sensors) {
 	},
-	other: function(rcv,rules,sensors) {
+	eachnode: function(rcv,rules,sensors) {
 	}
 };
 

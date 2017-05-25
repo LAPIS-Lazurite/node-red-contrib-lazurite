@@ -22,9 +22,9 @@
 	<div class="form-row">
 		<label for="node-input-mode"><i class="fa fa-search-plus"></i> mode</label>
 		<select id="node-input-mode">
-			<option value="dashboard" selected>dashboard</option>
-			<option value="spreadsheet">spreadsheet</option>
-			<option value="other">other</option>
+			<option value="eachsensor">each sensor</option>
+			<option value="eachnode" selected>each node</option>
+			<option value="alltoone">all to one</option>
 		</select>
 	</div>
     <div class="form-row node-input-rule-container-row">
@@ -176,10 +176,10 @@
 			if(node.rules.length != undefined) {
 				if(node.rules.length != undefined) {
 					switch(data){ 
-						case "dashboard": 
+						case "each sensor": 
 							this.outputs = sensor_num;
 							break;
-						case "spreadsheet": 
+						case "all to one": 
 							this.outputs = 1;
 							break;
 						default:

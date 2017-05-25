@@ -36,7 +36,7 @@ module.exports = function(RED) {
 		}
 		return false;
 	}
-    function NodeManager(config) {
+	function NodeManager(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
 		rules = config.rules;
@@ -61,7 +61,7 @@ module.exports = function(RED) {
 			val.sensor = sensors[val.sensor];
 		});
 		
-        node.on('input', function (msg) {
+		node.on('input', function (msg) {
 			if (Array.isArray(msg.payload)) {
 				for (var i = 0; i < msg.payload.length ; i++) {
 					var data = sensor_decode(msg.payload[i]);
@@ -70,9 +70,12 @@ module.exports = function(RED) {
 					}
 				}
 			} else {
-				sensor_decode(msg);
+				var data sensor_decode(msg);
+				if(data != false) {
+					node.send(data);
+				}
 			}
-        });
-    }
-    RED.nodes.registerType("node-manager", NodeManager);
+		});
+	}
+	RED.nodes.registerType("node-manager", NodeManager);
 }
