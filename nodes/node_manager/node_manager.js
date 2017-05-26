@@ -15,30 +15,13 @@
  **/
 
 module.exports = function(RED) {
-	var rules;
-	var mode;
-	var outputs;
 	var cloud = require('./lib/cloud')
 	var sensors = require('./lib/sensors')
-	function isAddressMatch(addr1,addr2){
-		for (var i = 0; i < 4 ; i++){
-			if(addr1[i] != addr2[i]) {
-				return false;
-			}
-		}
-		return true;
-	}
-	function sensor_decode(rcv) {
-		for (var i=0 ; i < rules.length ; i++) {
-			if(isAddressMatch(rules[i].addr,rcv.src_addr)) {
-				var data = cloud[mode].genPayload(rcv,rules[i]);
-				return data;
-			}
-		}
-		return false;
-	}
 	function NodeManager(config) {
 		RED.nodes.createNode(this,config);
+		var rules;
+		var mode;
+		var outputs;
 		var node = this;
 		rules = config.rules;
 		mode = config.mode;
@@ -89,6 +72,23 @@ module.exports = function(RED) {
 				}
 			}
 		});
+		function isAddressMatch(addr1,addr2){
+			for (var i = 0; i < 4 ; i++){
+				if(addr1[i] != addr2[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+		function sensor_decode(rcv) {
+			for (var i=0 ; i < rules.length ; i++) {
+				if(isAddressMatch(rules[i].addr,rcv.src_addr)) {
+					var data = cloud[mode].genPayload(rcv,rules[i]);
+					return data;
+				}
+			}
+			return false;
+		}
 	}
 	RED.nodes.registerType("node-manager", NodeManager);
 }
