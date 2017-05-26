@@ -17,6 +17,7 @@
 module.exports = function(RED) {
 	var rules;
 	var mode;
+	var outputs;
 	var cloud = require('./lib/cloud')
 	var sensors = require('./lib/sensors')
 	function isAddressMatch(addr1,addr2){
@@ -30,7 +31,7 @@ module.exports = function(RED) {
 	function sensor_decode(rcv) {
 		for (var i=0 ; i < rules.length ; i++) {
 			if(isAddressMatch(rules[i].addr,rcv.src_addr)) {
-				var data = cloud[mode](rcv,rules[i]);
+				var data = cloud[mode].genPayload(rcv,rules[i]);
 				return data;
 			}
 		}
@@ -43,9 +44,9 @@ module.exports = function(RED) {
 		mode = config.mode;
 		var num = 0;
 		rules.forEach(function(val,index,ar){
+			val.sensor_num = num;
 			num += sensors[val.sensor].size;
-			val.num = num-1;
-			val.index = index;
+			val.node_num = index;
 			if(val.src.length == 16) {
 				val.addr = [
 					parseInt("0x"+val.src.substr(12,4)),
@@ -58,8 +59,20 @@ module.exports = function(RED) {
 				val.addr = [parseInt(val.src),0,0,0];
 				val.bit = 16;
 			}
-			val.sensor = sensors[val.sensor];
+			val.info = sensors[val.sensor];
 		});
+		switch(cloud[mode].outputMode())
+		{
+			case 0:
+				outputs = 1;
+				break;
+			case 1:
+				outputs = rules.length;
+				break;
+			case 2:
+				outputs = num;
+				break;
+		}
 		
 		node.on('input', function (msg) {
 			if (Array.isArray(msg.payload)) {
@@ -70,7 +83,7 @@ module.exports = function(RED) {
 					}
 				}
 			} else {
-				var data sensor_decode(msg);
+				var data = sensor_decode(msg);
 				if(data != false) {
 					node.send(data);
 				}

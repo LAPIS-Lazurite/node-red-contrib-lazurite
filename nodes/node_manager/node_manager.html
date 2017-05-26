@@ -22,9 +22,8 @@
 	<div class="form-row">
 		<label for="node-input-mode"><i class="fa fa-search-plus"></i> mode</label>
 		<select id="node-input-mode">
-			<option value="eachsensor">each sensor</option>
-			<option value="eachnode" selected>each node</option>
-			<option value="alltoone">all to one</option>
+			<option value="dashboard" selected>dashboard</option>
+			<option value="googlespreadsheet">google spreadsheet</option>
 		</select>
 	</div>
     <div class="form-row node-input-rule-container-row">
@@ -59,33 +58,7 @@
         oneditprepare: function() {
             var node = this;
 			var mode = $("#node-input-mode").val();
-			/*
-			var sensor_details = {
-				"none": {name: ["none"], unit: [""], size: 1},
-				"07.button": {
-					name : ["button"],
-					unit : ["none"],
-					size : 1},
-				"07.env":{
-					name: ["temprature","presssure","humidity","brightness"],
-					unit: ["degree","Pa","%","lux"],
-					size: 4},
-				"07.prox": {
-					name: ["prox"],
-					unit: [""],
-					size: 1},
-				"07.hall": {
-					name: ["hall"],
-					unit: [""],
-					size: 1},
-				"05.CT": {
-					name: ["ct"],
-					unit: ["mA"],
-					size: 1}
-			};
-			*/
             var sensors = [
-                {v:"none",t:"none"},
                 {v:"07.button",t:"07.button"},
                 {v:"07.env",t:"07.env"},
                 {v:"07.prox",t:"07.prox"},
@@ -110,24 +83,6 @@
                     }
 					srcAddrField.val(rule.src);
 					sensorField.val(rule.sensor);
-					/*
-                    var label;
-					label= $('<label for="node-input-sensor0">').text(sensor_details[rule.sensor].name[0]);
-					label.appendTo(row2);
-                    $('<input/>',{class:"node-input-sensor0",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
-					label= $('<label for="node-input-sensor1">').text(sensor_details[rule.sensor].name[1]);
-					label.appendTo(row3);
-                    $('<input/>',{class:"node-input-sensor1",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
-					label= $('<label for="node-input-sensor2">').text(sensor_details[rule.sensor].name[2]);
-					label.appendTo(row4);
-                    $('<input/>',{class:"node-input-sensor2",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
-					label= $('<label for="node-input-sensor3">').text(sensor_details[rule.sensor].name[3]);
-					label.appendTo(row5);
-                    $('<input/>',{class:"node-input-sensor3",type:"text",style:"width:160;",placeholder:"Sensor ID"}).appendTo(label);
-					sensorField.change(function(){
-						var type = sensorField.val();
-					});
-					*/
                 },
 
                 removeItem: function(opt) {
@@ -166,20 +121,21 @@
                 node.rules.push(r);
 				switch(sensor){
 					case "07.env":
-						sensor_num += 3;
+						sensor_num += 5;
 						break;
 					default:
-						sensor_num += 1;
+						sensor_num += 2;
 						break;
 				}
             });
 			if(node.rules.length != undefined) {
 				if(node.rules.length != undefined) {
+					console.log(data);
 					switch(data){ 
-						case "each sensor": 
+						case "dashboard": 
 							this.outputs = sensor_num;
 							break;
-						case "all to one": 
+						case "googlespreadsheet": 
 							this.outputs = 1;
 							break;
 						default:

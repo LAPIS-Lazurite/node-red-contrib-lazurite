@@ -1,24 +1,33 @@
 module.exports = {
-	"none": {name: ["none"], unit: [""], size: 1},
+	"none": {
+		name: "none",
+		sensor: ["none"],
+		unit: [""],
+		size: 1},
 	"07.button": {
-		name : ["button"],
-		unit : ["none"],
-		size : 1},
+		name: "07.button",
+		sensor : ["button","vbat"],
+		unit : ["none","v"],
+		size : 2},
 	"07.env":{
-		name: ["temprature","presssure","humidity","brightness","vbat"],
+		name: "07.env",
+		sensor: ["temprature","presssure","humidity","brightness","vbat"],
 		unit: ["degree","Pa","%","lux","v"],
 		size: 5},
 	"07.prox": {
-		name: ["prox"],
-		unit: [""],
-		size: 1},
+		name: "07.prox",
+		sensor: ["prox","vbat"],
+		unit: ["","v"],
+		size: 2},
 	"07.hall": {
-		name: ["hall"],
-		unit: [""],
-		size: 1},
+		name: "07.hall",
+		sensor: ["hall","vbat"],
+		unit: ["","v"],
+		size: 2},
 	"05.CT": {
-		name: ["ct"],
-		unit: ["mA"],
-		size: 1}
+		name: "05.CT",
+		sensor: ["ct","vbat"],
+		unit: ["mA","v"],
+		size: 2}
 };
 
