@@ -11,8 +11,8 @@
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
       "patlamp": "nodes/patlamp/patlamp.js",
-      "node-mng": "nodes/node_manager/node_manager.js",
-      "google-spreadsheet": "nodes/node_manager/google_spreadsheet.js"
+      "node-config": "nodes/node-config/node-config.js",
+      "calcurator": "nodes/calculator/calculator.js"
     }
   },
   "repository": {

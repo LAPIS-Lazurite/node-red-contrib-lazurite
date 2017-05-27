@@ -17,7 +17,7 @@
 module.exports = function(RED) {
 	var cloud = require('./lib/cloud')
 	var sensors = require('./lib/sensors')
-	function NodeManager(config) {
+	function NodeConfig(config) {
 		RED.nodes.createNode(this,config);
 		var rules;
 		var mode;
@@ -90,5 +90,5 @@ module.exports = function(RED) {
 			return false;
 		}
 	}
-	RED.nodes.registerType("node-manager", NodeManager);
+	RED.nodes.registerType("lazurite-node-config", NodeConfig);
 }
