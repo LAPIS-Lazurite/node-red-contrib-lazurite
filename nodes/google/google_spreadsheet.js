@@ -30,7 +30,7 @@ module.exports = function(RED) {
 	var oauth2Client;
 	
 	function init() {
-		fs.readFile('client_secret.json', function processClientSecrets(err, content) {
+		fs.readFile('/home/pi/.node-red/node_modules/node-red-contrib-lazurite/nodes/google/client_secret.json', function processClientSecrets(err, content) {
 			if (err) {
 				console.log('Error loading client secret file: ' + err);
 				return;
