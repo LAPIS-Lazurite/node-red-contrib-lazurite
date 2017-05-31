@@ -11,6 +11,9 @@
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
       "node-config": "nodes/node-config/node-config.js",
+      "rpi-control": "nodes/rpi-control/rpi-control.js",
+      "google": "nodes/google/google_spreadsheet.js",
+      "patlamp": "nodes/patlamp/patlamp.js",
       "calcurator": "nodes/calculator/calculator.js"
     }
   },
