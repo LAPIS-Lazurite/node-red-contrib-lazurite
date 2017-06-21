@@ -247,6 +247,7 @@ Handle<Value> lazurite_read(const Arguments& args) {
 
 			snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
 			obj->Set(String::NewSymbol("header"),Integer::New(mac.header));
+			obj->Set(String::NewSymbol("seq_num"),Integer::New(mac.seq_num));
 			obj->Set(String::NewSymbol("dst_panid"),Integer::New(mac.dst_panid));
 			obj->Set(String::NewSymbol("dst_addr"),dst_addr);
 			obj->Set(String::NewSymbol("src_panid"),Integer::New(mac.src_panid));
@@ -293,6 +294,7 @@ Handle<Value> lazurite_read(const Arguments& args) {
 			packet->Set(String::NewSymbol("tag"),Integer::New(tag));
 
 			packet->Set(String::NewSymbol("header"),Integer::New(mac.header));
+			packet->Set(String::NewSymbol("seq_num"),Integer::New(mac.seq_num));
 			packet->Set(String::NewSymbol("dst_panid"),Integer::New(mac.dst_panid));
 			packet->Set(String::NewSymbol("dst_addr"),dst_addr);
 			packet->Set(String::NewSymbol("src_panid"),Integer::New(mac.src_panid));
