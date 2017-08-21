@@ -117,11 +117,7 @@ module.exports = function(RED) {
 		console.log('Token stored to ' + TOKEN_PATH);
 	}
 	
-	/**
-	* Print the names and majors of students in a sample spreadsheet:
-	* https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-	*/
-	function send(data) {
+	function append(data) {
 		var sheets = google.sheets('v4');
 		var range = 'A:'+String.fromCharCode("A".charCodeAt(0)+data.length);
 		sheets.spreadsheets.values.append({
@@ -139,6 +135,18 @@ module.exports = function(RED) {
 				return;
 			}
 		});
+	}
+	/**
+	* Print the names and majors of students in a sample spreadsheet:
+	* https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+	*/
+	function send(data) {
+		try {
+			append(data);
+		} catch(e) {
+			init();
+			append(data);
+		}
 	}
 	function GoogleSpreadsheet(config) {
 		RED.nodes.createNode(this,config);

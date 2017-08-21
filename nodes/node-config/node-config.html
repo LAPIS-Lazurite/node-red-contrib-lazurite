@@ -24,6 +24,7 @@
 		<select id="node-input-mode">
 			<option value="dashboard" selected>dashboard</option>
 			<option value="googlespreadsheet">google spreadsheet</option>
+			<option value="LazuriteIoT">lazurite-iot</option>
 		</select>
 	</div>
     <div class="form-row node-input-rule-container-row">
@@ -32,11 +33,27 @@
 </script>
 
 <script type="text/x-red" data-help-name="lazurite-node-config">
-    <p>A node to route messages based on property values.</p>
-    <p>When a message arrives, the selected property is evaluated against each
-    of the defined rules. The message is then sent to the output of <i>all</i>
-    rules that pass.</p>
-    <p><b>Note</b>: the <i>otherwise</i> rule applies as a "not any of" the rules preceding it.</p>
+    <p> About "lazurite-node-config"</p>
+    <p><b>mode: </b> output mode. </p>
+    <p>  "dashboard"= output is optimized to node-red-dashboard.</p>
+    <p>   "07.button": output for button shield by SwitchSience.</p>
+    <p>       1st: button (0: release, 1: push)</p>
+    <p>       2nd: battery voltage[volt:]</p>
+    <p>   "07.env": output for sensor shield by SwitchSience.</p>
+    <p>       1st: temprature[degree]</p>
+    <p>       2nd: pressure[Pa]</p>
+    <p>       3rd: humidity[%]</p>
+    <p>       4th: brightness[lux]<p>
+    <p>       5th: battery voltage[volt]<p>
+    <p>   "07.prox": output for proximity sensor in magnetic shield by SwitchSience.</p>
+    <p>       1st: value of proximity sensor(0: far, 4095: near)</p>
+    <p>       2nd: battery voltage[volt]<p>
+    <p>   "07.hall": output for hall sensor in magnetic shield by SwitchSience.</p>
+    <p>       1st: value of proximity sensor(0: release, 1: detecte)</p>
+    <p>       2nd: battery voltage[volt]<p>
+    <p>   "05.CT": output for CT sensor shield</p>
+    <p>       1st: current[mA] by CT sensor
+    <p>       2nd: battery voltage[volt]<p>
 </script>
 
 <script type="text/javascript">
@@ -53,7 +70,7 @@
         outputs: 1,
         icon: "switch.png",
         label: function() {
-            return this.name||"node config";
+            return this.name||this.mode;
         },
         oneditprepare: function() {
             var node = this;
@@ -136,6 +153,7 @@
 							this.outputs = sensor_num;
 							break;
 						case "googlespreadsheet": 
+						case "LazuriteIoT": 
 							this.outputs = 1;
 							break;
 						default:
@@ -156,4 +174,110 @@
             $("#node-input-rule-container").editableList('height',height);
         }
     });
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-pre-mqtt-publisher">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
+        <input type="text" id="node-input-name"></input>
+    </div>
+	<div class="form-row">
+		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
+        <input type="text" id="node-input-interval" style="width:60px;"></input>
+		<select id="node-input-intervalUnit" style="width:80px;">
+			<option value="sec" selected>sec</option>
+			<option value="min">min</option>
+			<option value="hour">hour</option>
+		</select>
+	</div>
+    <div class="form-row">
+        <label for="node-input-adapter"><i class="fa fa-tag"></i> </span> adaptor</label>
+        <input type="text" id="node-input-adapter"></input>
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-pre-mqtt-publisher', {
+        color: "#E2D96E",
+        category: 'Lazurite',
+        defaults: {
+            name: {value:""},
+            interval: {value:"0"},
+            adapter: {value:"eth0"},
+            intervalUnit: {value: "sec"}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name||"pre-mqtt-publisher";
+        }
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-vmstat">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
+        <input type="text" id="node-input-name"></input>
+    </div>
+	<div class="form-row">
+		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
+        <input type="text" id="node-input-interval" style="width:60px;"></input>
+		<select id="node-input-intervalUnit" style="width:80px;">
+			<option value="sec" selected>sec</option>
+			<option value="min">min</option>
+			<option value="hour">hour</option>
+		</select>
+	</div>
+</script>
+<script type="text/x-red" data-help-name="lazurite-vmstat">
+<p></p>
+<p>&nbsp;<b>Procs</b><p>
+<p>&nbsp;&nbsp;<b>r:</b>&nbsp;The number of runnable processes (running or waiting for run time).<p>
+<p>&nbsp;&nbsp;<b>b:</b>&nbsp;The number of processes in uninterruptible sleep.<p>
+<p><p>
+<p>&nbsp;<b>Memory</b><p>
+<p>&nbsp;&nbsp;<b>swpd:</b>&nbsp;the amount of virtual memory used.<p>
+<p>&nbsp;&nbsp;<b>free:</b>&nbsp;the amount of idle memory.<p>
+<p>&nbsp;&nbsp;<b>buff:</b>&nbsp;the amount of memory used as buffers.<p>
+<p>&nbsp;&nbsp;<b>cache:</b>&nbsp;the amount of memory used as cache.<p>
+<p>&nbsp;&nbsp;<b>inact:</b>&nbsp;the amount of inactive memory.  (-a option)<p>
+<p>&nbsp;&nbsp;<b>active:</b>&nbsp;the amount of active memory.  (-a option)<p>
+<p>&nbsp;&nbsp;<p>
+<p>&nbsp;&nbsp;<b>Swap</b><p>
+<p>&nbsp;&nbsp;<b>si:</b>&nbsp;Amount of memory swapped in from disk (/s).<p>
+<p>&nbsp;&nbsp;<b>so:</b>&nbsp;Amount of memory swapped to disk (/s).<p>
+<p><p>
+<p>&nbsp;<b>IO</b><p>
+<p>&nbsp;&nbsp;<b>bi:</b>&nbsp;Blocks received from a block device (blocks/s).<p>
+<p>&nbsp;&nbsp;<b>bo:</b>&nbsp;Blocks sent to a block device (blocks/s).<p>
+<p><p>
+<p>&nbsp;<b>System</b><p>
+<p>&nbsp;&nbsp;<b>in:</b>&nbsp;The number of interrupts per second, including the clock.<p>
+<p>&nbsp;&nbsp;<b>cs:</b>&nbsp;The number of context switches per second.<p>
+<p><p>
+<p>&nbsp;<b>CPU</b><p>
+<p>These are percentages of total CPU time.<p>
+<p>&nbsp;&nbsp;<b>us:</b>&nbsp;Time spent running non-kernel code.  (user time, including nice time)<p>
+<p>&nbsp;&nbsp;<b>sy:</b>&nbsp;Time spent running kernel code.  (system time)<p>
+<p>&nbsp;&nbsp;<b>id:</b>&nbsp;Time spent idle.  Prior to Linux 2.5.41, this includes IO-wait time.<p>
+<p>&nbsp;&nbsp;<b>wa:</b>&nbsp;Time spent waiting for IO.  Prior to Linux 2.5.41, included in idle.<p>
+<p>&nbsp;&nbsp;<b>st:</b>&nbsp;Time stolen from a virtual machine.  Prior to Linux 2.6.11, unknown.<p>
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-vmstat', {
+        color: "#E2D96E",
+        category: 'Lazurite',
+        defaults: {
+            name: {value:""},
+            interval: {value:"0"},
+            intervalUnit: {value: "sec"}
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name||("vmstat::"+toString(interval)+intervalUnit);
+        }
+	});
 </script>
