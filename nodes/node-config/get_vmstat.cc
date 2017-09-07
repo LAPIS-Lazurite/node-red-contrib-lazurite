@@ -29,9 +29,7 @@
 #include <node.h>
 #include <v8.h>
 
-#if (V8_MAJOR_VERSION == 4)
-	#define V8_VER_5
-#elif (V8_MAJOR_VERSION == 5)
+#if (V8_MAJOR_VERSION >= 4)
 	#define V8_VER_5
 #else
 	#define V8_VER_0

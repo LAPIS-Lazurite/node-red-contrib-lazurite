@@ -29,15 +29,29 @@
 #include <node.h>
 #include <v8.h>
 
+#if (V8_MAJOR_VERSION == 4)
+	#define V8_VER_5
+#elif (V8_MAJOR_VERSION == 5)
+	#define V8_VER_5
+#else
+	#define V8_VER_0
+#endif
+
 using namespace v8;
 using namespace std;
 
 const char* ToCString(const String::Utf8Value& value) {
 	return *value ? *value : "<string conversion failed>";
 }
+
+#ifdef V8_VER_0
+Handle<Value> get_vmstat(const Arguments& args) {
+	HandleScope scope;
+#endif
+#ifdef V8_VER_5
 void get_vmstat(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-
+#endif
 	FILE *fp;
 	char cmd[256];
 	char buf[256];
@@ -70,8 +84,14 @@ void get_vmstat(const FunctionCallbackInfo<Value>& args) {
 	sprintf(cmd,"vmstat");
 	fp = popen(cmd,"r");
 	if (fp == NULL) {
+		//return scope.Close(String::New("error"));
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
+#endif
 	}
 	while(fgets(buf,sizeof(buf),fp) != NULL) {
 	}
@@ -85,6 +105,30 @@ void get_vmstat(const FunctionCallbackInfo<Value>& args) {
 		if(tmp == NULL) break;
 	}
 
+#ifdef V8_VER_0
+	Local<Object> obj = Object::New();
+
+	obj->Set(String::NewSymbol("r"),Integer::New(log.vmstat.r));
+	obj->Set(String::NewSymbol("b"),Integer::New(log.vmstat.b));
+	obj->Set(String::NewSymbol("swap"),Integer::New(log.vmstat.swap));
+	obj->Set(String::NewSymbol("free"),Integer::New(log.vmstat.free));
+	obj->Set(String::NewSymbol("buff"),Integer::New(log.vmstat.buff));
+	obj->Set(String::NewSymbol("cache"),Integer::New(log.vmstat.cache));
+	obj->Set(String::NewSymbol("si"),Integer::New(log.vmstat.si));
+	obj->Set(String::NewSymbol("so"),Integer::New(log.vmstat.so));
+	obj->Set(String::NewSymbol("bi"),Integer::New(log.vmstat.bi));
+	obj->Set(String::NewSymbol("bo"),Integer::New(log.vmstat.bo));
+	obj->Set(String::NewSymbol("in"),Integer::New(log.vmstat.in));
+	obj->Set(String::NewSymbol("cs"),Integer::New(log.vmstat.cs));
+	obj->Set(String::NewSymbol("us"),Integer::New(log.vmstat.us));
+	obj->Set(String::NewSymbol("sy"),Integer::New(log.vmstat.sy));
+	obj->Set(String::NewSymbol("id"),Integer::New(log.vmstat.id));
+	obj->Set(String::NewSymbol("wa"),Integer::New(log.vmstat.wa));
+	obj->Set(String::NewSymbol("st"),Integer::New(log.vmstat.st));
+
+	return scope.Close(obj);
+#endif
+#ifdef V8_VER_5
 	Local<Object> obj = Object::New(isolate);
 
 	obj->Set(String::NewFromUtf8(isolate,"r"),Integer::New(isolate,log.vmstat.r));
@@ -104,13 +148,22 @@ void get_vmstat(const FunctionCallbackInfo<Value>& args) {
 	obj->Set(String::NewFromUtf8(isolate,"id"),Integer::New(isolate,log.vmstat.id));
 	obj->Set(String::NewFromUtf8(isolate,"wa"),Integer::New(isolate,log.vmstat.wa));
 	obj->Set(String::NewFromUtf8(isolate,"st"),Integer::New(isolate,log.vmstat.st));
+
 	args.GetReturnValue().Set(obj);
 	return ;
+#endif
 }
 
 //void init(Local<Object> target) {
-void Init(Local<Object> exports, Local<Object> module) {
-	NODE_SET_METHOD(module, "get_vmstat",get_vmstat);
+#ifdef V8_VER_0
+void Init(Handle<Object> target) {
+#endif
+#ifdef V8_VER_5
+void Init(Local<Object> target) {
+	target->GetIsolate();
+#endif
+
+	NODE_SET_METHOD(target, "get_vmstat",get_vmstat);
 }
 
 NODE_MODULE(get_vmstat,Init)

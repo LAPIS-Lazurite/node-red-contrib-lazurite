@@ -348,7 +348,6 @@ module.exports = function(RED) {
 			// function to reset per interval
 			if(node.capInterval.interval < 3) {
 				if(st_reset_time !== now_reset_time){
-					console.log('reset capacity');
 					for(var i = 0; i < node.capacity.length; i++) {
 						// reset data
 						node.capacity[i].ct_total = 0;
@@ -400,6 +399,34 @@ module.exports = function(RED) {
 		RED.nodes.createNode(this,config);
 		this.config = config;
 	}
+	function NodeFactoryViewer(config){
+		RED.nodes.createNode(this,config);
+		var node = this;
+		var outMsg = [];
+		node.config = RED.nodes.getNode(config.config).config;
+		node.on('input', function (msg) {
+			var newMsg = Array(node.config.rules.length*3);
+			for(var i=0;i<node.config.rules.length;i++) {
+				if(msg.topic === node.config.rules[i].machine) {
+					newMsg[i*3] = {
+						topic: msg.topic,
+						payload: msg.state
+					};
+					newMsg[i*3+1] = {
+						topic: msg.topic,
+						payload: msg.interval
+					};
+					newMsg[i*3+2] = {
+						topic: msg.topic,
+						payload: msg.payload
+					};
+					node.send(newMsg);
+					break;
+				}
+			}
+		});
+	}
 	RED.nodes.registerType("lazurite-node-factory", NodeFactory);
 	RED.nodes.registerType("lazurite-factory-config", NodeFactoryConfig);
+	RED.nodes.registerType("lazurite-factory-viewer", NodeFactoryViewer);
 }

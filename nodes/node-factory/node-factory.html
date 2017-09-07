@@ -13,7 +13,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<!--
 <script type="text/x-red" data-template-name="lazurite-factory-viewer">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -21,7 +20,7 @@
 	</div>
 	<div class="form-row">
 		<label for="node-input-config"><i class="fa fa-tag"></i> Config</label>
-		<input type="lazurite-factory-config" id="node-input-config">
+		<input type="lazurite-factory-config" id="node-input-config" onChange="configChange()">
 	</div>
 </script>
 
@@ -32,22 +31,38 @@
 		defaults: {
 			name: {value:""},
 			config: {value:"", required:true, type:"lazurite-factory-config"},
-			outputs:{value:1}
+			outputs:{value:0},
+			outlabels:{value:[]}
 		},
 		inputs: 1,
-		outputs: 1,
+		outputs: 0,
 		icon: "switch.png",
 		label: function() {
 			return this.name||"factory-viewer";
 		},
-		oneditsave: function() {
-			this.outputs = 3;
-			console.log('config',this.config);
-			console.log('output',this.outputs);
+		outputLabels: function(index) {
+			return this.outlabels[index];
+		},
+		oneditprepare: function() {
+			var node = this;
+			$("#node-input-config").change(function(){
+				var configValue = RED.nodes.node(document.getElementById("node-input-config").value);
+				node.outlabels = [];
+				if(configValue !== null){
+					node.outputs = configValue.rules.length * 3;
+					for(i=0;i<configValue.rules.length;i++){
+						node.outlabels.push(configValue.rules[i].machine+":status");
+						node.outlabels.push(configValue.rules[i].machine+":interval");
+						node.outlabels.push(configValue.rules[i].machine+":capacity");
+					}
+				} else {
+					node.outputs = 0;
+				}
+				console.log(node);
+			});
 		}
 	});
 </script>
--->
 
 <script type="text/x-red" data-template-name="lazurite-node-factory">
 	<div class="form-row">
@@ -74,17 +89,17 @@
 		color: "#E2D96E",
 		category: 'Lazurite',
 		defaults: {
-			name: {value:"Setting"},
+			name: {value:""},
 			config: {value:"", required:true, type:"lazurite-factory-config"},
 			interval: {value: 1},
 			outputLabels:{value: ["現在の稼働率","稼働率","作業ログ","ワーニングメッセージ"]},
 		},
 		inputs: 1,
-		outputs: 4,
+		outputs: 1,			// [capacity, capacity, log, warning]
 		icon: "switch.png",
 		label: function() {
 			return this.name||"node-factory";
-		},
+		}
 	});
 </script>
 <script type="text/x-red" data-template-name="lazurite-factory-config">

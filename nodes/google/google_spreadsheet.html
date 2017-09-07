@@ -23,6 +23,10 @@
         <label for="node-input-sheetid"><i class="fa fa-tag"></i> </span> Sheet ID</label>
         <input type="text" id="node-input-sheetid"></input>
     </div>
+    <div class="form-row">
+        <label for="node-input-sheetname"><i class="fa fa-tag"></i> </span> Sheet Name</label>
+        <input type="text" id="node-input-sheetname"></input>
+    </div>
 </script>
 
 <script type="text/x-red" data-help-name="google-spreadsheet">
@@ -35,6 +39,7 @@
         defaults: {
             name: {value:""},
             sheetid: {value:"",required: true},
+            sheetname: {value:""},
         },
         inputs: 1,
         outputs: 0,

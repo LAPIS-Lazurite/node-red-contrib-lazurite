@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-lazurite",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "R/W data of Lazurite-Gateway.",
   "main": "lazurite.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
       "node-config": "nodes/node-config/node-config.js",
-      "rpi-control": "nodes/rpi-control/rpi-control.js",
+      "node-factory": "nodes/node-factory/node-factory.js",
       "calcurator": "nodes/calculator/calculator.js"
     }
   },
@@ -28,9 +28,5 @@
     "node-red",
     "Lazurite"
   ],
-  "license": "Apache-2.0",
-  "dependencies": {
-    "google-auth-library": "^0.10.0",
-    "googleapis": "^19.0.0"
-  }
+  "license": "Apache-2.0"
 }

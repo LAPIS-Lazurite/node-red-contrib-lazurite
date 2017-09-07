@@ -15,10 +15,10 @@
 -->
 
 <script type="text/x-red" data-template-name="lazurite-node-config">
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
-        <input type="text" id="node-input-name"></input>
-    </div>
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
+		<input type="text" id="node-input-name"></input>
+	</div>
 	<div class="form-row">
 		<label for="node-input-mode"><i class="fa fa-search-plus"></i> mode</label>
 		<select id="node-input-mode">
@@ -27,115 +27,115 @@
 			<option value="LazuriteIoT">lazurite-iot</option>
 		</select>
 	</div>
-    <div class="form-row node-input-rule-container-row">
-        <ol id="node-input-rule-container"></ol>
-    </div>
+	<div class="form-row node-input-rule-container-row">
+		<ol id="node-input-rule-container"></ol>
+	</div>
 </script>
 
 <script type="text/x-red" data-help-name="lazurite-node-config">
-    <p> About "lazurite-node-config"</p>
-    <p><b>mode: </b> output mode. </p>
-    <p>  "dashboard"= output is optimized to node-red-dashboard.</p>
-    <p>   "07.button": output for button shield by SwitchSience.</p>
-    <p>       1st: button (0: release, 1: push)</p>
-    <p>       2nd: battery voltage[volt:]</p>
-    <p>   "07.env": output for sensor shield by SwitchSience.</p>
-    <p>       1st: temprature[degree]</p>
-    <p>       2nd: pressure[Pa]</p>
-    <p>       3rd: humidity[%]</p>
-    <p>       4th: brightness[lux]<p>
-    <p>       5th: battery voltage[volt]<p>
-    <p>   "07.prox": output for proximity sensor in magnetic shield by SwitchSience.</p>
-    <p>       1st: value of proximity sensor(0: far, 4095: near)</p>
-    <p>       2nd: battery voltage[volt]<p>
-    <p>   "07.hall": output for hall sensor in magnetic shield by SwitchSience.</p>
-    <p>       1st: value of proximity sensor(0: release, 1: detecte)</p>
-    <p>       2nd: battery voltage[volt]<p>
-    <p>   "05.CT": output for CT sensor shield</p>
-    <p>       1st: current[mA] by CT sensor
-    <p>       2nd: battery voltage[volt]<p>
+	<p> About "lazurite-node-config"</p>
+	<p><b>mode: </b> output mode. </p>
+	<p>  "dashboard"= output is optimized to node-red-dashboard.</p>
+	<p>   "07.button": output for button shield by SwitchSience.</p>
+	<p>	   1st: button (0: release, 1: push)</p>
+	<p>	   2nd: battery voltage[volt:]</p>
+	<p>   "07.env": output for sensor shield by SwitchSience.</p>
+	<p>	   1st: temprature[degree]</p>
+	<p>	   2nd: pressure[Pa]</p>
+	<p>	   3rd: humidity[%]</p>
+	<p>	   4th: brightness[lux]<p>
+	<p>	   5th: battery voltage[volt]<p>
+	<p>   "07.prox": output for proximity sensor in magnetic shield by SwitchSience.</p>
+	<p>	   1st: value of proximity sensor(0: far, 4095: near)</p>
+	<p>	   2nd: battery voltage[volt]<p>
+	<p>   "07.hall": output for hall sensor in magnetic shield by SwitchSience.</p>
+	<p>	   1st: value of proximity sensor(0: release, 1: detecte)</p>
+	<p>	   2nd: battery voltage[volt]<p>
+	<p>   "05.CT": output for CT sensor shield</p>
+	<p>	   1st: current[mA] by CT sensor
+	<p>	   2nd: battery voltage[volt]<p>
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('lazurite-node-config', {
-        color: "#E2D96E",
-        category: 'Lazurite',
-        defaults: {
-            name: {value:""},
-            mode: {value:"dashboard",required: true},
-            rules: {value:[{src:"0xFFFF", sensor:"none"}]},
-            outputs: {value:1}
-        },
-        inputs: 1,
-        outputs: 1,
-        icon: "switch.png",
-        label: function() {
-            return this.name||this.mode;
-        },
-        oneditprepare: function() {
-            var node = this;
+	RED.nodes.registerType('lazurite-node-config', {
+		color: "#E2D96E",
+		category: 'Lazurite',
+		defaults: {
+			name: {value:""},
+			mode: {value:"dashboard",required: true},
+			rules: {value:[{src:"0xFFFF", sensor:"none"}]},
+			outputs: {value:1}
+		},
+		inputs: 1,
+		outputs: 1,
+		icon: "switch.png",
+		label: function() {
+			return this.name||this.mode;
+		},
+		oneditprepare: function() {
+			var node = this;
 			var mode = $("#node-input-mode").val();
-            var sensors = [
-                {v:"07.button",t:"07.button"},
-                {v:"07.env",t:"07.env"},
-                {v:"07.prox",t:"07.prox"},
-                {v:"07.hall",t:"07.hall"},
-                {v:"05.CT",t:"05.CT"}
-            ];
-            function resizeRule(rule) {
-                var sensorField = rule.find("select");
-                var type = sensorField.val()||"";
-                var srcAddrField = rule.find(".node-input-src-addr");
-            }
+			var sensors = [
+				{v:"07.button",t:"07.button"},
+				{v:"07.env",t:"07.env"},
+				{v:"07.prox",t:"07.prox"},
+				{v:"07.hall",t:"07.hall"},
+				{v:"05.CT",t:"05.CT"}
+			];
+			function resizeRule(rule) {
+				var sensorField = rule.find("select");
+				var type = sensorField.val()||"";
+				var srcAddrField = rule.find(".node-input-src-addr");
+			}
 
-            $("#node-input-rule-container").css('min-height','250px').css('min-width','450px').editableList({
-                addItem: function(container,i,opt) {
-                    var rule = opt;
+			$("#node-input-rule-container").css('min-height','250px').css('min-width','450px').editableList({
+				addItem: function(container,i,opt) {
+					var rule = opt;
 					var mode = $("#node-input-mode").val();
-                    var row = $('<div/>').appendTo(container);
-                    var srcAddrField = $('<input/>',{class:"node-input-src-addr",type:"text",style:"width:160px;margin-left: 5px;",placeholder:"SRC ADDR"}).appendTo(row);
-                    var sensorField= $('<select/>',{style:"width:120px; margin-left: 10px; text-align: center;"}).appendTo(row);
-                    for (var d in sensors) {
-                        sensorField.append($("<option></option>").val(sensors[d].v).text(sensors[d].t));
-                    }
+					var row = $('<div/>').appendTo(container);
+					var srcAddrField = $('<input/>',{class:"node-input-src-addr",type:"text",style:"width:160px;margin-left: 5px;",placeholder:"SRC ADDR"}).appendTo(row);
+					var sensorField= $('<select/>',{style:"width:120px; margin-left: 10px; text-align: center;"}).appendTo(row);
+					for (var d in sensors) {
+						sensorField.append($("<option></option>").val(sensors[d].v).text(sensors[d].t));
+					}
 					srcAddrField.val(rule.src);
 					sensorField.val(rule.sensor);
-                },
+				},
 
-                removeItem: function(opt) {
-                    var rules = $("#node-input-rule-container").editableList('items');
-                    rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
-                },
-                resizeItem: resizeRule,
-                sortItems: function(rules) {
-                    var rules = $("#node-input-rule-container").editableList('items');
-                    rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
-                },
-                sortable: true,
-                removable: true
-            });
+				removeItem: function(opt) {
+					var rules = $("#node-input-rule-container").editableList('items');
+					rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
+				},
+				resizeItem: resizeRule,
+				sortItems: function(rules) {
+					var rules = $("#node-input-rule-container").editableList('items');
+					rules.each(function(i) { $(this).find(".node-input-rule-index").html(i+1); });
+				},
+				sortable: true,
+				removable: true
+			});
 
 			if(this.rules.length != undefined) {
-            	for (var i=0;i<this.rules.length;i++) {
-                	var rule = this.rules[i];
-                	$("#node-input-rule-container").editableList('addItem',rule);
+				for (var i=0;i<this.rules.length;i++) {
+					var rule = this.rules[i];
+					$("#node-input-rule-container").editableList('addItem',rule);
 				}
 			}
-        },
-        oneditsave: function() {
-            var rules = $("#node-input-rule-container").editableList('items');
-            var ruleset;
-            var node = this;
+		},
+		oneditsave: function() {
+			var rules = $("#node-input-rule-container").editableList('items');
+			var ruleset;
+			var node = this;
 			var data = $("#node-input-mode").val();
 			var sensor_num = 0;
-            node.rules= [];
-            rules.each(function(i) {
-                var rule = $(this);
-                var src = rule.find(".node-input-src-addr").val();
-                var sensor = rule.find("select").val();
-                //var type = rule.find("sensors").val();
-                var r = {src:src,sensor:sensor};
-                node.rules.push(r);
+			node.rules= [];
+			rules.each(function(i) {
+				var rule = $(this);
+				var src = rule.find(".node-input-src-addr").val();
+				var sensor = rule.find("select").val();
+				//var type = rule.find("sensors").val();
+				var r = {src:src,sensor:sensor};
+				node.rules.push(r);
 				switch(sensor){
 					case "07.env":
 						sensor_num += 5;
@@ -144,7 +144,7 @@
 						sensor_num += 2;
 						break;
 				}
-            });
+			});
 			if(node.rules.length != undefined) {
 				if(node.rules.length != undefined) {
 					console.log(data);
@@ -162,122 +162,16 @@
 					}
 				}
 			}
-        },
-        oneditresize: function(size) {
-            var rows = $("#dialog-form>div:not(.node-input-rule-container-row)");
-            var height = size.height;
-            for (var i=0;i<rows.size();i++) {
-                height -= $(rows[i]).outerHeight(true);
-            }
-            var editorRow = $("#dialog-form>div.node-input-rule-container-row");
-            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
-            $("#node-input-rule-container").editableList('height',height);
-        }
-    });
-</script>
-
-<script type="text/x-red" data-template-name="lazurite-pre-mqtt-publisher">
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
-        <input type="text" id="node-input-name"></input>
-    </div>
-	<div class="form-row">
-		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
-        <input type="text" id="node-input-interval" style="width:60px;"></input>
-		<select id="node-input-intervalUnit" style="width:80px;">
-			<option value="sec" selected>sec</option>
-			<option value="min">min</option>
-			<option value="hour">hour</option>
-		</select>
-	</div>
-    <div class="form-row">
-        <label for="node-input-adapter"><i class="fa fa-tag"></i> </span> adaptor</label>
-        <input type="text" id="node-input-adapter"></input>
-    </div>
-</script>
-
-<script type="text/javascript">
-    RED.nodes.registerType('lazurite-pre-mqtt-publisher', {
-        color: "#E2D96E",
-        category: 'Lazurite',
-        defaults: {
-            name: {value:""},
-            interval: {value:"0"},
-            adapter: {value:"eth0"},
-            intervalUnit: {value: "sec"}
-        },
-        inputs: 1,
-        outputs: 1,
-        icon: "lazurite.png",
-        label: function() {
-            return this.name||"pre-mqtt-publisher";
-        }
-	});
-</script>
-
-<script type="text/x-red" data-template-name="lazurite-vmstat">
-    <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
-        <input type="text" id="node-input-name"></input>
-    </div>
-	<div class="form-row">
-		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
-        <input type="text" id="node-input-interval" style="width:60px;"></input>
-		<select id="node-input-intervalUnit" style="width:80px;">
-			<option value="sec" selected>sec</option>
-			<option value="min">min</option>
-			<option value="hour">hour</option>
-		</select>
-	</div>
-</script>
-<script type="text/x-red" data-help-name="lazurite-vmstat">
-<p></p>
-<p>&nbsp;<b>Procs</b><p>
-<p>&nbsp;&nbsp;<b>r:</b>&nbsp;The number of runnable processes (running or waiting for run time).<p>
-<p>&nbsp;&nbsp;<b>b:</b>&nbsp;The number of processes in uninterruptible sleep.<p>
-<p><p>
-<p>&nbsp;<b>Memory</b><p>
-<p>&nbsp;&nbsp;<b>swpd:</b>&nbsp;the amount of virtual memory used.<p>
-<p>&nbsp;&nbsp;<b>free:</b>&nbsp;the amount of idle memory.<p>
-<p>&nbsp;&nbsp;<b>buff:</b>&nbsp;the amount of memory used as buffers.<p>
-<p>&nbsp;&nbsp;<b>cache:</b>&nbsp;the amount of memory used as cache.<p>
-<p>&nbsp;&nbsp;<b>inact:</b>&nbsp;the amount of inactive memory.  (-a option)<p>
-<p>&nbsp;&nbsp;<b>active:</b>&nbsp;the amount of active memory.  (-a option)<p>
-<p>&nbsp;&nbsp;<p>
-<p>&nbsp;&nbsp;<b>Swap</b><p>
-<p>&nbsp;&nbsp;<b>si:</b>&nbsp;Amount of memory swapped in from disk (/s).<p>
-<p>&nbsp;&nbsp;<b>so:</b>&nbsp;Amount of memory swapped to disk (/s).<p>
-<p><p>
-<p>&nbsp;<b>IO</b><p>
-<p>&nbsp;&nbsp;<b>bi:</b>&nbsp;Blocks received from a block device (blocks/s).<p>
-<p>&nbsp;&nbsp;<b>bo:</b>&nbsp;Blocks sent to a block device (blocks/s).<p>
-<p><p>
-<p>&nbsp;<b>System</b><p>
-<p>&nbsp;&nbsp;<b>in:</b>&nbsp;The number of interrupts per second, including the clock.<p>
-<p>&nbsp;&nbsp;<b>cs:</b>&nbsp;The number of context switches per second.<p>
-<p><p>
-<p>&nbsp;<b>CPU</b><p>
-<p>These are percentages of total CPU time.<p>
-<p>&nbsp;&nbsp;<b>us:</b>&nbsp;Time spent running non-kernel code.  (user time, including nice time)<p>
-<p>&nbsp;&nbsp;<b>sy:</b>&nbsp;Time spent running kernel code.  (system time)<p>
-<p>&nbsp;&nbsp;<b>id:</b>&nbsp;Time spent idle.  Prior to Linux 2.5.41, this includes IO-wait time.<p>
-<p>&nbsp;&nbsp;<b>wa:</b>&nbsp;Time spent waiting for IO.  Prior to Linux 2.5.41, included in idle.<p>
-<p>&nbsp;&nbsp;<b>st:</b>&nbsp;Time stolen from a virtual machine.  Prior to Linux 2.6.11, unknown.<p>
-</script>
-<script type="text/javascript">
-    RED.nodes.registerType('lazurite-vmstat', {
-        color: "#E2D96E",
-        category: 'Lazurite',
-        defaults: {
-            name: {value:""},
-            interval: {value:"0"},
-            intervalUnit: {value: "sec"}
-        },
-        inputs: 0,
-        outputs: 1,
-        icon: "lazurite.png",
-        label: function() {
-            return this.name||("vmstat::"+toString(interval)+intervalUnit);
-        }
+		},
+		oneditresize: function(size) {
+			var rows = $("#dialog-form>div:not(.node-input-rule-container-row)");
+			var height = size.height;
+			for (var i=0;i<rows.size();i++) {
+				height -= $(rows[i]).outerHeight(true);
+			}
+			var editorRow = $("#dialog-form>div.node-input-rule-container-row");
+			height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+			$("#node-input-rule-container").editableList('height',height);
+		}
 	});
 </script>

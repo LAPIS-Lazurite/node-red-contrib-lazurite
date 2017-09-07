@@ -1,0 +1,121 @@
+<!--
+  Copyright 2017 Lapis Semiconductor Ltd.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<script type="text/x-red" data-template-name="lazurite-pre-mqtt-publisher">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
+        <input type="text" id="node-input-name"></input>
+    </div>
+	<div class="form-row">
+		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
+        <input type="text" id="node-input-interval" style="width:60px;"></input>
+		<select id="node-input-intervalUnit" style="width:80px;">
+			<option value="sec" selected>sec</option>
+			<option value="min">min</option>
+			<option value="hour">hour</option>
+		</select>
+	</div>
+    <div class="form-row">
+        <label for="node-input-adapter"><i class="fa fa-tag"></i> </span> adaptor</label>
+        <input type="text" id="node-input-adapter"></input>
+    </div>
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-pre-mqtt-publisher', {
+        color: "#E2D96E",
+        category: 'Lazurite',
+        defaults: {
+            name: {value:""},
+            interval: {value:"0"},
+            adapter: {value:"eth0"},
+            intervalUnit: {value: "sec"}
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name||"pre-mqtt-publisher";
+        }
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-vmstat">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
+        <input type="text" id="node-input-name"></input>
+    </div>
+	<div class="form-row">
+		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
+        <input type="text" id="node-input-interval" style="width:60px;"></input>
+		<select id="node-input-intervalUnit" style="width:80px;">
+			<option value="sec" selected>sec</option>
+			<option value="min">min</option>
+			<option value="hour">hour</option>
+		</select>
+	</div>
+</script>
+<script type="text/x-red" data-help-name="lazurite-vmstat">
+<p></p>
+<p>&nbsp;<b>Procs</b><p>
+<p>&nbsp;&nbsp;<b>r:</b>&nbsp;The number of runnable processes (running or waiting for run time).<p>
+<p>&nbsp;&nbsp;<b>b:</b>&nbsp;The number of processes in uninterruptible sleep.<p>
+<p><p>
+<p>&nbsp;<b>Memory</b><p>
+<p>&nbsp;&nbsp;<b>swpd:</b>&nbsp;the amount of virtual memory used.<p>
+<p>&nbsp;&nbsp;<b>free:</b>&nbsp;the amount of idle memory.<p>
+<p>&nbsp;&nbsp;<b>buff:</b>&nbsp;the amount of memory used as buffers.<p>
+<p>&nbsp;&nbsp;<b>cache:</b>&nbsp;the amount of memory used as cache.<p>
+<p>&nbsp;&nbsp;<b>inact:</b>&nbsp;the amount of inactive memory.  (-a option)<p>
+<p>&nbsp;&nbsp;<b>active:</b>&nbsp;the amount of active memory.  (-a option)<p>
+<p>&nbsp;&nbsp;<p>
+<p>&nbsp;&nbsp;<b>Swap</b><p>
+<p>&nbsp;&nbsp;<b>si:</b>&nbsp;Amount of memory swapped in from disk (/s).<p>
+<p>&nbsp;&nbsp;<b>so:</b>&nbsp;Amount of memory swapped to disk (/s).<p>
+<p><p>
+<p>&nbsp;<b>IO</b><p>
+<p>&nbsp;&nbsp;<b>bi:</b>&nbsp;Blocks received from a block device (blocks/s).<p>
+<p>&nbsp;&nbsp;<b>bo:</b>&nbsp;Blocks sent to a block device (blocks/s).<p>
+<p><p>
+<p>&nbsp;<b>System</b><p>
+<p>&nbsp;&nbsp;<b>in:</b>&nbsp;The number of interrupts per second, including the clock.<p>
+<p>&nbsp;&nbsp;<b>cs:</b>&nbsp;The number of context switches per second.<p>
+<p><p>
+<p>&nbsp;<b>CPU</b><p>
+<p>These are percentages of total CPU time.<p>
+<p>&nbsp;&nbsp;<b>us:</b>&nbsp;Time spent running non-kernel code.  (user time, including nice time)<p>
+<p>&nbsp;&nbsp;<b>sy:</b>&nbsp;Time spent running kernel code.  (system time)<p>
+<p>&nbsp;&nbsp;<b>id:</b>&nbsp;Time spent idle.  Prior to Linux 2.5.41, this includes IO-wait time.<p>
+<p>&nbsp;&nbsp;<b>wa:</b>&nbsp;Time spent waiting for IO.  Prior to Linux 2.5.41, included in idle.<p>
+<p>&nbsp;&nbsp;<b>st:</b>&nbsp;Time stolen from a virtual machine.  Prior to Linux 2.6.11, unknown.<p>
+</script>
+<script type="text/javascript">
+    RED.nodes.registerType('lazurite-vmstat', {
+        color: "#E2D96E",
+        category: 'Lazurite',
+        defaults: {
+            name: {value:""},
+            interval: {value:"0"},
+            intervalUnit: {value: "sec"}
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "lazurite.png",
+        label: function() {
+            return this.name||("vmstat::"+toString(interval)+intervalUnit);
+        }
+	});
+</script>
