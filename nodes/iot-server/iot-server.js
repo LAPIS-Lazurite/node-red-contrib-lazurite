@@ -16,7 +16,6 @@
 
 module.exports = function(RED) {
 	function PreMqttPublisher(config) {
-		var lib = require('../../build/Release/get_addr');
 		var param = require('../../param');
 		//var stream = require('stream');
 		//var util = require('util');
@@ -26,7 +25,7 @@ module.exports = function(RED) {
 		this.check = true;
 		this.sent = false;
 		this.packet = [];
-		param.ipt =lib.get_ipv4(config.adapter);
+		param.ipt = config.ipt;
 		var ip = param.ipt.split(".");
 		param.ipa = [];
 		for (var i=0; i<4; i++) {
