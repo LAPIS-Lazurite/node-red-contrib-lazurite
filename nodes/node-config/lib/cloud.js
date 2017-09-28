@@ -149,6 +149,9 @@ module.exports = {
 			// data
 			output.payload.data = {};
 			for(var i=0;i<node.info.size;i++) {
+				if (output.payload.collection == "05.PumpMon") {
+					if ((val[i] === "") || (val[i] === null)) continue;
+				}
 				output.payload.data[node.info.sensor[i].substr(0,2)] = parseFloat(val[i]);
 			}
 			output.payload.data["rs"] = parseInt(rcv.rssi);

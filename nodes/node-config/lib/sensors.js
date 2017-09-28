@@ -28,6 +28,11 @@ module.exports = {
 		name: "05.CT",
 		sensor: ["ct","vbat"],
 		unit: ["mA","v"],
-		size: 2}
+		size: 2},
+	"05.PumpMon": {
+		name: "05.PumpMon",
+		sensor: ["ct","vbat","ax","ay","az","tcouple","tbase","sound"],
+		unit: ["mA","v","g","g","g","degree","degree",""],
+		size: 8}
 };
 
