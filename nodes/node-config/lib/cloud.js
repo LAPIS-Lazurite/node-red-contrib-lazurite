@@ -42,6 +42,9 @@ module.exports = {
 			var val = rcv.payload.replace(/\r?\n/g,"").split(",");
 			for (var i = 0 ;i < node.info.size; i++)
 			{
+				if (node.info.nullval == "exist") {
+					if ((val[i] === null) || (val[i] === "") || (val[i] === undefined)) continue;
+				}
 				output[offset+i] = {};
 				output[offset+i].topic = node.info.name + "-" + 
 					node.src + "-" + node.info.sensor[i];
@@ -149,8 +152,8 @@ module.exports = {
 			// data
 			output.payload.data = {};
 			for(var i=0;i<node.info.size;i++) {
-				if (output.payload.collection == "05.PumpMon") {
-					if ((val[i] === "") || (val[i] === null)) continue;
+				if (node.info.nullval == "exist") {
+					if ((val[i] === null) || (val[i] === "") || (val[i] === undefined)) continue;
 				}
 				output.payload.data[node.info.sensor[i].substr(0,2)] = parseFloat(val[i]);
 			}

@@ -31,6 +31,7 @@ module.exports = {
 		size: 2},
 	"05.PumpMon": {
 		name: "05.PumpMon",
+		nullval: "exist",
 		sensor: ["ct","vbat","ax","ay","az","tcouple","tbase","sound"],
 		unit: ["mA","v","g","g","g","degree","degree",""],
 		size: 8}
