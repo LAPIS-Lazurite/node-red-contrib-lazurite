@@ -63,7 +63,7 @@ module.exports = {
 		// one payload include multiple json as Array
 		/*
 			{ 
-				s: [0x12,0x34] or [0x00,0x1d,0x12,0x90,0x00,0x04,0x12,0x34],	// address of sensor node
+				src: [0x12,0x34] or [0x00,0x1d,0x12,0x90,0x00,0x04,0x12,0x34],	// address of sensor node
 				n: 0,							// sequence number
 				t: 1498092314737,				// 64bit linux time [ms]
 				database: "ENV"					// database
@@ -87,7 +87,7 @@ module.exports = {
 					},
 					r: {
 						d: 233,
-			r			f: 0
+						f: 0
 					}
 				}
 			} 
@@ -131,6 +131,7 @@ module.exports = {
 					addr += (rcv.src_addr[1] & 0x00FF).toString(16);
 
 				case 16:
+					addr = "0x"
 					if((rcv.src_addr[0] >> 8) < 16) {
 						addr += "0";
 					}
@@ -155,7 +156,7 @@ module.exports = {
 				if (node.info.nullval == "exist") {
 					if ((val[i] === null) || (val[i] === "") || (val[i] === undefined)) continue;
 				}
-				output.payload.data[node.info.sensor[i].substr(0,2)] = parseFloat(val[i]);
+				output.payload.data[node.info.sensor[i]] = parseFloat(val[i]);
 			}
 			output.payload.data["rs"] = parseInt(rcv.rssi);
 			return output;

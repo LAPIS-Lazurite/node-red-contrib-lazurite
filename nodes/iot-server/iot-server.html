@@ -23,6 +23,7 @@
 		<label for="node-input-interval"><i class="fa fa-search-plus"></i> interval</label>
         <input type="text" id="node-input-interval" style="width:60px;"></input>
 		<select id="node-input-intervalUnit" style="width:80px;">
+			<option value="none">none</option>
 			<option value="sec" selected>sec</option>
 			<option value="min">min</option>
 			<option value="hour">hour</option>
@@ -40,7 +41,7 @@
         category: 'Lazurite',
         defaults: {
             name: {value:""},
-            interval: {value:"0"},
+            interval: {value:"1"},
             ipt: {value:"127.0.0.1"},
             intervalUnit: {value: "sec"}
         },
