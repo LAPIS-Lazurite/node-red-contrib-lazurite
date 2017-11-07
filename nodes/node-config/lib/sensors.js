@@ -11,7 +11,7 @@ module.exports = {
 		size : 2},
 	"07.env":{
 		name: "07.env",
-		sensor: ["temprature","presssure","humidity","brightness","vbat"],
+		sensor: ["temperature","pressure","humidity","brightness","vbat"],
 		unit: ["degree","Pa","%","lux","v"],
 		size: 5},
 	"07.prox": {
