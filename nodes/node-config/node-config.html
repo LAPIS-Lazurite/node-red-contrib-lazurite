@@ -40,8 +40,8 @@
 	<p>	   1st: button (0: release, 1: push)</p>
 	<p>	   2nd: battery voltage[volt:]</p>
 	<p>   "07.env": output for sensor shield by SwitchSience.</p>
-	<p>	   1st: temprature[degree]</p>
-	<p>	   2nd: pressure[Pa]</p>
+	<p>	   1st: temperature[degree]</p>
+	<p>	   2nd: pressure[hPa]</p>
 	<p>	   3rd: humidity[%]</p>
 	<p>	   4th: brightness[lux]<p>
 	<p>	   5th: battery voltage[volt]<p>
@@ -80,7 +80,8 @@
 				{v:"07.env",t:"07.env"},
 				{v:"07.prox",t:"07.prox"},
 				{v:"07.hall",t:"07.hall"},
-				{v:"05.CT",t:"05.CT"}
+				{v:"05.CT",t:"05.CT"},
+				{v:"05.PumpMon",t:"05.PumpMon"}
 			];
 			function resizeRule(rule) {
 				var sensorField = rule.find("select");
@@ -139,6 +140,9 @@
 				switch(sensor){
 					case "07.env":
 						sensor_num += 5;
+						break;
+					case "05.PumpMon":
+						sensor_num += 8;
 						break;
 					default:
 						sensor_num += 2;

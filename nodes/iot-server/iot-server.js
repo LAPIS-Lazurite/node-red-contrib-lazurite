@@ -37,19 +37,22 @@ module.exports = function(RED) {
 
 		var node = this;
 		switch(config.intervalUnit) {
-			case 'sec':
+		case 'none':
+			this.check = false;
+			break;
+		case 'sec':
 			this.unit = 1000;
 			break;
-			case 'min':
+		case 'min':
 			this.unit = 60000;
 			break;
-			case 'hour':
+		case 'hour':
 			this.unit = 3600000;
 			break;
-			case 'day':
+		case 'day':
 			this.unit = 3600000*24;
 			break;
-			default:
+		default:
 			this.check = false;
 			break;
 		}
@@ -83,6 +86,22 @@ module.exports = function(RED) {
 				this.packet= [];
 			}
 			this.packet.push(msg.payload);
+			if(this.check == false) {
+				if(this.packet.length != 0){
+					var output = {};
+					var payload = {};
+					var gw ={};
+					gw.ipa = param.ipa;
+					gw.ipt = param.ipt;
+					gw.loa = param.loa;
+					gw.lot = param.lot;
+					payload.gw = gw;
+					payload.data = this.packet;
+					output.payload = payload;
+					node.send(output);
+					this.sent = true;
+				}
+			}
 		});
 		node.on('close',function(msg){
 			if(this.timer !== null) clearInterval(this.timer);
