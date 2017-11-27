@@ -36,6 +36,7 @@ module.exports = function(RED) {
 		node.worklog = [];
 		node.initialized = false;
 		node.awsiot = [];
+		node.dbName = config.dbName;
 
 		// convert address
 		node.config.rules.forEach(function(data){
@@ -122,7 +123,7 @@ module.exports = function(RED) {
 		// check addres
 		function calCapacity(msg) {
 			var rxtime;
-			for(var i=0; i < node.capacity.length; i++) {
+			for(i in node.capacity) {
 				// In case of CT sensor
 				if(node.capacity[i].ct_addr instanceof Array){
 					if(addrComp(node.capacity[i].ct_addr,msg.src_addr)) {
@@ -240,7 +241,7 @@ module.exports = function(RED) {
 					node.capacity[index].ct_state = 'act';
 					node.capacity[index].ct_active_time += delta_time;
 					node.capacity[index].ct_state_time = rxtime;
-					updateWorkLog(index,'act',rxtime);
+					updateWorkLog(index,'act',node.capacity[index].ct_state_time);
 				} 
 				if(node.capacity[index].update) {updateWorkLog(index,'stop',rxtime);}
 				break;
@@ -258,7 +259,7 @@ module.exports = function(RED) {
 						node.capacity[index].ct_total_time  += (rxtime - node.capacity[index].ct_wait_time);
 						node.capacity[index].ct_state_time = node.capacity[index].ct_wait_time;
 						node.capacity[index].ct_wait_time = 0;
-						updateWorkLog(index,'stop',rxtime);
+						updateWorkLog(index,'stop',node.capacity[index].ct_state_time);
 					} else {
 					}
 				}
@@ -306,6 +307,7 @@ module.exports = function(RED) {
 				// message of worklog
 				msg.payload = {
 					timestamp: rxtime,			// id of database
+					dbName:    node.dbName,
 					state:     state,
 					from:      node.capacity[index].ct_state_time,
 					machine:   node.capacity[index].id,
@@ -371,7 +373,7 @@ module.exports = function(RED) {
 				payload.rssi = {};
 				payload.vbat = {};
 				//console.log({capacity:node.capacity,config:node.config.rules,param:param});
-				for(var i = 0; i < node.capacity.length ; i++) {
+				for( i  in node.capacity) {
 					if(node.capacity[i].count > 0) {
 						payload.count[node.capacity[i].id] = node.capacity[i].count;
 						payload.rssi[node.capacity[i].id] = node.capacity[i].rssi;
@@ -454,7 +456,7 @@ module.exports = function(RED) {
 		}
 		function getLocalAddress(adaptor){
 			var address = os.networkInterfaces();
-			if(address[adaptor].length == 1){
+			if((typeof address[adaptor] !== 'undefined')&&(address[adaptor].length == 1)){
 				return address[adaptor][0].address;
 			} else {
 				return "unknown";

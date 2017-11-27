@@ -70,6 +70,10 @@
 		<input type="text" id="node-input-name"> </input>
 	</div>
 	<div class="form-row">
+		<label for="node-input-dbName"><i class="fa fa-tag"></i> dbName</label>
+		<input type="text" id="node-input-dbName"> </input>
+	</div>
+	<div class="form-row">
 		<label for="node-input-interval"><i class="fa fa-clock-o"></i> interval</label>
 		<select id="node-input-interval">
 			<option value=0>min</option>
@@ -90,6 +94,7 @@
 		category: 'Lazurite',
 		defaults: {
 			name: {value:""},
+			dbName: {value:""},
 			config: {value:"", required:true, type:"lazurite-factory-config"},
 			interval: {value: 1},
 			outputLabels:{value: ["現在の稼働率","稼働率","作業ログ","ワーニングメッセージ"]},
