@@ -127,6 +127,42 @@
 	<p><b>msg.length</b> is length of payload.</p>
 </script>
 
+
+
+
+
+<!-- test lazurite4k-rx-node -->
+<script type="text/javascript">
+    RED.nodes.registerType('Lazurite4k-Rx',{
+        category: 'Lazurite',
+		color:"#3FADB5",
+        defaults: {
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+		icon: "lazurite.png",
+        label: function() {
+            return this.name||"Lazurite4k-Rx";
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="Lazurite4k-Rx">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="Lazurite4k-Rx">
+    <p>A simple node that converts the message payloads into all lazurite4k-rx characters</p>
+</script>
+
+
+
+
+
 <script type="text/x-red" data-template-name="lazurite-tx">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -199,6 +235,42 @@
 	<p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
 	<p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
 </script>
+
+
+
+
+
+<!-- test lazurite4k-tx-node -->
+<script type="text/javascript">
+    RED.nodes.registerType('Lazurite4k-Tx',{
+        category: 'Lazurite',
+		color:"#3FADB5",
+		align: 'right',
+        defaults: {
+            name: {value:""}
+        },
+        inputs:1,
+        outputs:1,
+		icon: "lazurite.png",
+        label: function() {
+            return this.name||"Lazurite4k-Tx";
+        }
+    });
+</script>
+
+<script type="text/x-red" data-template-name="Lazurite4k-Tx">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="Lazurite4k-Tx">
+    <p>A simple node that converts the message payloads into all lazurite4k-tx characters</p>
+</script>
+
+
+
 
 
 <script type="text/x-red" data-template-name="lazurite-tx64">

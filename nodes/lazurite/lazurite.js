@@ -253,6 +253,36 @@ module.exports = function(RED) {
 	RED.nodes.registerType("lazurite-tx64",LazuriteTx64Node);
 
 
+
+
+    // test lazurite4k-tx-node
+    function Lazurite4kTxNode(config) {
+        RED.nodes.createNode(this,config);
+        var node = this;
+        node.on('input', function(msg) {
+            msg.payload = msg.payload.toLazurite4KNode();
+            node.send(msg);
+            node.change
+        });
+    }
+    RED.nodes.registerType("Lazurite4k-Tx",Lazurite4kTxNode);
+
+
+    // test lazurite4k-rx-node
+    function Lazurite4kRxNode(config) {
+        RED.nodes.createNode(this,config);
+        var node = this;
+        node.on('input', function(msg) {
+            msg.payload = msg.payload.toLazurite4kRx();
+            node.send(msg);
+        });
+    }
+    RED.nodes.registerType("lazurite4k-Rx",Lazurite4kRxNode);
+
+
+
+
+
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
 		var key = "";
