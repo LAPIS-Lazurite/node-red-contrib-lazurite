@@ -132,29 +132,79 @@
 
 
 <!-- test lazurite4k-rx-node -->
+<script type="text/x-red" data-template-name="Lazurite4k-Rx">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
+		<input type="lazurite-channel" id="node-input-channel"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-spreading-factor"><i class="fa fa-tag"></i> SF</label>
+		<input type="checkbox" id="node-input-enbinterval" style="width:20px;"> 8</input>
+		<input type="checkbox" id="node-input-enbinterval" style="width:20px;"> 16</input>
+		<input type="checkbox" id="node-input-enbinterval" style="width:20px;"> 32</input>
+		<input type="checkbox" id="node-input-enbinterval" style="width:20px;"> 64(default)</input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-psdu-length"><i class="fa fa-tag"></i> psdu-length</label>
+		<input type="text" id="node-input-psdu-length" style="width:80px; margin-left:20px;"></input>
+		<label style="width:40px;">byte</label>
+	</div>
+	<div class="form-row">
+		<label for="node-input-interval"><i class="fa fa-clock-o"></i> Interval</label>
+		<input type="checkbox" id="node-input-enbinterval" style="width:20px;"> Enable</input>
+		<input type="text" id="node-input-interval" style="width:80px; margin-left:20px;"></input>
+		<label style="width:40px;">msec</label>
+	</div>
+	<div class="form-row">
+		<label for="node-input-latestpacket"><i class="fa fa-tag"></i> format</label>
+		<input type="checkbox" id="node-input-latestpacket" style="width:20px;"> receive only latest packet</input>
+	</div>
+</script>
 <script type="text/javascript">
     RED.nodes.registerType('Lazurite4k-Rx',{
         category: 'Lazurite',
+		paletteLabel: 'Lazurite4k Rx',
 		color:"#3FADB5",
-        defaults: {
-            name: {value:""}
-        },
-        inputs:1,
-        outputs:1,
+		align: 'left',
+		inputs:1,
+		outputs:1,
 		icon: "lazurite.png",
-        label: function() {
-            return this.name||"Lazurite4k-Rx";
-        }
-    });
+		label: function() {
+			return this.name || "lazurite4k Rx";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+		defaults: {
+			channel: {value:"", required:true, type:"lazurite-channel"},
+			interval: {value:"10", required:true},
+			enbinterval: {value:true},
+			latestpacket: {value:false},
+			name   : {value:""}
+		},
+		oneditprepare: function() {
+			if(lazurite_rf_param != false) {
+				$("#node-input-channel").val(lazurite_rf_param);
+			}
+		},
+		oneditsave: function() {
+			console.log($("#node-input-channel").val());
+			lazurite_rf_param = $("#node-input-channel").val();
+			$.ajax({
+				url: "lazurite-rx/"+this.id+"/"+lazurite_rf_param,
+				type: "POST",
+				success: function(resp, textStatus, xhr) {
+				},
+				error: function(jqXHR,textStatus,errorThrown) {
+				}
+			});
+		}
+	});
 </script>
-
-<script type="text/x-red" data-template-name="Lazurite4k-Rx">
-    <div class="form-row">
-        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
-    </div>
-</script>
-
 <script type="text/x-red" data-help-name="Lazurite4k-Rx">
     <p>A simple node that converts the message payloads into all lazurite4k-rx characters</p>
 </script>
@@ -241,6 +291,12 @@
 
 
 <!-- test lazurite4k-tx-node -->
+<script type="text/x-red" data-template-name="Lazurite4k-Tx">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
 <script type="text/javascript">
     RED.nodes.registerType('Lazurite4k-Tx',{
         category: 'Lazurite',
@@ -257,14 +313,6 @@
         }
     });
 </script>
-
-<script type="text/x-red" data-template-name="Lazurite4k-Tx">
-    <div class="form-row">
-        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
-    </div>
-</script>
-
 <script type="text/x-red" data-help-name="Lazurite4k-Tx">
     <p>A simple node that converts the message payloads into all lazurite4k-tx characters</p>
 </script>
