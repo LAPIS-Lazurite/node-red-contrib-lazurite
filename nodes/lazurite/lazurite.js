@@ -153,6 +153,56 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("lazurite-rx",LazuriteRxNode);
 
+
+
+    // test lazurite4k-rx-node
+    function Lazurite4kRxNode(config) {
+        RED.nodes.createNode(this,config);
+		this.channel = RED.nodes.getNode(config.channel);
+		this.ch	= this.channel ? this.channel.config.ch			  : 36;
+		this.panid = this.channel ? parseInt(this.channel.config.panid) : 0xabcd;
+		this.rate  = this.channel ? this.channel.config.rate			: 100;
+		this.pwr   = this.channel ? this.channel.config.pwr			 : 20;
+		this.interval   = parseInt(config.interval);
+		this.name  = config.name;
+		this.enbinterval  = config.enbinterval;
+		this.psdu_length  = config.psdu_length;
+		this.latestpacket  = config.latestpacket;
+		var node = this;
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		connect(node);
+		if(!lib.setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
+		if(this.enbinterval) {
+			var readStream = new ReadStream(node);
+			readStream.on('data', function(data) {
+					if(data['length'] > 0) {
+					var msg = data;
+					node.send(msg);
+					//node.send(data);
+					};
+					});
+			readStream.resume(node);
+		} else {
+			if(!lib.rxEnable()) { Warn("lazurite_rxEnable fail"); }
+		}
+        node.on('input', function(msg) {
+			var data = lib.read();
+			if(data['length'] > 0) {
+				var msg = data;
+				node.send(msg);
+			}
+        });
+		node.on('close', function(done) {
+			readStream.pause();
+			disconnect(node)
+			done();
+		});
+    }
+    RED.nodes.registerType("lazurite4k-Rx",Lazurite4kRxNode);
+
+
+
+
 	function LazuriteTxNode(config) {
 		RED.nodes.createNode(this,config);
 		if(latest_rfparam_id==""){
@@ -257,28 +307,46 @@ module.exports = function(RED) {
 
     // test lazurite4k-tx-node
     function Lazurite4kTxNode(config) {
-        RED.nodes.createNode(this,config);
-        var node = this;
-        node.on('input', function(msg) {
-            msg.payload = msg.payload.toLazurite4KNode();
-            node.send(msg);
-            node.change
-        });
+		RED.nodes.createNode(this,config);
+		if(latest_rfparam_id==""){
+			this.channel  = RED.nodes.getNode(config.channel);
+		} else {
+			this.channel  = RED.nodes.getNode(latest_rfparam_id);
+		}
+		this.ch	   = this.channel  ? this.channel.config.ch				: 36;
+		this.panid	= this.channel  ? this.channel.config.panid			 : 0xabcd;
+		this.rate	 = this.channel  ? this.channel.config.rate			  : 100;
+		this.pwr	  = this.channel  ? this.channel.config.pwr			   : 20;
+		this.dst_addr   = parseInt(config.dst_addr);
+		this.dst_panid  = parseInt(config.dst_panid);
+		this.psdu_length  = config.psdu_length;
+		this.name	 = config.name;
+		var node = this;
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		connect(node);
+
+		node.on('input', function(msg) {
+			var dst_panid;
+			var dst_addr;
+			if(typeof msg.dst_panid != "undefined") {
+					dst_panid = msg.dst_panid;
+			} else {
+				dst_panid = node.dst_panid;
+			}
+			if(typeof msg.dst_addr != "undefined") {
+				dst_addr = msg.dst_addr[0];
+			} else {
+				dst_addr = node.dst_addr;
+			}
+			if(!lib.send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+			node.send(msg);
+		});
+		node.on('close', function(done) {
+			disconnect(node);
+			done();
+		});
     }
     RED.nodes.registerType("Lazurite4k-Tx",Lazurite4kTxNode);
-
-
-    // test lazurite4k-rx-node
-    function Lazurite4kRxNode(config) {
-        RED.nodes.createNode(this,config);
-        var node = this;
-        node.on('input', function(msg) {
-            msg.payload = msg.payload.toLazurite4kRx();
-            node.send(msg);
-        });
-    }
-    RED.nodes.registerType("lazurite4k-Rx",Lazurite4kRxNode);
-
 
 
 
