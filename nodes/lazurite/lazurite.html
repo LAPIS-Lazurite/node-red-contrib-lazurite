@@ -139,7 +139,7 @@
 	</div>
 	<div class="form-row">
 		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
-		<input type="lazurite-channel" id="node-input-channel"></input>
+		<input type="lazurite4k-channel" id="node-input-channel"></input>
 	<div class="form-row">
 		<label for="node-input-spreading-factor"><i class="fa fa-list-ul"></i> SF</label>
 		<select id="node-config-input-spreading-factor">
@@ -181,7 +181,7 @@
 			return this.text?"node_label_italic":"";
 		},
 		defaults: {
-			channel: {value:"", required:true, type:"lazurite-channel"},
+			channel: {value:"", required:true, type:"lazurite4k-channel"},
 			psdu_length: {value:"32", required:true},
 			interval: {value:"10", required:true},
 			enbinterval: {value:true},
@@ -257,7 +257,7 @@
 	</div>
 	<div class="form-row">
 		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
-		<input type="lazurite-channel" id="node-input-channel"></input>
+		<input type="lazurite4k-channel" id="node-input-channel"></input>
 	</div>
 	<div class="form-row">
 		<label for="node-input-dst_panid"><i class="fa fa-user"></i> dst panid</label>
@@ -335,7 +335,7 @@
 	</div>
 	<div class="form-row">
 		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
-		<input type="lazurite-channel" id="node-input-channel"></input>
+		<input type="lazurite4k-channel" id="node-input-channel"></input>
 	</div>
 	<div class="form-row">
 		<label for="node-input-dst_panid"><i class="fa fa-user"></i> dst panid</label>
@@ -376,7 +376,7 @@
 			return this.text?"node_label_italic":"";
 		},
 		defaults: {
-			channel:   {value:"", required:true, type:"lazurite-channel"},
+			channel:   {value:"", required:true, type:"lazurite4k-channel"},
 			dst_addr: {value:"0xffff", required:true},
 			dst_panid: {value:"0xffff", required:true},
 			psdu_length: {value:"32", required:true},
@@ -526,6 +526,65 @@
 </script>
 <script type="text/javascript">
 	RED.nodes.registerType('lazurite-channel',{
+		category: 'config',
+		defaults: {
+			ch: {value:36,required:true,validate:RED.validators.number()},
+			panid: {value:"0xabcd",required:true},
+			rate: {value:100,required:true,validate:RED.validators.number()},
+			pwr: {value:20,required:true,validate:RED.validators.number()},
+			defaultaddress: {value:true,required:true},
+			myaddr: {value:"0", required:true },
+			key: {value:""}
+		},
+		label: function() {
+			if(this.defaultaddress == true){
+				return "ch:" + this.ch + " addr:" + this.panid + ",default";
+			} else {
+				return "ch:" + this.ch + " addr:" + this.panid + ","+this.myaddr;
+			}
+		},
+		oneditprepare: function() {
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite4k-channel">
+	<div class="form-row">
+		<label for="node-config-input-ch"><i class="fa fa-dot-circle-o"></i> ch</label>
+		<input type="text" id="node-config-input-ch" placeholder="RF frequency.">
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-panid"><i class="fa fa-user"></i> panid</label>
+		<input type="text" id="node-config-input-panid" placeholder="PANID.">
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-rate"><i class="fa fa-list-ul"></i> rate</label>
+		<select id="node-config-input-rate">
+			<option value=50>50 kcps</option>
+			<option value=100>100 kcps</option>
+			<option value=200>200 kcps</option>
+		</select>
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-pwr"><i class="fa fa-rss"></i> pwr</label>
+		<select id="node-config-input-pwr">
+			<option value=1>1 mW</option>
+			<option value=20>20 mW</option>
+		</select>
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-myaddr"><i class="fa fa-map-marker"></i> My Address</label>
+		<input type="checkbox" id="node-config-input-defaultaddress" style="width:20px;"> default</input>
+		<input type="text" id="node-config-input-myaddr" placeholder="my address" style="width:80px; margin-left:20px;"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-key"><i class="fa fa-key"></i> AES key</label>
+		<input type="text" id="node-config-input-key" placeholder="128bit AES key"></input>
+	</div>
+    <div class="form-tips">in case of 200kcps, ch is 24-28, 33-57.<br>in case of 100kcps, ch is 24-31, 33-60.<br>in case of 50kcps, ch is 24-61.</div>
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite4k-channel',{
 		category: 'config',
 		defaults: {
 			ch: {value:36,required:true,validate:RED.validators.number()},

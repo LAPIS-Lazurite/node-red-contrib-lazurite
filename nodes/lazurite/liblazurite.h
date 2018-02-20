@@ -415,6 +415,13 @@ namespace lazurite
 		@exception      none
 		******************************************************************************/
 		int lazurite_setKey(char *key);
+
+		/******************************************************************************/
+		/*! @brief set modulation
+		  @param[in]     true : IEEE802.15.4k mode, false: IEEE802.15.4g mode
+		  @exception      none
+		 ******************************************************************************/
+		int lazurite_setModulation(bool on);
 #ifdef __cplusplus
 	};
 };

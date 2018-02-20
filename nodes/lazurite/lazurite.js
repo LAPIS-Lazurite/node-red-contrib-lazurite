@@ -41,6 +41,9 @@ module.exports = function(RED) {
 	function setBroadcast(node) {
 			if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
 	}
+  	function setModulation(node) {
+  			if(!lib.setModulation(node.modulation)) { Warn("lazurite_setModulation fail"); return; }
+  	}
 	function connect(node) {
 		if(!isConnect) {
 			if(!lib.dlopen()) { Warn("dlopen fail"); return; }
@@ -171,6 +174,7 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
+//		setModulation(node);
 		if(!lib.setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
@@ -324,7 +328,7 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-
+//		setModulation(node);
 		node.on('input', function(msg) {
 			var dst_panid;
 			var dst_addr;
