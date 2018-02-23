@@ -257,7 +257,7 @@
 	</div>
 	<div class="form-row">
 		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
-		<input type="lazurite4k-channel" id="node-input-channel"></input>
+		<input type="lazurite-channel" id="node-input-channel"></input>
 	</div>
 	<div class="form-row">
 		<label for="node-input-dst_panid"><i class="fa fa-user"></i> dst panid</label>
@@ -581,7 +581,7 @@
 		<label for="node-config-input-key"><i class="fa fa-key"></i> AES key</label>
 		<input type="text" id="node-config-input-key" placeholder="128bit AES key"></input>
 	</div>
-    <div class="form-tips">in case of 200kcps, ch is 24-28, 33-57.<br>in case of 100kcps, ch is 24-31, 33-60.<br>in case of 50kcps, ch is 24-61.</div>
+    <div class="form-tips">in case of 200kcps, ch is 24-28, 33-57.<br>in case of 100kcps, ch is 24-31, 33-60.<br>in case of 50kcps and 100bps, ch is 24-61.</div>
 </script>
 <script type="text/javascript">
 	RED.nodes.registerType('lazurite4k-channel',{

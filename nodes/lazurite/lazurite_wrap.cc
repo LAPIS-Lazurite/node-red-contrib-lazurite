@@ -61,7 +61,7 @@ int (*getmyaddr64)(uint8_t*);
 int (*setaeskey)(const void*);
 int (*closefunc)(void);
 int (*removefunc)(void);
-int (*setModulation)(bool);
+int (*setmodulation)(bool);
 
 bool opened = false;
 bool initialized = false;
@@ -117,7 +117,7 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 			setaeskey    = (int (*)(const void*))find(handle, "lazurite_setKey");
 			closefunc    = (int (*)(void))dlsym(handle, "lazurite_close");
 			removefunc   = (int (*)(void))dlsym(handle, "lazurite_remove");
-			setModulation  = (int (*)(bool))find(handle, "lazurite_setModulation");
+			setmodulation  = (int (*)(bool))find(handle, "lazurite_setModulation");
 			opened = true;
 		}
 	}
@@ -1130,7 +1130,10 @@ static void dlclose(const FunctionCallbackInfo<Value>& args) {
 #endif
 }
 
-#if 0
+#ifdef V8_VER_0
+static Handle<Value> setModulation(const Arguments& args) {
+	HandleScope scope;
+#endif
 #ifdef V8_VER_5
 static void setModulation(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
@@ -1146,7 +1149,7 @@ static void setModulation(const FunctionCallbackInfo<Value>& args) {
 		return;
 #endif
 	}
-	if(!setModulation) {
+	if(!setmodulation) {
 		fprintf (stderr, "lazurite_setModulation fail.\n");
 #ifdef V8_VER_0
 		return scope.Close(Boolean::New(false));
@@ -1156,8 +1159,8 @@ static void setModulation(const FunctionCallbackInfo<Value>& args) {
 		return;
 #endif
 	}
-	bool Modulation = args[0]->BooleanValue();;
-	if(setModulation(Modulation) != 0){
+	bool modulation = args[0]->BooleanValue();;
+	if(setmodulation(modulation) != 0){
 		fprintf (stderr, "lazurite_setModulation exe error.\n");
 #ifdef V8_VER_0
 		return scope.Close(Boolean::New(false));
@@ -1175,7 +1178,6 @@ static void setModulation(const FunctionCallbackInfo<Value>& args) {
 	return;
 #endif
 }
-#endif
 
 #ifdef V8_VER_0
 static void Init(Handle<Object> target) {
@@ -1203,7 +1205,7 @@ static void Init(Local<Object> target) {
 	NODE_SET_METHOD(target, "close", close);
 	NODE_SET_METHOD(target, "remove", remove);
 	NODE_SET_METHOD(target, "dlclose", dlclose);
-//	NODE_SET_METHOD(target, "setModulation", setModulation);
+	NODE_SET_METHOD(target, "setModulation", setModulation);
 }
 
 NODE_MODULE(lazurite_wrap, Init)

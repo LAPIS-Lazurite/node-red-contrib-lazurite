@@ -174,7 +174,7 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-//		setModulation(node);
+		setModulation(node);
 		if(!lib.setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
@@ -328,7 +328,7 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-//		setModulation(node);
+		setModulation(node);
 		node.on('input', function(msg) {
 			var dst_panid;
 			var dst_addr;
@@ -374,6 +374,25 @@ module.exports = function(RED) {
 		}
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
+	function Lazurite4kChannelNode(config) {
+		RED.nodes.createNode(this,config);
+		var key = "";
+		if(typeof config.key == 'string') {
+			if (config.key.length == 32) {
+				key = config.key;
+			}
+		}
+		this.config = {
+			ch: config.ch,
+			panid: parseInt(config.panid),
+			rate: config.rate,
+			pwr: config.pwr,
+			defaultaddress: config.defaultaddress,
+			myaddr: parseInt(config.myaddr),
+			key: key
+		}
+	}
+	RED.nodes.registerType("lazurite4k-channel",Lazurite4kChannelNode);
 	RED.httpAdmin.post("/lazurite-tx/:id/:state", RED.auth.needsPermission("lazurite-tx.write"), function(req,res) {
 		var node = RED.nodes.getNode(req.params.id);
 		var state = req.params.state;
