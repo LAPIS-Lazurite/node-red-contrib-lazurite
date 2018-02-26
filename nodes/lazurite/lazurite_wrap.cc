@@ -61,7 +61,9 @@ int (*getmyaddr64)(uint8_t*);
 int (*setaeskey)(const void*);
 int (*closefunc)(void);
 int (*removefunc)(void);
-int (*setmodulation)(bool);
+int (*setmodulation)(uint8_t);
+int (*setdssssize)(uint8_t, uint8_t);
+int (*setsf)(uint8_t);
 
 bool opened = false;
 bool initialized = false;
@@ -99,6 +101,7 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 		if (!handle) {
 			fprintf (stderr, "%s\n", dlerror());
 		} else {
+//			fprintf (stderr, "-----------debug OPEN.\n");
 			initfunc     = (int (*)(void))find(handle, "lazurite_init");
 			beginfunc    = (int (*)(uint8_t, uint16_t, uint8_t,uint8_t))find(handle, "lazurite_begin");
 			enablefunc   = (int (*)(void))find(handle, "lazurite_rxEnable");
@@ -117,7 +120,9 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 			setaeskey    = (int (*)(const void*))find(handle, "lazurite_setKey");
 			closefunc    = (int (*)(void))dlsym(handle, "lazurite_close");
 			removefunc   = (int (*)(void))dlsym(handle, "lazurite_remove");
-			setmodulation  = (int (*)(bool))find(handle, "lazurite_setModulation");
+			setmodulation  = (int (*)(uint8_t))find(handle, "lazurite_setModulation");
+			setdssssize  = (int (*)(uint8_t,uint8_t))find(handle, "lazurite_setDsssSize");
+			setsf  = (int (*)(uint8_t))find(handle, "lazurite_setDsssSpreadFactor");
 			opened = true;
 		}
 	}
@@ -138,6 +143,8 @@ static Handle<Value> init(const Arguments& args) {
 static void init(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 #endif
+
+//	fprintf (stderr, "-----------debug INIT.\n");
 
 	if(!initialized) {
 		if(!initfunc) {
@@ -181,6 +188,7 @@ static Handle<Value> begin(const Arguments& args) {
 static void begin(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 #endif
+//	fprintf (stderr, "-----------debug BEGIN.\n");
 	if(!began) {
 		if(args.Length() < 4) {
 			fprintf (stderr, "Wrong number of arguments\n");
@@ -564,6 +572,7 @@ static Handle<Value> send(const Arguments& args) {
 static void send(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 #endif
+//	fprintf (stderr, "-----------debug SEND.\n");
 	if(args.Length() < 3) {
 		fprintf (stderr, "Wrong number of arguments\n");
 #ifdef V8_VER_0
@@ -1159,9 +1168,108 @@ static void setModulation(const FunctionCallbackInfo<Value>& args) {
 		return;
 #endif
 	}
-	bool modulation = args[0]->BooleanValue();;
-	if(setmodulation(modulation) != 0){
+	uint8_t mode = args[0]->NumberValue();
+	if(setmodulation(mode) != 0){
 		fprintf (stderr, "lazurite_setModulation exe error.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+#ifdef V8_VER_0
+	return scope.Close(Boolean::New(true));
+#endif
+#ifdef V8_VER_5
+	args.GetReturnValue().Set(Boolean::New(isolate,true));
+	return;
+#endif
+}
+
+#ifdef V8_VER_0
+static Handle<Value> setDsssSize(const Arguments& args) {
+	HandleScope scope;
+#endif
+#ifdef V8_VER_5
+static void setDsssSize(const FunctionCallbackInfo<Value>& args) {
+	Isolate* isolate = args.GetIsolate();
+#endif
+
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+	if(!setdssssize) {
+		fprintf (stderr, "lazurite_setDsssSize fail.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+	uint8_t size = args[0]->NumberValue();
+	uint8_t addr_mode = args[1]->NumberValue();
+	if(setdssssize(size, addr_mode) != 0){
+		fprintf (stderr, "lazurite_setDsssSize exe error.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+#ifdef V8_VER_0
+	return scope.Close(Boolean::New(true));
+#endif
+#ifdef V8_VER_5
+	args.GetReturnValue().Set(Boolean::New(isolate,true));
+	return;
+#endif
+}
+
+#ifdef V8_VER_0
+static Handle<Value> setDsssSpreadFactor(const Arguments& args) {
+	HandleScope scope;
+#endif
+#ifdef V8_VER_5
+static void setDsssSpreadFactor(const FunctionCallbackInfo<Value>& args) {
+	Isolate* isolate = args.GetIsolate();
+#endif
+
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+	if(!setsf) {
+		fprintf (stderr, "lazurite_setDsssSreadFactor fail.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+	uint8_t value = args[0]->NumberValue();;
+	if(setsf(value) != 0){
+		fprintf (stderr, "lazurite_setDsssSreadFactor exe error.\n");
 #ifdef V8_VER_0
 		return scope.Close(Boolean::New(false));
 #endif
@@ -1206,6 +1314,8 @@ static void Init(Local<Object> target) {
 	NODE_SET_METHOD(target, "remove", remove);
 	NODE_SET_METHOD(target, "dlclose", dlclose);
 	NODE_SET_METHOD(target, "setModulation", setModulation);
+	NODE_SET_METHOD(target, "setDsssSize", setDsssSize);
+	NODE_SET_METHOD(target, "setDsssSpreadFactor", setDsssSpreadFactor);
 }
 
 NODE_MODULE(lazurite_wrap, Init)

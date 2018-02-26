@@ -42,7 +42,15 @@ module.exports = function(RED) {
 			if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
 	}
   	function setModulation(node) {
+            node.modulation = 0x10;
   			if(!lib.setModulation(node.modulation)) { Warn("lazurite_setModulation fail"); return; }
+  	}
+  	function setDsssSize(node) {
+  			if(!lib.setDsssSize(node.dssssize)) { Warn("lazurite_setDsssSize fail"); return; }
+  	}
+  	function setDsssSpreadFactor(node) {
+            node.sf = 64;
+  			if(!lib.setDsssSpreadFactor(node.sf)) { Warn("lazurite_setDsssSpreadFactor fail"); return; }
   	}
 	function connect(node) {
 		if(!isConnect) {
@@ -61,6 +69,9 @@ module.exports = function(RED) {
 				param.loa.push(lo[i]);
 				param.lot += (lo[i] < 16 ? "0":"") + lo[i].toString(16);
 			}
+		    setModulation(node);
+            setDsssSize(node);
+            setDsssSpreadFactor(node);
 
 			if(!lib.begin(node.ch, node.panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		}
@@ -174,7 +185,6 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-		setModulation(node);
 		if(!lib.setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
@@ -328,7 +338,6 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-		setModulation(node);
 		node.on('input', function(msg) {
 			var dst_panid;
 			var dst_addr;

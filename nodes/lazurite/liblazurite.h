@@ -418,10 +418,27 @@ namespace lazurite
 
 		/******************************************************************************/
 		/*! @brief set modulation
+		  @param[in]   0x00: IEEE802.15.4g mode
+                       0x10: IEEE802.15.4k mode
+                       0x20: SigFox
+		  @exception      none
+		 ******************************************************************************/
+		int lazurite_setModulation(uint8_t mode);
+
+		/******************************************************************************/
+		/*! @brief set psdu length for DSSS
+		  @param[in]   psdu length, address mode: 0x00=16bit addrmode, 0x01=64bit addrmode
+		  @exception      none
+		 ******************************************************************************/
+		int lazurite_setDsssSize(uint8_t length, uint8_t addr_mode);
+
+		/******************************************************************************/
+		/*! @brief set spread factor
 		  @param[in]     true : IEEE802.15.4k mode, false: IEEE802.15.4g mode
 		  @exception      none
 		 ******************************************************************************/
-		int lazurite_setModulation(bool on);
+		int lazurite_setDsssSreadFactor(uint8_t sf);
+
 #ifdef __cplusplus
 	};
 };
