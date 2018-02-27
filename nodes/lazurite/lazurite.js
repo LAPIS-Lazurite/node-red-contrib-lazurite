@@ -46,10 +46,9 @@ module.exports = function(RED) {
   			if(!lib.setModulation(node.modulation)) { Warn("lazurite_setModulation fail"); return; }
   	}
   	function setDsssSize(node) {
-  			if(!lib.setDsssSize(node.dssssize)) { Warn("lazurite_setDsssSize fail"); return; }
+  			if(!lib.setDsssSize(node.psdu_length,node.addr_mode)) { Warn("lazurite_setDsssSize fail"); return; }
   	}
   	function setDsssSpreadFactor(node) {
-            node.sf = 64;
   			if(!lib.setDsssSpreadFactor(node.sf)) { Warn("lazurite_setDsssSpreadFactor fail"); return; }
   	}
 	function connect(node) {
@@ -180,7 +179,9 @@ module.exports = function(RED) {
 		this.interval   = parseInt(config.interval);
 		this.name  = config.name;
 		this.enbinterval  = config.enbinterval;
+		this.sf  = config.spreading_factor;
 		this.psdu_length  = config.psdu_length;
+		this.addr_mode  = config.addr_mode;
 		this.latestpacket  = config.latestpacket;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
@@ -334,6 +335,8 @@ module.exports = function(RED) {
 		this.dst_addr   = parseInt(config.dst_addr);
 		this.dst_panid  = parseInt(config.dst_panid);
 		this.psdu_length  = config.psdu_length;
+		this.addr_mode  = config.addr_mode;
+		this.sf  = config.spreading_factor;
 		this.name	 = config.name;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});

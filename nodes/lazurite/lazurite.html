@@ -141,8 +141,8 @@
 		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
 		<input type="lazurite4k-channel" id="node-input-channel"></input>
 	<div class="form-row">
-		<label for="node-input-spreading-factor"><i class="fa fa-list-ul"></i> SF</label>
-		<select id="node-config-input-spreading-factor">
+		<label for="node-input-spreading_factor"><i class="fa fa-list-ul"></i> SF</label>
+		<select id="node-input-spreading_factor">
 			<option value=64>64 bytes</option>
 			<option value=32>32 bytes</option>
 			<option value=16>16 bytes</option>
@@ -152,6 +152,7 @@
 	<div class="form-row">
 		<label for="node-input-psdu-length"><i class="fa fa-tag"></i> psdu-length</label>
 		<input type="text" id="node-input-psdu_length" style="width:80px; margin-left:20px;"></input>
+		<input type="checkbox" id="node-input-addr_mode" style="width:20px;"> 64bit address mode</input>
 		<label style="width:40px;">byte</label>
 	</div>
 	<div class="form-row">
@@ -182,7 +183,9 @@
 		},
 		defaults: {
 			channel: {value:"", required:true, type:"lazurite4k-channel"},
+            spreading_factor: {value:64,required:true},
 			psdu_length: {value:"32", required:true},
+			addr_mode: {value:false},
 			interval: {value:"10", required:true},
 			enbinterval: {value:true},
 			latestpacket: {value:false},
@@ -346,8 +349,8 @@
 		<input type="text" id="node-input-dst_addr" placeholder="16bit short address of receiver.">
 	</div>
 	<div class="form-row">
-		<label for="node-input-spreading-factor"><i class="fa fa-list-ul"></i> SF</label>
-		<select id="node-config-input-spreading-factor">
+		<label for="node-input-spreading_factor"><i class="fa fa-list-ul"></i> SF</label>
+		<select id="node-input-spreading_factor">
 			<option value=64>64 bytes</option>
 			<option value=32>32 bytes</option>
 			<option value=16>16 bytes</option>
@@ -357,6 +360,7 @@
 	<div class="form-row">
 		<label for="node-input-psdu-length"><i class="fa fa-tag"></i> psdu-length</label>
 		<input type="text" id="node-input-psdu_length" style="width:80px; margin-left:20px;"></input>
+		<input type="checkbox" id="node-input-addr_mode" style="width:20px;"> 64bit address mode</input>
 		<label style="width:40px;">byte</label>
 	</div>
 </script>
@@ -379,7 +383,9 @@
 			channel:   {value:"", required:true, type:"lazurite4k-channel"},
 			dst_addr: {value:"0xffff", required:true},
 			dst_panid: {value:"0xffff", required:true},
+            spreading_factor: {value:64,required:true},
 			psdu_length: {value:"32", required:true},
+			addr_mode: {value:false},
 			name: {value:""}
 		},
 		oneditprepare: function() {
