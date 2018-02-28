@@ -167,8 +167,6 @@ module.exports = function(RED) {
 	RED.nodes.registerType("lazurite-rx",LazuriteRxNode);
 
 
-
-    // test lazurite4k-rx-node
     function Lazurite4kRxNode(config) {
         RED.nodes.createNode(this,config);
 		this.channel = RED.nodes.getNode(config.channel);
@@ -318,9 +316,62 @@ module.exports = function(RED) {
 	RED.nodes.registerType("lazurite-tx64",LazuriteTx64Node);
 
 
+	function Lazurite4kTx64Node(config) {
+		RED.nodes.createNode(this,config);
+		if(latest_rfparam_id==""){
+			this.channel  = RED.nodes.getNode(config.channel);
+		} else {
+			this.channel  = RED.nodes.getNode(latest_rfparam_id);
+		}
+		this.ch	   = this.channel  ? this.channel.config.ch				: 36;
+		this.panid	= this.channel  ? this.channel.config.panid			 : 0xabcd;
+		this.rate	 = this.channel  ? this.channel.config.rate			  : 100;
+		this.pwr	  = this.channel  ? this.channel.config.pwr			   : 20;
+		this.name	 = config.name;
+		this.psdu_length  = config.psdu_length;
+		this.sf  = config.spreading_factor;
+		this.addr_mode  = 1; // 64bits address mode
+		this.dst_addr = [
+			parseInt("0x"+config.dst_addr0.substr(0,2)),
+			parseInt("0x"+config.dst_addr0.substr(2,2)),
+			parseInt("0x"+config.dst_addr1.substr(0,2)),
+			parseInt("0x"+config.dst_addr1.substr(2,2)),
+			parseInt("0x"+config.dst_addr2.substr(0,2)),
+			parseInt("0x"+config.dst_addr2.substr(2,2)),
+			parseInt("0x"+config.dst_addr3.substr(0,2)),
+			parseInt("0x"+config.dst_addr3.substr(2,2))];
+		var node = this;
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		connect(node);
+
+		node.on('input', function(msg) {
+			var dst_panid;
+			var dst_addr;
+			if(typeof msg.dst_addr != "undefined") {
+				// convert from little endian to big endian
+				dst_addr = new Array(8);
+				dst_addr[0] = msg.dst_addr[3] >> 8;
+				dst_addr[1] = msg.dst_addr[3] & 0x00ff;
+				dst_addr[2] = msg.dst_addr[2] >> 8;
+				dst_addr[3] = msg.dst_addr[2] & 0x00ff;
+				dst_addr[4] = msg.dst_addr[1] >> 8;
+				dst_addr[5] = msg.dst_addr[1] & 0x00ff;
+				dst_addr[6] = msg.dst_addr[0] >> 8;
+				dst_addr[7] = msg.dst_addr[0] & 0x00ff;
+			} else {
+				dst_addr = node.dst_addr;
+			}
+			if(!lib.send64be(dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+			node.send(msg);
+		});
+		node.on('close', function(done) {
+			disconnect(node);
+			done();
+		});
+	}
+	RED.nodes.registerType("lazurite4k-tx64",Lazurite4kTx64Node);
 
 
-    // test lazurite4k-tx-node
     function Lazurite4kTxNode(config) {
 		RED.nodes.createNode(this,config);
 		if(latest_rfparam_id==""){
@@ -335,8 +386,8 @@ module.exports = function(RED) {
 		this.dst_addr   = parseInt(config.dst_addr);
 		this.dst_panid  = parseInt(config.dst_panid);
 		this.psdu_length  = config.psdu_length;
-		this.addr_mode  = config.addr_mode;
 		this.sf  = config.spreading_factor;
+		this.addr_mode  = 0; // 16bits address mode
 		this.name	 = config.name;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
@@ -363,8 +414,6 @@ module.exports = function(RED) {
 		});
     }
     RED.nodes.registerType("Lazurite4k-Tx",Lazurite4kTxNode);
-
-
 
 
 	function LazuriteChannelNode(config) {

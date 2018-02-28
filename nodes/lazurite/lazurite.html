@@ -129,9 +129,6 @@
 
 
 
-
-
-<!-- test lazurite4k-rx-node -->
 <script type="text/x-red" data-template-name="Lazurite4k-Rx">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -328,9 +325,6 @@
 
 
 
-
-
-<!-- test lazurite4k-tx-node -->
 <script type="text/x-red" data-template-name="Lazurite4k-Tx">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -360,7 +354,6 @@
 	<div class="form-row">
 		<label for="node-input-psdu-length"><i class="fa fa-tag"></i> psdu-length</label>
 		<input type="text" id="node-input-psdu_length" style="width:80px; margin-left:20px;"></input>
-		<input type="checkbox" id="node-input-addr_mode" style="width:20px;"> 64bit address mode</input>
 		<label style="width:40px;">byte</label>
 	</div>
 </script>
@@ -385,7 +378,6 @@
 			dst_panid: {value:"0xffff", required:true},
             spreading_factor: {value:64,required:true},
 			psdu_length: {value:"32", required:true},
-			addr_mode: {value:false},
 			name: {value:""}
 		},
 		oneditprepare: function() {
@@ -487,6 +479,92 @@
 </script>
 <script type="text/x-red" data-help-name="lazurite-tx64">
 	<p>Send data of Lazurite-Gateway.</p>
+	<p>Outputs a message with the properties:
+	  <li>msg.payload</li>
+	</p>
+	<p><b>msg.payload</b> is payload to be sent.</p>
+	<p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
+	<p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
+</script>
+
+
+<script type="text/x-red" data-template-name="lazurite4k-tx64">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
+		<input type="lazurite4k-channel" id="node-input-channel"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-dst_addr0"><i class="fa fa-dot-circle-o"></i> dst addr</label>
+		<input type="text" id="node-input-dst_addr0" placeholder="001D" style="width:50px">
+		<input type="text" id="node-input-dst_addr1" placeholder="1290" style="width:50px">
+		<input type="text" id="node-input-dst_addr2" placeholder="0004" style="width:50px">
+		<input type="text" id="node-input-dst_addr3" placeholder="0000" style="width:50px">
+	</div>
+	<div class="form-row">
+		<label for="node-input-spreading_factor"><i class="fa fa-list-ul"></i> SF</label>
+		<select id="node-input-spreading_factor">
+			<option value=64>64 bytes</option>
+			<option value=32>32 bytes</option>
+			<option value=16>16 bytes</option>
+			<option value=8>8 bytes</option>
+		</select>
+	</div>
+	<div class="form-row">
+		<label for="node-input-psdu-length"><i class="fa fa-tag"></i> psdu-length</label>
+		<input type="text" id="node-input-psdu_length" style="width:80px; margin-left:20px;"></input>
+		<label style="width:40px;">byte</label>
+	</div>
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite4k-tx64',{
+		category: 'Lazurite',
+		paletteLabel: 'Lazurite4k TX64',
+		color:"#3FADB5",
+		align: 'right',
+		inputs:1,
+		outputs:1,
+		icon: "lazurite.png",
+		label: function() {
+			return this.name || "lazurite4k TX64";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+		defaults: {
+			channel:   {value:"", required:true, type:"lazurite4k-channel"},
+			dst_addr0: {value:"001D", required:true},
+			dst_addr1: {value:"1290", required:true},
+			dst_addr2: {value:"0004", required:true},
+			dst_addr3: {value:"0000", required:true},
+            spreading_factor: {value:64,required:true},
+			psdu_length: {value:"32", required:true},
+			name: {value:""}
+		},
+		oneditprepare: function() {
+			if(lazurite_rf_param != false) {
+				$("#node-input-channel").val(lazurite_rf_param);
+			}
+		},
+		oneditsave: function() {
+			console.log($("#node-input-channel").val());
+			lazurite_rf_param = $("#node-input-channel").val();
+			$.ajax({
+				url: "lazurite-tx/"+this.id+"/"+lazurite_rf_param,
+				type: "POST",
+				success: function(resp, textStatus, xhr) {
+				},
+				error: function(jqXHR,textStatus,errorThrown) {
+				}
+			});
+		}
+	});
+</script>
+<script type="text/x-red" data-help-name="lazurite4k-tx64">
+	<p>Send data of Lazurite-Gateway for IEEE802.15.4k.</p>
 	<p>Outputs a message with the properties:
 	  <li>msg.payload</li>
 	</p>

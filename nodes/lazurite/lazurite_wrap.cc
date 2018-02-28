@@ -101,7 +101,6 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 		if (!handle) {
 			fprintf (stderr, "%s\n", dlerror());
 		} else {
-//			fprintf (stderr, "-----------debug OPEN.\n");
 			initfunc     = (int (*)(void))find(handle, "lazurite_init");
 			beginfunc    = (int (*)(uint8_t, uint16_t, uint8_t,uint8_t))find(handle, "lazurite_begin");
 			enablefunc   = (int (*)(void))find(handle, "lazurite_rxEnable");
