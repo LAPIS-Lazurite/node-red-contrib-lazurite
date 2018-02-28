@@ -128,8 +128,7 @@
 </script>
 
 
-
-<script type="text/x-red" data-template-name="Lazurite4k-Rx">
+<script type="text/x-red" data-template-name="lazurite4k-Rx">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
 		<input type="text" id="node-input-name">
@@ -137,6 +136,7 @@
 	<div class="form-row">
 		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
 		<input type="lazurite4k-channel" id="node-input-channel"></input>
+	</div>
 	<div class="form-row">
 		<label for="node-input-spreading_factor"><i class="fa fa-list-ul"></i> SF</label>
 		<select id="node-input-spreading_factor">
@@ -164,7 +164,7 @@
 	</div>
 </script>
 <script type="text/javascript">
-    RED.nodes.registerType('Lazurite4k-Rx',{
+    RED.nodes.registerType('lazurite4k-Rx',{
         category: 'Lazurite',
 		paletteLabel: 'Lazurite4k Rx',
 		color:"#3FADB5",
@@ -207,7 +207,7 @@
 		}
 	});
 </script>
-<script type="text/x-red" data-help-name="Lazurite4k-Rx">
+<script type="text/x-red" data-help-name="lazurite4k-Rx">
 	<p>Recieve data of Lazurite-Gateway for IEEE802.15.4k.</p>
 	<p><li><b>Interval</b></li></P>
 	<p>check receiving data by this interval, when enabling</p>
@@ -245,9 +245,6 @@
 	<p><li>msg.length</li></p>
 	<p><b>msg.length</b> is length of payload. And the length must be the same as the transceiver.</p>
 </script>
-
-
-
 
 
 <script type="text/x-red" data-template-name="lazurite-tx">
@@ -325,7 +322,7 @@
 
 
 
-<script type="text/x-red" data-template-name="Lazurite4k-Tx">
+<script type="text/x-red" data-template-name="lazurite4k-Tx">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
 		<input type="text" id="node-input-name">
@@ -358,7 +355,7 @@
 	</div>
 </script>
 <script type="text/javascript">
-    RED.nodes.registerType('Lazurite4k-Tx',{
+    RED.nodes.registerType('lazurite4k-Tx',{
 		category: 'Lazurite',
 		paletteLabel: 'Lazurite4k Tx',
 		color:"#3FADB5",
@@ -367,7 +364,7 @@
 		outputs:1,
 		icon: "lazurite.png",
 		label: function() {
-            return this.name || "Lazurite4k-Tx";
+            return this.name || "lazurite4k Tx";
 		},
 		labelStyle: function() {
 			return this.text?"node_label_italic":"";
@@ -399,7 +396,7 @@
 		}
     });
 </script>
-<script type="text/x-red" data-help-name="Lazurite4k-Tx">
+<script type="text/x-red" data-help-name="lazurite4k-Tx">
 	<p>Send data of Lazurite-Gateway for IEEE802.15.4k.</p>
 	<p>Outputs a message with the properties:
 	  <li>msg.payload</li>
@@ -408,8 +405,6 @@
 	<p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
 	<p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
 </script>
-
-
 
 
 
@@ -632,6 +627,7 @@
 	});
 </script>
 
+
 <script type="text/x-red" data-template-name="lazurite4k-channel">
 	<div class="form-row">
 		<label for="node-config-input-ch"><i class="fa fa-dot-circle-o"></i> ch</label>
@@ -665,7 +661,7 @@
 		<label for="node-config-input-key"><i class="fa fa-key"></i> AES key</label>
 		<input type="text" id="node-config-input-key" placeholder="128bit AES key"></input>
 	</div>
-    <div class="form-tips">in case of 200kcps, ch is 24-28, 33-57.<br>in case of 100kcps, ch is 24-31, 33-60.<br>in case of 50kcps and 100bps, ch is 24-61.</div>
+    <div class="form-tips">in case of 200kcps, ch is 24-28, 33-57.<br>in case of 100kcps, ch is 24-31, 33-60.<br>in case of 50kcps, ch is 24-61.</div>
 </script>
 <script type="text/javascript">
 	RED.nodes.registerType('lazurite4k-channel',{

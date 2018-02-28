@@ -260,6 +260,51 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("lazurite-tx",LazuriteTxNode);
 
+
+    function Lazurite4kTxNode(config) {
+		RED.nodes.createNode(this,config);
+		if(latest_rfparam_id==""){
+			this.channel  = RED.nodes.getNode(config.channel);
+		} else {
+			this.channel  = RED.nodes.getNode(latest_rfparam_id);
+		}
+		this.ch	   = this.channel  ? this.channel.config.ch				: 36;
+		this.panid	= this.channel  ? this.channel.config.panid			 : 0xabcd;
+		this.rate	 = this.channel  ? this.channel.config.rate			  : 100;
+		this.pwr	  = this.channel  ? this.channel.config.pwr			   : 20;
+		this.dst_addr   = parseInt(config.dst_addr);
+		this.dst_panid  = parseInt(config.dst_panid);
+		this.psdu_length  = config.psdu_length;
+		this.sf  = config.spreading_factor;
+		this.addr_mode  = 0; // 16bits address mode
+		this.name	 = config.name;
+		var node = this;
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		connect(node);
+		node.on('input', function(msg) {
+			var dst_panid;
+			var dst_addr;
+			if(typeof msg.dst_panid != "undefined") {
+					dst_panid = msg.dst_panid;
+			} else {
+				dst_panid = node.dst_panid;
+			}
+			if(typeof msg.dst_addr != "undefined") {
+				dst_addr = msg.dst_addr[0];
+			} else {
+				dst_addr = node.dst_addr;
+			}
+			if(!lib.send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+			node.send(msg);
+		});
+		node.on('close', function(done) {
+			disconnect(node);
+			done();
+		});
+    }
+    RED.nodes.registerType("lazurite4k-Tx",Lazurite4kTxNode);
+
+
 	function LazuriteTx64Node(config) {
 		RED.nodes.createNode(this,config);
 		if(latest_rfparam_id==""){
@@ -370,51 +415,6 @@ module.exports = function(RED) {
 		});
 	}
 	RED.nodes.registerType("lazurite4k-tx64",Lazurite4kTx64Node);
-
-
-    function Lazurite4kTxNode(config) {
-		RED.nodes.createNode(this,config);
-		if(latest_rfparam_id==""){
-			this.channel  = RED.nodes.getNode(config.channel);
-		} else {
-			this.channel  = RED.nodes.getNode(latest_rfparam_id);
-		}
-		this.ch	   = this.channel  ? this.channel.config.ch				: 36;
-		this.panid	= this.channel  ? this.channel.config.panid			 : 0xabcd;
-		this.rate	 = this.channel  ? this.channel.config.rate			  : 100;
-		this.pwr	  = this.channel  ? this.channel.config.pwr			   : 20;
-		this.dst_addr   = parseInt(config.dst_addr);
-		this.dst_panid  = parseInt(config.dst_panid);
-		this.psdu_length  = config.psdu_length;
-		this.sf  = config.spreading_factor;
-		this.addr_mode  = 0; // 16bits address mode
-		this.name	 = config.name;
-		var node = this;
-		node.status({fill:"red",shape:"ring",text:"disconnected"});
-		connect(node);
-		node.on('input', function(msg) {
-			var dst_panid;
-			var dst_addr;
-			if(typeof msg.dst_panid != "undefined") {
-					dst_panid = msg.dst_panid;
-			} else {
-				dst_panid = node.dst_panid;
-			}
-			if(typeof msg.dst_addr != "undefined") {
-				dst_addr = msg.dst_addr[0];
-			} else {
-				dst_addr = node.dst_addr;
-			}
-			if(!lib.send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-			node.send(msg);
-		});
-		node.on('close', function(done) {
-			disconnect(node);
-			done();
-		});
-    }
-    RED.nodes.registerType("Lazurite4k-Tx",Lazurite4kTxNode);
-
 
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
