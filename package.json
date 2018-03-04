@@ -11,7 +11,8 @@
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
       "node-config": "nodes/node-config/node-config.js",
-      "node-factory": "nodes/node-factory/node-factory.js",
+      "node-factory2": "nodes/node-factory2/node-factory2.js",
+      "aws-iot": "nodes/aws-iot/aws-iot.js",
       "calcurator": "nodes/calculator/calculator.js"
     }
   },
@@ -26,7 +27,13 @@
   },
   "keywords": [
     "node-red",
+    "aws-iot",
     "Lazurite"
   ],
+  "dependencies": {
+    "aws-iot-device-sdk": "",
+    "util": "",
+    "is-utf8": ""
+  },
   "license": "Apache-2.0"
 }

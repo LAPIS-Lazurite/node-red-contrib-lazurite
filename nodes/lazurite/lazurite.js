@@ -58,8 +58,18 @@ module.exports = function(RED) {
 				param.loa.push(lo[i]);
 				param.lot += (lo[i] < 16 ? "0":"") + lo[i].toString(16);
 			}
-
-			if(!lib.begin(node.ch, node.panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
+			var panid;
+			if(node.panid === 0xffff) {
+				panid = parseInt(Math.random() * 0xfffd);
+			} else {
+				panid = node.panid;
+			}
+			global.gateway = {
+				panid: panid,
+				macaddr: parseInt('0x'+param.lot),
+				shortaddr: node.channel.config.myaddr
+			}
+			if(!lib.begin(node.ch, panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		}
 		node.status({fill:"green",shape:"dot",text:"connected"},true);
 		isConnect = true;
@@ -90,12 +100,12 @@ module.exports = function(RED) {
 
 	ReadStream.prototype.resume = function() {
 		this.timer = setInterval(function() {
-				if(!this.enable) {
+			if(!this.enable) {
 				if(!lib.rxEnable()) { Warn("lazurite_rxEnable fail"); clearInterval(this.timer); return; }
 				this.enable = true;
-				}
-				this.emit('data', lib.read());
-				}.bind(this), this.interval);
+			}
+			this.emit('data', lib.read());
+		}.bind(this), this.interval);
 	};
 
 	ReadStream.prototype.pause = function() {
@@ -127,12 +137,12 @@ module.exports = function(RED) {
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
 			readStream.on('data', function(data) {
-					if(data['length'] > 0) {
+				if(data['length'] > 0) {
 					var msg = data;
 					node.send(msg);
 					//node.send(data);
-					};
-					});
+				};
+			});
 			readStream.resume(node);
 		} else {
 			if(!lib.rxEnable()) { Warn("lazurite_rxEnable fail"); }
@@ -177,7 +187,7 @@ module.exports = function(RED) {
 			var dst_panid;
 			var dst_addr;
 			if(typeof msg.dst_panid != "undefined") {
-					dst_panid = msg.dst_panid;
+				dst_panid = msg.dst_panid;
 			} else {
 				dst_panid = node.dst_panid;
 			}
