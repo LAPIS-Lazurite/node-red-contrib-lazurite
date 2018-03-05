@@ -49,7 +49,7 @@ module.exports = function(RED) {
 					} else {
 						node.send(res);
 						console.log(res);
-						machineParams = res.Items;
+						genAddressMap(res.Items);
 						resolve();
 					}
 				});
@@ -104,25 +104,23 @@ module.exports = function(RED) {
 		}
 
 		node.on('input', function (msg) {
-			if(isGatewayActive) {
-				try {
-					var data = JSON.parse(msg.payload);
-					switch(data.type) {
-						case 'machine':
-							genAddressMap(data.Items);
-							node.send([{payload:data.Items}]);
-							break;
-						case 'optime':
-							optimeParams = data.Items;
-							node.send([,{payload:data.Items}]);
-							break;
-						default:
-							node.send([,,{payload:{message: 'invalid type', data: data}}]);
-							break;
-					}
-				} catch (e) {
-					node.send([,,{payload:{message: 'invalid data', data: data}}]);
+			try {
+				var data = JSON.parse(msg.payload);
+				switch(data.type) {
+					case 'machine':
+						genAddressMap(data.Items);
+						node.send([{payload:data.Items}]);
+						break;
+					case 'optime':
+						optimeParams = data.Items;
+						node.send([,{payload:data.Items}]);
+						break;
+					default:
+						node.send([,,{payload:{message: 'invalid type', data: data}}]);
+						break;
 				}
+			} catch (e) {
+				node.send([,,{payload:{message: 'invalid data', data: data}}]);
 			}
 		});
 		function genAddressMap(data) {
@@ -164,6 +162,7 @@ module.exports = function(RED) {
 			}
 		});
 		function checkRxData(rxdata) {
+			console.log(rxdata.payload);
 			if((rxdata.dst_panid == 0xffff) &&
 				(rxdata.dst_addr[0] == 0xffff) &&
 				(rxdata.dst_addr[1] == 0xffff) &&
@@ -171,11 +170,12 @@ module.exports = function(RED) {
 				(rxdata.dst_addr[3] == 0xffff)) {
 				// broadcast
 				var id = addr2id[rxdata.src_addr[0]];
+				console.log({id:id});
 				if (id) {
 					var txdata = {
 						dst_panid: 0xffff,
 						dst_addr: rxdata.src_addr,
-						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
+						payload: `debug,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
 					};
 					node.send(txdata);
 				}
