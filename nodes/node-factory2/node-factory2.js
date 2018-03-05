@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-var machineParams = {};
-var addr2id = {};
-var optimeParams = [];
 module.exports = function(RED) {
 	//const server = api.lazurite.io
 	const https = require('https');
 	//const https = require('http');
 	var fs = require('fs');
+	var machineParams = {};
+	var addr2id = {};
+	var optimeParams = [];
+	var isGatewayActive = false;
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
@@ -39,76 +40,89 @@ module.exports = function(RED) {
 				"LAZURITE-API-TOKEN": node.awsiotConfig.access.token
 			}
 		};
-
-		Promise.resolve().then(() => {
-		}).then(() => {
+		Promise.resolve().then(() =>{
 			return new Promise((resolve,reject) => {
-				var body = "";
-				httpOptions.path = '/v0/info/machine';
-				https.get(httpOptions,(res) => {
-					res.setEncoding('utf8');
-					res.on('data',(chunk) => {
-						body += chunk;
-					})
-					res.on('end',(res) => {
-						try {
-							var data = JSON.parse(body);
-							node.send({payload:data.Items});
-							genAddressMap(data.Items);
-							resolve();
-						} catch (e) {
-							reject(e);
-						}
-					})
-				}).on('error',(e) => {
-					reject(e);
+				var index = 0;
+				getParameter('/v0/info/machine',(err,res) => {
+					if(err){
+						reject(err);
+					} else {
+						node.send(res);
+						console.log(res);
+						machineParams = res.Items;
+						resolve();
+					}
 				});
 			});
 		}).then(() => {
 			return new Promise((resolve,reject) => {
-				var body = "";
-				httpOptions.path = '/v0/info/optime';
-				https.get(httpOptions,(res) => {
-					res.setEncoding('utf8');
-					res.on('data',(chunk) => {
-						body += chunk;
-					})
-					res.on('end',(res) => {
-						try {
-							var data = JSON.parse(body);
-							node.send([,{payload:data.Items}]);
-							optimeParams = data.Items;
-							resolve();
-						} catch (e) {
-							reject(e);
-						}
-					})
-				}).on('error',(e) => {
-					reject(e);
+				getParameter('/v0/info/optime',(err,res) => {
+					if(err){
+						reject(err);
+					} else {
+						node.send([,res]);
+						console.log(res);
+						optimeParams = res.Items;
+						isGatewayActive = true;
+						resolve();
+					}
 				});
 			});
-		}).catch((e) => {
-			node.send([,,{payload: e}]);
+		}).then((values) => {
+		}).catch((err) => {
+			console.log(err);
+			node.send([,,err]);
 		});
+		function getParameter(path,callback) {
+			var retry = 0;
+			Promise.resolve().then(function loop() {
+				return new Promise((resolve,reject)=>{
+					var body = "";
+					httpOptions.path = path;
+					https.get(httpOptions,(res) => {
+						res.setEncoding('utf8');
+						res.on('data',(chunk) => {
+							body += chunk;
+						});
+						res.on('end',() => {
+							resolve(body);
+						});
+					}).on('error',(e) => {
+						reject(e)
+					});
+				}).then((values) => {
+					callback(null,JSON.parse(values));
+				}).catch((err) => {
+					retry += 1;
+					if(retry < 10) {
+						setTimeout(loop,5000);
+					} else {
+						callback(err,null);
+					}
+				})
+			});
+		}
 
 		node.on('input', function (msg) {
-			try {
-				var data = JSON.parse(msg.payload);
-				switch(data.type) {
-					case 'machine':
-						genAddressMap(data.Items);
-						node.send([{payload:data.Items}]);
-						break;
-					case 'optime':
-						optimeParams = data.Items;
-						node.send([,{payload:data.Items}]);
-						break;
-					default:
-						node.send([,,{payload:{message: 'invalid type', data: data}}]);
-						break;
+			if(isGatewayActive) {
+				try {
+					var data = JSON.parse(msg.payload);
+					switch(data.type) {
+						case 'machine':
+							genAddressMap(data.Items);
+							node.send([{payload:data.Items}]);
+							break;
+						case 'optime':
+							optimeParams = data.Items;
+							node.send([,{payload:data.Items}]);
+							break;
+						default:
+							node.send([,,{payload:{message: 'invalid type', data: data}}]);
+							break;
+					}
+				} catch (e) {
+					node.send([,,{payload:{message: 'invalid data', data: data}}]);
 				}
-			} catch (e) {
-				node.send([,,{payload:{message: 'invalid data', data: data}}]);
 			}
 		});
 		function genAddressMap(data) {
