@@ -415,6 +415,23 @@ namespace lazurite
 		@exception      none
 		******************************************************************************/
 		int lazurite_setKey(char *key);
+
+		/******************************************************************************/
+		/*! @brief set enhance ACK 
+	 	  @param[in]     set pointer of enhance ACK data
+		  @param[in]     set size of enhance ACK data
+		  @exception     none
+		 ******************************************************************************/
+		int lazurite_setEnhanceAck(uint8_t *data, uint16_t size);
+
+		/******************************************************************************/
+		/*! @brief get enhance ACK 
+		  @param[out]    set pointer's pointer of enhance ACK data
+	  	  @param[out]    set pointer of enhance ACK size
+	  	  @exception     none
+	 	******************************************************************************/
+		int lazurite_getEnhanceAck(uint8_t **data, uint16_t *size);
+
 #ifdef __cplusplus
 	};
 };

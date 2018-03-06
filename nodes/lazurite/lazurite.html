@@ -276,6 +276,43 @@
 </script>
 
 
+
+<script type="text/x-red" data-template-name="SetEnhanceACK">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name">
+	</div>
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('SetEnhanceACK',{
+		category: 'Lazurite',
+		paletteLabel: 'Set EnhanceACK',
+		color:"#3FADB5",
+		align: 'left',
+		inputs:1,
+		outputs:1,
+		icon: "lazurite.png",
+		label: function() {
+			return this.name || "SetEnhanceACK";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+	});
+</script>
+<script type="text/x-red" data-help-name="SetEnhanceACK">
+	<p>Parameters for Enhance ACK of Lazurite-Gateway.</p>
+	<p>Outputs a message with the properties:
+	  <li>msg.payload</li>
+	</p>
+	<p><b>msg.payload</b> is payload to be sent.</p>
+	<p><b>msg.dst_panid</b> is panid of receiver. If it is not set, dst_panid in GUI is in use.</p>
+	<p><b>msg.dst_addr</b> is 4 integers array of receiver address. currentry msg.dst_addr[0] is valid. If it is not set, dst_addr in GUI is in use.</p>
+</script>
+
+
+
+
 <script type="text/x-red" data-template-name="lazurite-channel">
 	<div class="form-row">
 		<label for="node-config-input-ch"><i class="fa fa-dot-circle-o"></i> ch</label>

@@ -197,6 +197,7 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
+            getEnhanceAck(node);
 			if(!lib.send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
 			node.send(msg);
 		});
@@ -252,6 +253,7 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
+            getEnhanceAck(node);
 			if(!lib.send64be(dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
 			node.send(msg);
 		});
@@ -261,6 +263,33 @@ module.exports = function(RED) {
 		});
 	}
 	RED.nodes.registerType("lazurite-tx64",LazuriteTx64Node);
+
+
+	function SetEnhanceACKNode(config) {
+		RED.nodes.createNode(this,config);
+		if(latest_rfparam_id==""){
+			this.channel  = RED.nodes.getNode(config.channel);
+		} else {
+			this.channel  = RED.nodes.getNode(latest_rfparam_id);
+		}
+		this.addr    = config.addr;
+		this.data	 = config.data;
+		var node = this;
+		node.status({fill:"red",shape:"ring",text:"disconnected"});
+		connect(node);
+
+		node.on('input', function(msg) {
+			var data;
+			var size
+			if(!lib.seteack(data, size, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+			node.send(msg);
+		});
+		node.on('close', function(done) {
+			disconnect(node);
+			done();
+		});
+	}
+	RED.nodes.registerType("SetEnhanceACK",SetEnhanceACKNode);
 
 
 	function LazuriteChannelNode(config) {
