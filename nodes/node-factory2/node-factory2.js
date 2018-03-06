@@ -162,15 +162,29 @@ module.exports = function(RED) {
 			}
 		});
 		function checkRxData(rxdata) {
-			console.log(rxdata.payload);
-			if((rxdata.dst_panid == 0xffff) &&
+			if(rxdata.dst_panid == global.gateway.panid) {
+				rxdata.payload = rxdata.payload.split(",");
+				// updated database
+				if(rxdata.payload[0] === "update") {
+					var id = rxdata.src_addr[0];
+					node.send({
+						dst_panid: global.gateway.panid,
+						dst_addr: rxdata.src_addr,
+						payload: `debug,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
+					});
+				} else {
+				// state information
+					node.send([,rxdata]);
+				}
+				node.send([,rxdata]);
+			} else if((rxdata.dst_panid == 0xffff) &&
+				// state information
 				(rxdata.dst_addr[0] == 0xffff) &&
 				(rxdata.dst_addr[1] == 0xffff) &&
 				(rxdata.dst_addr[2] == 0xffff) &&
 				(rxdata.dst_addr[3] == 0xffff)) {
 				// broadcast
 				var id = addr2id[rxdata.src_addr[0]];
-				console.log({id:id});
 				if (id) {
 					var txdata = {
 						dst_panid: 0xffff,
