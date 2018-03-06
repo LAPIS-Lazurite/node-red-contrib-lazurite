@@ -55,6 +55,8 @@ int (*sendfunc)(uint16_t, uint16_t, const void*, uint16_t);
 int (*sendfunc64le)(uint8_t*, const void*, uint16_t);
 int (*sendfunc64be)(uint8_t*, const void*, uint16_t);
 int (*setackreq)(bool);
+int (*seteack)(uint8_t*, uint16_t);
+int (*geteack)(uint8_t**, uint16_t);
 int (*setbroadcast)(bool);
 int (*setmyaddress)(uint16_t);
 int (*getmyaddr64)(uint8_t*);
@@ -110,6 +112,8 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 			sendfunc64le = (int (*)(uint8_t*, const void*, uint16_t))find(handle, "lazurite_send64le");
 			sendfunc64be = (int (*)(uint8_t*, const void*, uint16_t))find(handle, "lazurite_send64be");
 			setackreq    = (int (*)(bool))find(handle, "lazurite_setAckReq");
+			seteack    = (int (*)(uint8_t*, uint16_t))find(handle, "lazurite_setEnhanceAck");
+			geteack    = (int (*)(uint8_t**, uint16_t))find(handle, "lazurite_getEnhanceAck");
 			setbroadcast = (int (*)(bool))find(handle, "lazurite_setBroadcastEnb");
 			setmyaddress = (int (*)(uint16_t))find(handle, "lazurite_setMyAddress");
 			getmyaddr64    = (int (*)(uint8_t*))find(handle, "lazurite_getMyAddr64");
@@ -801,6 +805,107 @@ static void setAckReq(const FunctionCallbackInfo<Value>& args) {
 #endif
 }
 
+
+#ifdef V8_VER_0
+static Handle<Value> setEnhanceAck(const Arguments& args) {
+	HandleScope scope;
+#endif
+#ifdef V8_VER_5
+static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
+	Isolate* isolate = args.GetIsolate();
+#endif
+
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+	if(!seteack) {
+		fprintf (stderr, "lazurite_setEnhanceAck fail.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+    uint8_t* data=0;
+    uint16_t size=0;
+	if(seteack(data,size) != 0){
+		fprintf (stderr, "lazurite_setEnhanceAck exe error.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+#ifdef V8_VER_0
+	return scope.Close(Boolean::New(true));
+#endif
+#ifdef V8_VER_5
+	args.GetReturnValue().Set(Boolean::New(isolate,true));
+	return;
+#endif
+}
+
+#ifdef V8_VER_0
+static Handle<Value> getEnhanceAck(const Arguments& args) {
+	HandleScope scope;
+#endif
+#ifdef V8_VER_5
+static void getEnhanceAck(const FunctionCallbackInfo<Value>& args) {
+	Isolate* isolate = args.GetIsolate();
+#endif
+
+	if(args.Length() < 1) {
+		fprintf (stderr, "Wrong number of arguments\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+	if(!geteack) {
+		fprintf (stderr, "lazurite_getEnhanceAck fail.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+    uint8_t **data=0;
+    uint16_t size=0;
+	if(geteack(data,size) != 0){
+		fprintf (stderr, "lazurite_getEnhanceAck exe error.\n");
+#ifdef V8_VER_0
+		return scope.Close(Boolean::New(false));
+#endif
+#ifdef V8_VER_5
+		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		return;
+#endif
+	}
+#ifdef V8_VER_0
+	return scope.Close(Boolean::New(true));
+#endif
+#ifdef V8_VER_5
+	args.GetReturnValue().Set(Boolean::New(isolate,true));
+	return;
+#endif
+}
+
 #ifdef V8_VER_0
 static Handle<Value> setBroadcastEnb(const Arguments& args) {
 	HandleScope scope;
@@ -1147,6 +1252,8 @@ static void Init(Local<Object> target) {
 	NODE_SET_METHOD(target, "send64le", send64le);
 	NODE_SET_METHOD(target, "send64be", send64be);
 	NODE_SET_METHOD(target, "setAckReq", setAckReq);
+	NODE_SET_METHOD(target, "setEnhanceAck", setEnhanceAck);
+	NODE_SET_METHOD(target, "getEnhanceAck", getEnhanceAck);
 	NODE_SET_METHOD(target, "setBroadcastEnb", setBroadcastEnb);
 	NODE_SET_METHOD(target, "setMyAddress", setMyAddress);
 	NODE_SET_METHOD(target, "getMyAddr64", getMyAddr64);
