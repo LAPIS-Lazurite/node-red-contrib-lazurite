@@ -41,6 +41,9 @@ module.exports = function(RED) {
 	function setBroadcast(node) {
 			if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
 	}
+	function getEnhanceAck(node) {
+//			if(!lib.getEnhanceAck(data,size)) { Warn("lazurite_setBroadcastEnb fail"); return; }
+	}
 	function connect(node) {
 		if(!isConnect) {
 			if(!lib.dlopen()) { Warn("dlopen fail"); return; }
@@ -267,11 +270,6 @@ module.exports = function(RED) {
 
 	function SetEnhanceACKNode(config) {
 		RED.nodes.createNode(this,config);
-		if(latest_rfparam_id==""){
-			this.channel  = RED.nodes.getNode(config.channel);
-		} else {
-			this.channel  = RED.nodes.getNode(latest_rfparam_id);
-		}
 		this.addr    = config.addr;
 		this.data	 = config.data;
 		var node = this;
@@ -282,7 +280,7 @@ module.exports = function(RED) {
 			var data;
 			var size
 			if(!lib.seteack(data, size, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-			node.send(msg);
+			node.seteack(msg);
 		});
 		node.on('close', function(done) {
 			disconnect(node);
