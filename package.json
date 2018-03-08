@@ -12,6 +12,7 @@
       "lazurite": "nodes/lazurite/lazurite.js",
       "node-config": "nodes/node-config/node-config.js",
       "node-factory2": "nodes/node-factory2/node-factory2.js",
+      "node-capacity": "nodes/node-capacity/node-capacity.js",
       "aws-iot": "nodes/aws-iot/aws-iot.js",
       "calcurator": "nodes/calculator/calculator.js"
     }
