@@ -163,27 +163,33 @@ module.exports = function(RED) {
 					rssi: rssi,
 				};
 				node.send({
+					payload: {
 					timestamp: rxtime.getTime(),
 					from: sensorInfo[id].from.getTime(),
 					type: "log",
 					state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+					}
 				});
 			} else {
 				if(sensorInfo[id].currentStatus !== state) {
 					sensorInfo[id].from = rxtime;
 					sensorInfo[id].currentStatus = state;
 					node.send({
+						payload: {
 						timestamp: rxtime.getTime(),
 						from: sensorInfo[id].from.getTime(),
 						type: "log",
 						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						}
 					});
 				} else if(sensorInfo[id].last.getDate() !== rxtime.getDate()) {
 					node.send({
+						payload: {
 						timestamp: rxtime.getTime(),
 						from: sensorInfo[id].from.getTime(),
 						type: "log",
 						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						}
 					});
 				}
 				sensorInfo[id].last = rxtime;

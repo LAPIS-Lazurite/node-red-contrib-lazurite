@@ -188,7 +188,7 @@ module.exports = function(RED) {
 			console.log({func: "remap",params: params});
 			if(params.setOff > 0) {
 				oper = EACK_DEBUG;
-				nextSleepTime = 3480;
+				nextSleepTime = parseInt(KEEP_ALIVE/1000);
 			} else if(params.setTime.flag > 0) {
 				var stTime = new Date(now.getTime());
 				var endTime = new Date(now.getTime())
@@ -199,7 +199,7 @@ module.exports = function(RED) {
 				endTime.setMinutes(params.setTime.end.min);
 				var diff = stTime - now;
 				if((diff > KEEP_ALIVE) || (now >  endTime )) {
-					nextSleepTime = KEEP_ALIVE;
+					nextSleepTime = parseInt(KEEP_ALIVE/1000);
 					oper = EACK_DEBUG;
 				} else if (diff > 0) {
 					console.log({diff:diff});
