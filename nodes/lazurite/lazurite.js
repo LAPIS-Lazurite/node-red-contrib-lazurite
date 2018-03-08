@@ -42,7 +42,10 @@ module.exports = function(RED) {
 			if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
 	}
 	function getEnhanceAck(node) {
-//			if(!lib.getEnhanceAck(data,size)) { Warn("lazurite_setBroadcastEnb fail"); return; }
+//			if(!lib.getEnhanceAck(data,size)) { Warn("lazurite_getEnhanceAck fail"); return; }
+	}
+	function setEnhanceAck(data,size) {
+			if(!lib.setEnhanceAck(data,size)) { Warn("lazurite_setEnhanceAck fail"); return; }
 	}
 	function connect(node) {
 		if(!isConnect) {
@@ -275,12 +278,40 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-
 		node.on('input', function(msg) {
-			var data;
-			var size
-			if(!lib.seteack(data, size, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-			node.seteack(msg);
+//          console.log('DEBUG lazurite.js: Payload:#%s Length:#%d',msg.payload,msg.payload.length);
+            var buffSize = msg.payload.length * (msg.payload[0].data.length+2) + 4;
+            var buffer = new ArrayBuffer(buffSize);
+            var uint8Array = new Uint8Array(buffer,0,buffSize);
+            var numOfRcv = msg.payload.length;
+            var sizeOfEack = msg.payload[0].data.length;
+            if(sizeOfEack > 16) {
+//              console.log("error1");
+                return;
+            }
+            var index = 4;
+            uint8Array[0] = numOfRcv&0x0ff;
+            uint8Array[1] = numOfRcv >> 8;
+            uint8Array[2] = sizeOfEack&0x0ff;
+            uint8Array[3] = sizeOfEack >> 8;
+			for(var i in msg.payload) {
+                if(sizeOfEack != msg.payload[i].data.length) {
+//                  console.log({msg: "error2", sizeOfEack: sizeOfEack, payload: msg.payload[i].data.length});
+                    return;
+                }
+                if(sizeOfEack == msg.payload[i].data.length) {
+                    uint8Array[index] = msg.payload[i].addr&0x0ff,index += 1;
+                    uint8Array[index] = msg.payload[i].addr>>8,index += 1;
+                    for(var j in msg.payload[i].data) {
+                        uint8Array[index] = msg.payload[i].data[j],index += 1;
+                    }
+                }
+//                console.log(uint8Array);
+            }
+
+//          console.log('DEBUG  #%s',uint8Array);
+			setEnhanceAck(uint8Array,buffSize);
+			node.send(uint8Array);
 		});
 		node.on('close', function(done) {
 			disconnect(node);

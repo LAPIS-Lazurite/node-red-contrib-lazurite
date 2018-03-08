@@ -835,9 +835,19 @@ static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 		return;
 #endif
 	}
-    uint8_t* data=0;
-    uint16_t size=0;
-	if(seteack(data,size) != 0){
+
+    Local<Array> payload = Local<Array>::Cast(args[0]);
+	uint8_t size  = args[1]->NumberValue();;
+
+    uint8_t i;
+    uint8_t data[size];
+
+//  fprintf (stderr, "DEBUG lazurite_wrap: Size:%d\n",size);
+    for (i=0;i<size;i++){
+        data[i] = payload->Get(i)->NumberValue();
+//      fprintf (stderr, "DEBUG lazurite_wrap: %d:%d\n",data[i],i);
+    }
+	if(seteack(data,size) != 0) {
 		fprintf (stderr, "lazurite_setEnhanceAck exe error.\n");
 #ifdef V8_VER_0
 		return scope.Close(Boolean::New(false));
