@@ -22,9 +22,12 @@ module.exports = function(RED) {
 	var addr2id = {};
 	var optimeParams = [];
 	var isGatewayActive = false;
+
 	const KEEP_ALIVE = 3480 *1000;
 	const MEAS_INTERVAL = 5 *1000;
 	const EACK_NOP = 0;
+	const EACK_DEBUG = 1;
+
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
@@ -181,8 +184,10 @@ module.exports = function(RED) {
 			var day = now.getDay();
 			var params = optimeParams[day];
 			var nextSleepTime;
+			var oper;
 			console.log({func: "remap",params: params});
 			if(params.setOff > 0) {
+				oper = EACK_DEBUG;
 				nextSleepTime = 3480;
 			} else if(params.setTime.flag > 0) {
 				var stTime = new Date(now.getTime());
@@ -193,11 +198,13 @@ module.exports = function(RED) {
 				endTime.setHours(  params.setTime.end.hour);
 				endTime.setMinutes(params.setTime.end.min);
 				var diff = stTime - now;
-				if((diff > KEEP_ALIVE * 1000) || (now >  endTime )) {
+				if((diff > KEEP_ALIVE) || (now >  endTime )) {
 					nextSleepTime = KEEP_ALIVE;
+					oper = EACK_DEBUG;
 				} else if (diff > 0) {
 					console.log({diff:diff});
 					nextSleepTime = diff;
+					oper = EACK_DEBUG;
 					console.log({sleepTime1: nextSleepTime});
 					if (nextSleepTime < MEAS_INTERVAL) {
 						nextSleepTime = MEAS_INTERVAL;
@@ -205,21 +212,25 @@ module.exports = function(RED) {
 					nextSleepTime = parseInt(nextSleepTime/1000);
 				} else {
 					nextSleepTime = parseInt(MEAS_INTERVAL/1000);
+					oper = EACK_NOP;
 				}
 			} else {
 				nextSleepTime = parseInt(MEAS_INTERVAL/1000);
+				oper = EACK_NOP;
 			}
 			if(global.sensorInfo === undefined) {
 				global.sensorInfo = {
 					enhanceAck : [
 						{
 							addr: 0xffff,
-							data: [EACK_NOP,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
+							data: [oper,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
 						}
 					],
-					sleepTime: nextSleepTime
+					sleepTime: nextSleepTime,
+					oper: EACK_DEBUG
 				}
 				node.send([,,{payload: global.sensorInfo.enhanceAck}]);
+				console.log({eack:"init", data:JSON.stringify(global.sensorInfo)});
 			} else {
 				if(global.sensorInfo.sleepTime !== nextSleepTime) {
 					console.log("update eack");
@@ -227,14 +238,14 @@ module.exports = function(RED) {
 					for (var i in global.sensorInfo.enhanceAck) {
 						if(global.sensorInfo.enhanceAck[i].addr === 0xffff) {
 							global.sensorInfo.enhanceAck[i].data =
-								[EACK_NOP,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
+								[oper,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
 						}
 						break;
 					}
 					node.send([,,{payload:global.sensorInfo.enhanceAck}]);
+					console.log({eack:"update", data:JSON.stringify(global.sensorInfo)});
 				}
 			}
-			console.log(JSON.stringify(global.sensorInfo));
 		}
 	}
 	RED.nodes.registerType("lazurite-factory-params", LazuriteFactoryParams);
