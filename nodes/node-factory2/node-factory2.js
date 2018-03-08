@@ -20,8 +20,11 @@ module.exports = function(RED) {
 	var fs = require('fs');
 	var machineParams = {};
 	var addr2id = {};
-	var optimeParams = [];
 	var isGatewayActive = false;
+	var sensorInfo;
+	global.lazuriteConfig = {
+		optimeInfo: []
+	}
 
 	const KEEP_ALIVE = 3480 *1000;
 	const MEAS_INTERVAL = 5 *1000;
@@ -52,8 +55,7 @@ module.exports = function(RED) {
 				if(err){
 					reject(err);
 				} else {
-					node.send(res);
-					console.log(res);
+					node.send({payload:res});
 					genAddressMap(res.Items);
 					resolve();
 				}
@@ -64,9 +66,8 @@ module.exports = function(RED) {
 					if(err){
 						reject(err);
 					} else {
-						node.send([,res]);
-						console.log(res);
-						optimeParams = remapOpTime(res.Items);
+						node.send([,{payload:res}]);
+						global.lazuriteConfig.optimeInfo = remapOpTime(res.Items);
 						genEnhanceAck();
 						setInterval(function() {
 							genEnhanceAck();
@@ -78,8 +79,7 @@ module.exports = function(RED) {
 			});
 		}).then((values) => {
 		}).catch((err) => {
-			console.log(err);
-			node.send([,,,err]);
+			node.send([,,,{payload:err}]);
 		});
 		function getParameter(path,callback) {
 			var retry = 0;
@@ -101,9 +101,10 @@ module.exports = function(RED) {
 				}).then((values) => {
 					callback(null,JSON.parse(values));
 				}).catch((err) => {
+					console.log(err);
 					retry += 1;
 					if(retry < 10) {
-						setTimeout(loop,5000);
+						setTimeout(loop,30000);
 					} else {
 						callback(err,null);
 					}
@@ -118,10 +119,10 @@ module.exports = function(RED) {
 				switch(data.type) {
 					case 'machine':
 						genAddressMap(data.Items);
-						node.send([{payload:data.Items}]);
+						node.send({payload:data.Items});
 						break;
 					case 'optime':
-						optimeParams = remapOpTime(data.Items);
+						global.lazuriteConfig.optimeInfo = remapOpTime(data.Items);
 						genEnhanceAck();
 						node.send([,{payload:data.Items}]);
 						break;
@@ -182,17 +183,15 @@ module.exports = function(RED) {
 		function genEnhanceAck() {
 			var now = new Date();
 			var day = now.getDay();
-			var params = optimeParams[day];
+			var params = global.lazuriteConfig.optimeInfo[day];
 			var nextSleepTime;
 			var oper;
-			console.log({func: "remap",params: params});
 			if(params.setOff > 0) {
 				oper = EACK_DEBUG;
 				nextSleepTime = parseInt(KEEP_ALIVE/1000);
 			} else if(params.setTime.flag > 0) {
 				var stTime = new Date(now.getTime());
 				var endTime = new Date(now.getTime())
-				console.log({setTime: params.setTime});
 				stTime.setHours(   params.setTime.st.hour);
 				stTime.setMinutes( params.setTime.st.min);
 				endTime.setHours(  params.setTime.end.hour);
@@ -202,10 +201,8 @@ module.exports = function(RED) {
 					nextSleepTime = parseInt(KEEP_ALIVE/1000);
 					oper = EACK_DEBUG;
 				} else if (diff > 0) {
-					console.log({diff:diff});
 					nextSleepTime = diff;
 					oper = EACK_DEBUG;
-					console.log({sleepTime1: nextSleepTime});
 					if (nextSleepTime < MEAS_INTERVAL) {
 						nextSleepTime = MEAS_INTERVAL;
 					}
@@ -218,8 +215,8 @@ module.exports = function(RED) {
 				nextSleepTime = parseInt(MEAS_INTERVAL/1000);
 				oper = EACK_NOP;
 			}
-			if(global.sensorInfo === undefined) {
-				global.sensorInfo = {
+			if(sensorInfo === undefined)  {
+				sensorInfo = {
 					enhanceAck : [
 						{
 							addr: 0xffff,
@@ -229,21 +226,19 @@ module.exports = function(RED) {
 					sleepTime: nextSleepTime,
 					oper: EACK_DEBUG
 				}
-				node.send([,,{payload: global.sensorInfo.enhanceAck}]);
-				console.log({eack:"init", data:JSON.stringify(global.sensorInfo)});
+				node.send([,,{payload: sensorInfo.enhanceAck}]);
 			} else {
-				if(global.sensorInfo.sleepTime !== nextSleepTime) {
+				if(sensorInfo.sleepTime !== nextSleepTime) {
 					console.log("update eack");
-					global.sensorInfo.sleepTime = nextSleepTime;
-					for (var i in global.sensorInfo.enhanceAck) {
-						if(global.sensorInfo.enhanceAck[i].addr === 0xffff) {
-							global.sensorInfo.enhanceAck[i].data =
+					sensorInfo.sleepTime = nextSleepTime;
+					for (var i in sensorInfo.enhanceAck) {
+						if(sensorInfo.enhanceAck[i].addr === 0xffff) {
+							sensorInfo.enhanceAck[i].data =
 								[oper,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
 						}
 						break;
 					}
-					node.send([,,{payload:global.sensorInfo.enhanceAck}]);
-					console.log({eack:"update", data:JSON.stringify(global.sensorInfo)});
+					node.send([,,{payload:sensorInfo.enhanceAck}]);
 				}
 			}
 		}
@@ -271,7 +266,7 @@ module.exports = function(RED) {
 				if(rxdata.payload[0] === "update") {
 					var id = rxdata.src_addr[0];
 					node.send({
-						dst_panid: global.gateway.panid,
+						dst_panid: gateway.panid,
 						dst_addr: rxdata.src_addr,
 						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
 					});
@@ -292,7 +287,7 @@ module.exports = function(RED) {
 					var txdata = {
 						dst_panid: 0xffff,
 						dst_addr: rxdata.src_addr,
-						payload: `debug,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
+						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
 					};
 					node.send(txdata);
 				}
