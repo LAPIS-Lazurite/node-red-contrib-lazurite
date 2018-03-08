@@ -28,7 +28,7 @@ module.exports = function(RED) {
 		// check timing to send capacity data to cloud
 		var timer = setInterval(function() {
 			now = new Date();
-			//now = new Date(now.getTime()-1080*1000);
+			//now = new Date(now.getTime()-1300*1000);
 			//console.log(now);
 			if(hour.reported === undefined) {
 				hour.reported = now;
@@ -57,6 +57,7 @@ module.exports = function(RED) {
 				}
 				node.send({payload:payload});
 				hour = { reported: now };
+				hourCapacity = {};
 			}
 
 			if(day.reported.getDate() != now.getDate()) {
@@ -87,6 +88,7 @@ module.exports = function(RED) {
 				}
 				node.send({payload:payload});
 				day = { reported: now };
+				dayCapacity = {};
 			}
 
 			for (var id in sensorInfo) {
@@ -119,6 +121,7 @@ module.exports = function(RED) {
 			}
 			hour.checked = now;
 			day.checked = now;
+			//console.log({hour:hourCapacity,day:dayCapacity});
 		}, 10000);
 
 		node.on('input', function (msg) {
@@ -159,11 +162,29 @@ module.exports = function(RED) {
 					battery: 0,
 					rssi: rssi,
 				};
+				node.send({
+					timestamp: rxtime.getTime(),
+					from: sensorInfo[id].from.getTime(),
+					type: "log",
+					state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+				});
 			} else {
 				if(sensorInfo[id].currentStatus !== state) {
 					sensorInfo[id].from = rxtime;
 					sensorInfo[id].currentStatus = state;
-					//node.send()								// TODO: send log information
+					node.send({
+						timestamp: rxtime.getTime(),
+						from: sensorInfo[id].from.getTime(),
+						type: "log",
+						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+					});
+				} else if(sensorInfo[id].last.getDate() !== rxtime.getDate()) {
+					node.send({
+						timestamp: rxtime.getTime(),
+						from: sensorInfo[id].from.getTime(),
+						type: "log",
+						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+					});
 				}
 				sensorInfo[id].last = rxtime;
 			}

@@ -22,6 +22,9 @@ module.exports = function(RED) {
 	var addr2id = {};
 	var optimeParams = [];
 	var isGatewayActive = false;
+	const KEEP_ALIVE = 3480 *1000;
+	const MEAS_INTERVAL = 5 *1000;
+	const EACK_NOP = 0;
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
@@ -40,19 +43,17 @@ module.exports = function(RED) {
 				"LAZURITE-API-TOKEN": node.awsiotConfig.access.token
 			}
 		};
-		Promise.resolve().then(() =>{
-			return new Promise((resolve,reject) => {
-				var index = 0;
-				getParameter('/v0/info/machine',(err,res) => {
-					if(err){
-						reject(err);
-					} else {
-						node.send(res);
-						console.log(res);
-						genAddressMap(res.Items);
-						resolve();
-					}
-				});
+		new Promise((resolve,reject) => {
+			var index = 0;
+			getParameter('/v0/info/machine',(err,res) => {
+				if(err){
+					reject(err);
+				} else {
+					node.send(res);
+					console.log(res);
+					genAddressMap(res.Items);
+					resolve();
+				}
 			});
 		}).then(() => {
 			return new Promise((resolve,reject) => {
@@ -62,7 +63,11 @@ module.exports = function(RED) {
 					} else {
 						node.send([,res]);
 						console.log(res);
-						optimeParams = res.Items;
+						optimeParams = remapOpTime(res.Items);
+						genEnhanceAck();
+						setInterval(function() {
+							genEnhanceAck();
+						},60000);
 						isGatewayActive = true;
 						resolve();
 					}
@@ -71,12 +76,12 @@ module.exports = function(RED) {
 		}).then((values) => {
 		}).catch((err) => {
 			console.log(err);
-			node.send([,,err]);
+			node.send([,,,err]);
 		});
 		function getParameter(path,callback) {
 			var retry = 0;
-			Promise.resolve().then(function loop() {
-				return new Promise((resolve,reject)=>{
+			function loop () {
+				new Promise((resolve,reject) => {
 					var body = "";
 					httpOptions.path = path;
 					https.get(httpOptions,(res) => {
@@ -99,8 +104,9 @@ module.exports = function(RED) {
 					} else {
 						callback(err,null);
 					}
-				})
-			});
+				});
+			}
+			loop();
 		}
 
 		node.on('input', function (msg) {
@@ -112,15 +118,16 @@ module.exports = function(RED) {
 						node.send([{payload:data.Items}]);
 						break;
 					case 'optime':
-						optimeParams = data.Items;
+						optimeParams = remapOpTime(data.Items);
+						genEnhanceAck();
 						node.send([,{payload:data.Items}]);
 						break;
 					default:
-						node.send([,,{payload:{message: 'invalid type', data: data}}]);
+						node.send([,,,{payload:{message: 'invalid type', data: data}}]);
 						break;
 				}
 			} catch (e) {
-				node.send([,,{payload:{message: 'invalid data', data: data}}]);
+				node.send([,,,{payload:{message: 'invalid data', data: data}}]);
 			}
 		});
 		function genAddressMap(data) {
@@ -143,6 +150,91 @@ module.exports = function(RED) {
 					detect1: data[i].detect1
 				}
 			}
+		}
+		function remapOpTime(values) {
+			var data = {};
+			for (var i in values) {
+				data[values[i].day] = {
+					setOff: values[i].setOff,
+					setTime : {
+						flag: values[i].setTime
+					}
+				}
+				if(values[i].setTime > 0) {
+					var tmp = values[i].stTime.split(":");
+					data[values[i].day].setTime.st = {
+						hour : parseInt(tmp[0]),
+						min : parseInt(tmp[1])
+					}
+					tmp = values[i].endTime.split(":");
+					data[values[i].day].setTime.end = {
+						hour : parseInt(tmp[0]),
+						min : parseInt(tmp[1])
+					}
+				}
+			}
+			//console.log(JSON.stringify(data,null,"  "});
+			return data;
+		}
+		function genEnhanceAck() {
+			var now = new Date();
+			var day = now.getDay();
+			var params = optimeParams[day];
+			var nextSleepTime;
+			console.log({func: "remap",params: params});
+			if(params.setOff > 0) {
+				nextSleepTime = 3480;
+			} else if(params.setTime.flag > 0) {
+				var stTime = new Date(now.getTime());
+				var endTime = new Date(now.getTime())
+				console.log({setTime: params.setTime});
+				stTime.setHours(   params.setTime.st.hour);
+				stTime.setMinutes( params.setTime.st.min);
+				endTime.setHours(  params.setTime.end.hour);
+				endTime.setMinutes(params.setTime.end.min);
+				var diff = stTime - now;
+				if((diff > KEEP_ALIVE * 1000) || (now >  endTime )) {
+					nextSleepTime = KEEP_ALIVE;
+				} else if (diff > 0) {
+					console.log({diff:diff});
+					nextSleepTime = diff;
+					console.log({sleepTime1: nextSleepTime});
+					if (nextSleepTime < MEAS_INTERVAL) {
+						nextSleepTime = MEAS_INTERVAL;
+					}
+					nextSleepTime = parseInt(nextSleepTime/1000);
+				} else {
+					nextSleepTime = parseInt(MEAS_INTERVAL/1000);
+				}
+			} else {
+				nextSleepTime = parseInt(MEAS_INTERVAL/1000);
+			}
+			if(global.sensorInfo === undefined) {
+				global.sensorInfo = {
+					enhanceAck : [
+						{
+							addr: 0xffff,
+							data: [EACK_NOP,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
+						}
+					],
+					sleepTime: nextSleepTime
+				}
+				node.send([,,{payload: global.sensorInfo.enhanceAck}]);
+			} else {
+				if(global.sensorInfo.sleepTime !== nextSleepTime) {
+					console.log("update eack");
+					global.sensorInfo.sleepTime = nextSleepTime;
+					for (var i in global.sensorInfo.enhanceAck) {
+						if(global.sensorInfo.enhanceAck[i].addr === 0xffff) {
+							global.sensorInfo.enhanceAck[i].data =
+								[EACK_NOP,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
+						}
+						break;
+					}
+					node.send([,,{payload:global.sensorInfo.enhanceAck}]);
+				}
+			}
+			console.log(JSON.stringify(global.sensorInfo));
 		}
 	}
 	RED.nodes.registerType("lazurite-factory-params", LazuriteFactoryParams);
@@ -173,7 +265,7 @@ module.exports = function(RED) {
 						payload: `debug,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
 					});
 				} else {
-				// state information
+					// state information
 					node.send([,rxdata]);
 				}
 				node.send([,rxdata]);
