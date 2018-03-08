@@ -273,7 +273,7 @@ module.exports = function(RED) {
 					node.send({
 						dst_panid: global.gateway.panid,
 						dst_addr: rxdata.src_addr,
-						payload: `debug,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
+						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
 					});
 				} else {
 					// state information

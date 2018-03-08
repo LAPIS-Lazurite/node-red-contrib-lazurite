@@ -165,6 +165,7 @@ module.exports = function(RED) {
 				node.send({
 					payload: {
 					timestamp: rxtime.getTime(),
+					machine: id,
 					from: sensorInfo[id].from.getTime(),
 					type: "log",
 					state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
@@ -178,6 +179,7 @@ module.exports = function(RED) {
 						payload: {
 						timestamp: rxtime.getTime(),
 						from: sensorInfo[id].from.getTime(),
+						machine: id,
 						type: "log",
 						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
 						}
@@ -187,6 +189,7 @@ module.exports = function(RED) {
 						payload: {
 						timestamp: rxtime.getTime(),
 						from: sensorInfo[id].from.getTime(),
+						machine: id,
 						type: "log",
 						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
 						}
