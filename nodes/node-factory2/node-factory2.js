@@ -18,10 +18,9 @@ module.exports = function(RED) {
 	const https = require('https');
 	//const https = require('http');
 	var fs = require('fs');
-	var machineParams = {};
 	var addr2id = {};
 	var isGatewayActive = false;
-	var sensorInfo;
+	var timerThread = null;
 	global.lazuriteConfig = {
 		optimeInfo: []
 	}
@@ -69,9 +68,11 @@ module.exports = function(RED) {
 						node.send([,{payload:res}]);
 						global.lazuriteConfig.optimeInfo = remapOpTime(res.Items);
 						genEnhanceAck();
-						setInterval(function() {
-							genEnhanceAck();
-						},60000);
+						if(timerThread === null ) {
+							timerThread = setInterval(function() {
+								genEnhanceAck();
+							},60000);
+						}
 						isGatewayActive = true;
 						resolve();
 					}
@@ -135,7 +136,8 @@ module.exports = function(RED) {
 			}
 		});
 		function genAddressMap(data) {
-			machineParams = {};
+			global.lazuriteConfig.machineInfo = {};
+			var machineInfo = global.lazuriteConfig.machineInfo;
 			for(var i in data) {
 				var addr;
 				if ((!isNaN(parseInt("0x"+data[i].ct)) && (data[i].ct.length == 16))){
@@ -147,11 +149,13 @@ module.exports = function(RED) {
 					continue;
 				}
 				addr2id[addr] = data[i].id;
-				machineParams[data[i].id] = {
+				machineInfo[data[i].id] = {
 					thres0: data[i].thres0,
 					detect0: data[i].detect0,
 					thres1: data[i].thres1,
-					detect1: data[i].detect1
+					detect1: data[i].detect1,
+					debug: (data[i].debug == 0)? false: true,
+					disp: (data[i].disp == 0)? false: true
 				}
 			}
 		}
@@ -184,8 +188,11 @@ module.exports = function(RED) {
 			var now = new Date();
 			var day = now.getDay();
 			var params = global.lazuriteConfig.optimeInfo[day];
+			var machineInfo = global.lazuriteConfig.machineInfo;
 			var nextSleepTime;
 			var oper;
+			console.log("getEnhanceAck");
+			console.log({machineInfo:machineInfo});
 			if(params.setOff > 0) {
 				oper = EACK_DEBUG;
 				nextSleepTime = parseInt(KEEP_ALIVE/1000);
@@ -215,19 +222,30 @@ module.exports = function(RED) {
 				nextSleepTime = parseInt(MEAS_INTERVAL/1000);
 				oper = EACK_NOP;
 			}
-			if(sensorInfo === undefined)  {
-				sensorInfo = {
-					enhanceAck : [
-						{
-							addr: 0xffff,
-							data: [oper,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
-						}
-					],
-					sleepTime: nextSleepTime,
-					oper: EACK_DEBUG
+			if(global.lazuriteConfig.sensorInfo === undefined)  {
+				global.lazuriteConfig.sensorInfo = {
+					sleepTime : nextSleepTime,
+					oper : oper
+				};
+				var sensorInfo = global.lazuriteConfig.sensorInfo;
+				sensorInfo.enhanceAck = [];
+				for ( var index in machineInfo) {
+					console.log(machineInfo[index]);
+					if(machineInfo[index].debug) {
+						sensorInfo.enhanceAck.push({
+							addr: parseInt(index),
+							data: [EACK_DEBUG,5,0]
+						});
+					}
 				}
+				sensorInfo.enhanceAck.push({
+					addr: 0xffff,
+					data: [oper,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
+				});
+				console.log(sensorInfo.enhanceAck);
 				node.send([,,{payload: sensorInfo.enhanceAck}]);
 			} else {
+				var sensorInfo = global.lazuriteConfig.sensorInfo;
 				if(sensorInfo.sleepTime !== nextSleepTime) {
 					console.log("update eack");
 					sensorInfo.sleepTime = nextSleepTime;
@@ -250,6 +268,7 @@ module.exports = function(RED) {
 	function LazuriteDeviceManager(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
+		var machineInfo = global.lazuriteConfig.machineInfo;
 		node.on('input', function (msg) {
 			if(Array.isArray(msg.payload)) {
 				for(var i in msg.payload) {
@@ -268,7 +287,7 @@ module.exports = function(RED) {
 					node.send({
 						dst_panid: gateway.panid,
 						dst_addr: rxdata.src_addr,
-						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
+						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineInfo[id].thres0},${machineInfo[id].detect0},${machineInfo[id].thres1},${machineInfo[id].detect1}`
 					});
 				} else {
 					// state information
@@ -287,7 +306,7 @@ module.exports = function(RED) {
 					var txdata = {
 						dst_panid: 0xffff,
 						dst_addr: rxdata.src_addr,
-						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineParams[id].thres0},${machineParams[id].detect0},${machineParams[id].thres1},${machineParams[id].detect1}`
+						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineInfo[id].thres0},${machineInfo[id].detect0},${machineInfo[id].thres1},${machineInfo[id].detect1}`
 					};
 					node.send(txdata);
 				}

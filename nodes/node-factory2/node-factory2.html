@@ -47,8 +47,9 @@ RED.nodes.registerType('lazurite-factory-params', {
 		awsiotConfig: {value:"", required: true}
 	},
 	inputs: 1,
+	inputLabels: "MQTT",
 	outputs: 4,
-	outlabels:{value:["装置情報","稼働日情報","enhanceAck","エラー情報"]},
+	outputLabels:["装置情報","稼働日情報","to SetEnhanceACK","エラー情報"],
 	icon: "lazurite.png",
 	label: function() {
 		return this.mode||"lazurite-factory-params";
@@ -79,8 +80,9 @@ RED.nodes.registerType('lazurite-device-manager', {
 		name: {value:""},
 	},
 	inputs: 1,
+	inputLabels: "lazurite-rx",
 	outputs: 3,
-	outlabels:{value:["activate","センサ情報","エラー情報"]},
+	outputLabels: ["to LazuriteTX64","to node-capacity","エラー情報" ],
 	icon: "lazurite.png",
 	label: function() {
 		return this.mode||"lazurite-device-manager";
