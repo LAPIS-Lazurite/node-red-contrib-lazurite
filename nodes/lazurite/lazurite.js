@@ -41,9 +41,6 @@ module.exports = function(RED) {
 	function setBroadcast(node) {
 			if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
 	}
-	function getEnhanceAck(node) {
-//			if(!lib.getEnhanceAck(data,size)) { Warn("lazurite_getEnhanceAck fail"); return; }
-	}
 	function setEnhanceAck(data,size) {
 			if(!lib.setEnhanceAck(data,size)) { Warn("lazurite_setEnhanceAck fail"); return; }
 	}
@@ -188,7 +185,6 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
-
 		node.on('input', function(msg) {
 			var dst_panid;
 			var dst_addr;
@@ -203,9 +199,12 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
-            getEnhanceAck(node);
 			if(!lib.send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-			node.send(msg);
+            var data = lib.getEnhanceAck();
+			if(data.length> 0) {
+				var msg = data;
+				node.send(msg);
+			}
 		});
 		node.on('close', function(done) {
 			disconnect(node);
@@ -259,8 +258,12 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
-            getEnhanceAck(node);
 			if(!lib.send64be(dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
+            var data = lib.getEnhanceAck();
+			if(data.length> 0) {
+				var msg = data;
+				node.send(msg);
+			}
 			node.send(msg);
 		});
 		node.on('close', function(done) {
@@ -273,18 +276,22 @@ module.exports = function(RED) {
 
 	function SetEnhanceACKNode(config) {
 		RED.nodes.createNode(this,config);
-		this.addr    = config.addr;
-		this.data	 = config.data;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
 		node.on('input', function(msg) {
 //          console.log('DEBUG lazurite.js: Payload:#%s Length:#%d',msg.payload,msg.payload.length);
-            var buffSize = msg.payload.length * (msg.payload[0].data.length+2) + 4;
+            var numOfRcv = Array.isArray(msg.payload) ? msg.payload.length : 0;
+            var sizeOfEack = Array.isArray(msg.payload[0].data) ? msg.payload[0].data.length : 0;
+            var buffSize;
+            if((numOfRcv == 0) || (sizeOfEack == 0)) {
+                buffSize = 0;
+			    setEnhanceAck(null,buffSize);
+                return;
+            }
+            buffSize = msg.payload.length * (msg.payload[0].data.length+2) + 4;
             var buffer = new ArrayBuffer(buffSize);
             var uint8Array = new Uint8Array(buffer,0,buffSize);
-            var numOfRcv = msg.payload.length;
-            var sizeOfEack = msg.payload[0].data.length;
             if(sizeOfEack > 16) {
 //              console.log("error1");
                 return;

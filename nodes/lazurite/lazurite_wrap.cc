@@ -56,7 +56,7 @@ int (*sendfunc64le)(uint8_t*, const void*, uint16_t);
 int (*sendfunc64be)(uint8_t*, const void*, uint16_t);
 int (*setackreq)(bool);
 int (*seteack)(uint8_t*, uint16_t);
-int (*geteack)(uint8_t**, uint16_t);
+int (*geteack)(char*, uint16_t*);
 int (*setbroadcast)(bool);
 int (*setmyaddress)(uint16_t);
 int (*getmyaddr64)(uint8_t*);
@@ -113,7 +113,7 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 			sendfunc64be = (int (*)(uint8_t*, const void*, uint16_t))find(handle, "lazurite_send64be");
 			setackreq    = (int (*)(bool))find(handle, "lazurite_setAckReq");
 			seteack    = (int (*)(uint8_t*, uint16_t))find(handle, "lazurite_setEnhanceAck");
-			geteack    = (int (*)(uint8_t**, uint16_t))find(handle, "lazurite_getEnhanceAck");
+			geteack    = (int (*)(char*, uint16_t*))find(handle, "lazurite_getEnhanceAck");
 			setbroadcast = (int (*)(bool))find(handle, "lazurite_setBroadcastEnb");
 			setmyaddress = (int (*)(uint16_t))find(handle, "lazurite_setMyAddress");
 			getmyaddr64    = (int (*)(uint8_t*))find(handle, "lazurite_getMyAddr64");
@@ -874,17 +874,6 @@ static Handle<Value> getEnhanceAck(const Arguments& args) {
 static void getEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 #endif
-
-	if(args.Length() < 1) {
-		fprintf (stderr, "Wrong number of arguments\n");
-#ifdef V8_VER_0
-		return scope.Close(Boolean::New(false));
-#endif
-#ifdef V8_VER_5
-		args.GetReturnValue().Set(Boolean::New(isolate,false));
-		return;
-#endif
-	}
 	if(!geteack) {
 		fprintf (stderr, "lazurite_getEnhanceAck fail.\n");
 #ifdef V8_VER_0
@@ -895,9 +884,22 @@ static void getEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 		return;
 #endif
 	}
-    uint8_t **data=0;
-    uint16_t size=0;
-	if(geteack(data,size) != 0){
+
+#ifdef V8_VER_0
+	Local<Object> obj = Object::New();
+#endif
+#ifdef V8_VER_5
+	Local<Object> obj = Object::New(isolate);
+#endif
+
+	char data[256];
+	uint16_t size=0;
+    int i;
+	Local<Array> str = Array::New(isolate,size);
+
+	memset(data,0,sizeof(data));
+
+	if(geteack(data,&size) != 0){
 		fprintf (stderr, "lazurite_getEnhanceAck exe error.\n");
 #ifdef V8_VER_0
 		return scope.Close(Boolean::New(false));
@@ -907,11 +909,26 @@ static void getEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 		return;
 #endif
 	}
+
+    for (i=0; i < size; i++){
+//      fprintf (stderr, "DEBUG lazurite_wrap: Data:%x, Size:%ld\n",data[i],size);
+	    str->Set(i,Integer::New(isolate,data[i]));
+    }
+
 #ifdef V8_VER_0
-	return scope.Close(Boolean::New(true));
+    obj->Set(String::NewSymbol("payload"),str);
+	obj->Set(String::NewSymbol("length"),Integer::New(size));
 #endif
 #ifdef V8_VER_5
-	args.GetReturnValue().Set(Boolean::New(isolate,true));
+    obj->Set(String::NewFromUtf8(isolate,"payload"),str);
+	obj->Set(String::NewFromUtf8(isolate,"length"),Integer::New(isolate,size));
+#endif
+
+#ifdef V8_VER_0
+	return scope.Close(obj);
+#endif
+#ifdef V8_VER_5
+	args.GetReturnValue().Set(obj);
 	return;
 #endif
 }
@@ -1228,6 +1245,8 @@ static void dlclose(const FunctionCallbackInfo<Value>& args) {
 		readfunc   = NULL;
 		closefunc  = NULL;
 		removefunc = NULL;
+		seteack    = NULL;
+		geteack    = NULL;
 
 		opened = false;
 		initialized = false;
