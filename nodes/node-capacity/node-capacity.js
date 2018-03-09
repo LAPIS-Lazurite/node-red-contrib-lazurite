@@ -50,7 +50,7 @@ module.exports = function(RED) {
 
 				for(var id in hourCapacity) {
 					if((now - sensorInfo[id].last) <3600*1000) {
-						payload.capacity[id] = hourCapacity[id].ontime/hourCapacity[id].meastime;
+						payload.capacity[id] = parseInt(hourCapacity[id].ontime/hourCapacity[id].meastime*1000)/10;
 						payload.vbat[id] = sensorInfo[id].battery;
 						payload.rssi[id] = sensorInfo[id].rssi;
 					}
@@ -72,7 +72,7 @@ module.exports = function(RED) {
 
 				for(var id in dayCapacity) {
 					if((now - sensorInfo[id].last) <3600*1000*24) {
-						payload.capacity[id] = dayCapacity[id].ontime/dayCapacity[id].meastime;
+						payload.capacity[id] = parseInt(dayCapacity[id].ontime/dayCapacity[id].meastime*1000)/10;
 						payload.count[id] = sensorInfo[id].on.count + sensorInfo[id].off.count;
 						payload.on[id] = {
 							average: sensorInfo[id].on.sum/sensorInfo[id].on.count,
@@ -89,8 +89,22 @@ module.exports = function(RED) {
 				node.send({payload:payload});
 				day = { reported: now };
 				dayCapacity = {};
+				/*
+				for(var id in sensorInfo) {
+					node.send({
+						payload: {
+							timestamp: rxtime.getTime() + 1 + id, // change index of dynamoDB
+							machine: id,
+							from: sensorInfo[id].from.getTime(),
+							type: "log",
+							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						}
+					});
+				}
+				*/
 			}
 
+			//console.log(global.lazuriteConfig.optimeInfo);
 			for (var id in sensorInfo) {
 				if((now - sensorInfo[id].last)<3600*1000)  {
 					if(hourCapacity[id] === undefined){
@@ -122,7 +136,7 @@ module.exports = function(RED) {
 			hour.checked = now;
 			day.checked = now;
 			//console.log({hour:hourCapacity,day:dayCapacity});
-		}, 10000);
+		}, 1000);
 
 		node.on('input', function (msg) {
 			//console.log(msg);
@@ -163,27 +177,36 @@ module.exports = function(RED) {
 					rssi: rssi,
 				};
 				node.send({
-					timestamp: rxtime.getTime(),
-					from: sensorInfo[id].from.getTime(),
-					type: "log",
-					state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+					payload: {
+						timestamp: rxtime.getTime(),
+						machine: id,
+						from: sensorInfo[id].from.getTime(),
+						type: "log",
+						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+					}
 				});
 			} else {
 				if(sensorInfo[id].currentStatus !== state) {
 					sensorInfo[id].from = rxtime;
 					sensorInfo[id].currentStatus = state;
 					node.send({
-						timestamp: rxtime.getTime(),
-						from: sensorInfo[id].from.getTime(),
-						type: "log",
-						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						payload: {
+							timestamp: rxtime.getTime(),
+							from: sensorInfo[id].from.getTime(),
+							machine: id,
+							type: "log",
+							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						}
 					});
 				} else if(sensorInfo[id].last.getDate() !== rxtime.getDate()) {
 					node.send({
-						timestamp: rxtime.getTime(),
-						from: sensorInfo[id].from.getTime(),
-						type: "log",
-						state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						payload: {
+							timestamp: rxtime.getTime(),
+							from: sensorInfo[id].from.getTime(),
+							machine: id,
+							type: "log",
+							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+						}
 					});
 				}
 				sensorInfo[id].last = rxtime;

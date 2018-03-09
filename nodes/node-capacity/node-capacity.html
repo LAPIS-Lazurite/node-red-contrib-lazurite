@@ -37,8 +37,9 @@ RED.nodes.registerType('lazurite-capacity', {
 		name: {value:""}
 	},
 	inputs: 1,
+	inputLabels: "",
 	outputs: 3,
-	outlabels:{value:["装置情報","稼働日情報","エラー情報"]},
+	outputLabels:["装置情報","稼働日情報","エラー情報"],
 	icon: "lazurite.png",
 	label: function() {
 		return this.mode||"lazurite-capacity";
