@@ -81,8 +81,8 @@ RED.nodes.registerType('lazurite-device-manager', {
 	},
 	inputs: 1,
 	inputLabels: "lazurite-rx",
-	outputs: 3,
-	outputLabels: ["to LazuriteTX64","to node-capacity","エラー情報" ],
+	outputs: 5,
+	outputLabels: ["to LazuriteTX64","to LazuriteTX","to node-capacity","EnhanceAck","エラー情報" ],
 	icon: "lazurite.png",
 	label: function() {
 		return this.mode||"lazurite-device-manager";
