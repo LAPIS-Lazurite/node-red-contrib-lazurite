@@ -277,7 +277,7 @@ module.exports = function(RED) {
 					data: [EACK_UPDATE,5,0]
 				});
 			}
-			console.log(global.lazuriteConfig.sensorInfo.enhanceAck);
+			//console.log(global.lazuriteConfig.sensorInfo.enhanceAck);
 			node.send([,,{payload:global.lazuriteConfig.sensorInfo.enhanceAck}]);
 		}
 	}
