@@ -595,18 +595,18 @@ static void send(const FunctionCallbackInfo<Value>& args) {
 	if(result < 0) {
 		fprintf (stderr, "tx error = %d\n",result);
 #ifdef V8_VER_0
-		return scope.Close(Boolean::New(false));
+		return scope.Close(result);
 #endif
 #ifdef V8_VER_5
-		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		args.GetReturnValue().Set(result);
 		return;
 #endif
 	}
 #ifdef V8_VER_0
-	return scope.Close(Boolean::New(true));
+	return scope.Close(0);
 #endif
 #ifdef V8_VER_5
-	args.GetReturnValue().Set(Boolean::New(isolate,true));
+	args.GetReturnValue().Set(0);
 	return;
 #endif
 }
@@ -740,18 +740,18 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 	if(result < 0) {
 		fprintf (stderr, "tx64be error = %d\n",result);
 #ifdef V8_VER_0
-		return scope.Close(Boolean::New(false));
+		return scope.Close(result);
 #endif
 #ifdef V8_VER_5
-		args.GetReturnValue().Set(Boolean::New(isolate,false));
+		args.GetReturnValue().Set(result);
 		return;
 #endif
 	}
 #ifdef V8_VER_0
-	return scope.Close(Boolean::New(true));
+	return scope.Close(0);
 #endif
 #ifdef V8_VER_5
-	args.GetReturnValue().Set(Boolean::New(isolate,true));
+	args.GetReturnValue().Set(0);
 	return;
 #endif
 }

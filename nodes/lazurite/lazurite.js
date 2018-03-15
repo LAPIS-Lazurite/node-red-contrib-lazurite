@@ -26,6 +26,12 @@ module.exports = function(RED) {
 	var util = require('util');
 	var latest_rfparam_id="";
 	var isConnect = false;
+    const lazurite_err = {
+        14: "TX FAIL",
+        16: "CCA BUSY",
+        52: "CCA FAIL",
+        110: "NO ACK"
+    };
 
 	function Warn(message){
 		RED.log.warn("LazuriteInNode: " + message);
@@ -200,17 +206,11 @@ module.exports = function(RED) {
 			}
 			setAckReq(node);
 			var ret = lib.send(dst_panid, dst_addr, msg.payload.toString());
-            if (!ret) { Warn("lazurite_send fail"); return; }
-            else {
-                var data = lib.getEnhanceAck();
-                if(data.length> 0) {
-                    var msg = data;
-                    node.send(msg);
-                }else{
-                    var msg = ret;
-                    node.send(msg);
-                }
-            }
+            var edat = lib.getEnhanceAck();
+            if(edat.length = 0) { edat = null; }
+            msg.payload = { "result":ret, "EACK":edat }
+            node.send(msg);
+            if (ret < 0) { Warn("lazurite_send fail::" + lazurite_err[-ret]); }
 		});
 		node.on('close', function(done) {
 			disconnect(node);
@@ -265,17 +265,11 @@ module.exports = function(RED) {
 			}
 			setAckReq(node);
 			var ret = lib.send64be(dst_addr, msg.payload.toString());
-            if (!ret) { Warn("lazurite_send fail"); return; }
-            else {
-                var data = lib.getEnhanceAck();
-                if(data.length> 0) {
-                    var msg = data;
-                    node.send(msg);
-                }else{
-                    var msg = ret;
-                    node.send(msg);
-                }
-            }
+            var edat = lib.getEnhanceAck();
+            if(edat.length = 0) { edat = null; }
+            msg.payload = { "result":ret, "EACK":edat }
+            node.send(msg);
+            if (ret < 0) { Warn("lazurite_send64 fail::" + lazurite_err[-ret]); }
 		});
 		node.on('close', function(done) {
 			disconnect(node);
