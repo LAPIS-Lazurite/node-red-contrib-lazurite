@@ -199,12 +199,18 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
-			if(!lib.send(dst_panid, dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-            var data = lib.getEnhanceAck();
-			if(data.length> 0) {
-				var msg = data;
-				node.send(msg);
-			}
+			var ret = lib.send(dst_panid, dst_addr, msg.payload.toString());
+            if (!ret) { Warn("lazurite_send fail"); return; }
+            else {
+                var data = lib.getEnhanceAck();
+                if(data.length> 0) {
+                    var msg = data;
+                    node.send(msg);
+                }else{
+                    var msg = ret;
+                    node.send(msg);
+                }
+            }
 		});
 		node.on('close', function(done) {
 			disconnect(node);
@@ -258,13 +264,18 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
-			if(!lib.send64be(dst_addr, msg.payload.toString())) { Warn("lazurite_send fail"); return; }
-            var data = lib.getEnhanceAck();
-			if(data.length> 0) {
-				var msg = data;
-				node.send(msg);
-			}
-			node.send(msg);
+			var ret = lib.send64be(dst_addr, msg.payload.toString());
+            if (!ret) { Warn("lazurite_send fail"); return; }
+            else {
+                var data = lib.getEnhanceAck();
+                if(data.length> 0) {
+                    var msg = data;
+                    node.send(msg);
+                }else{
+                    var msg = ret;
+                    node.send(msg);
+                }
+            }
 		});
 		node.on('close', function(done) {
 			disconnect(node);
