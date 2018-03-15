@@ -29,6 +29,7 @@ module.exports = function(RED) {
 	const MEAS_INTERVAL = 5 *1000;
 	const EACK_NOP = 0;
 	const EACK_DEBUG = 1;
+	const EACK_UPDATE = 2;
 
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
@@ -67,10 +68,10 @@ module.exports = function(RED) {
 					} else {
 						node.send([,{payload:res}]);
 						global.lazuriteConfig.optimeInfo = remapOpTime(res.Items);
-						genEnhanceAck(true);
+						genEnhanceAck(true,true);
 						if(timerThread === null ) {
 							timerThread = setInterval(function() {
-								genEnhanceAck(false);
+								genEnhanceAck(false,true);
 							},60000);
 						}
 						isGatewayActive = true;
@@ -119,12 +120,13 @@ module.exports = function(RED) {
 				switch(data.type) {
 					case 'machine':
 						genAddressMap(data.Items);
-						genEnhanceAck(true);
+						genEnhanceAck(true,false);
+						addEackForUpdate();
 						node.send({payload:data.Items});
 						break;
 					case 'optime':
 						global.lazuriteConfig.optimeInfo = remapOpTime(data.Items);
-						genEnhanceAck(true);
+						genEnhanceAck(true,true);
 						node.send([,{payload:data.Items}]);
 						break;
 					default:
@@ -184,7 +186,7 @@ module.exports = function(RED) {
 			//console.log(JSON.stringify(data,null,"  "});
 			return data;
 		}
-		function genEnhanceAck(reset) {
+		function genEnhanceAck(reset,update) {
 			var now = new Date();
 			var day = now.getDay();
 			var params = global.lazuriteConfig.optimeInfo[day];
@@ -240,7 +242,7 @@ module.exports = function(RED) {
 					addr: 0xffff,
 					data: [oper,parseInt(nextSleepTime&0x0FF),parseInt(nextSleepTime>>8)] // 0: nop, 1: sleepTime
 				});
-				node.send([,,{payload: sensorInfo.enhanceAck}]);
+				if(update) node.send([,,{payload: sensorInfo.enhanceAck}]);
 			} else {
 				var sensorInfo = global.lazuriteConfig.sensorInfo;
 				if(sensorInfo.sleepTime !== nextSleepTime) {
@@ -253,9 +255,30 @@ module.exports = function(RED) {
 						}
 						break;
 					}
-					node.send([,,{payload:sensorInfo.enhanceAck}]);
+					if(update) node.send([,,{payload: sensorInfo.enhanceAck}]);
 				}
 			}
+		}
+		function addEackForUpdate() {
+			var machineInfo = global.lazuriteConfig.machineInfo;
+			var enhanceAck = global.lazuriteConfig.sensorInfo.enhanceAck;
+
+			for(var i in machineInfo) {
+				var addr = parseInt(i);
+				var update = true;
+				for(var j in enhanceAck) {
+					if((enhanceAck[j].addr == addr) && (enhanceAck[j].data[0] == EACK_UPDATE)) {
+						update = false;
+						break;
+					}
+				}
+				enhanceAck.unshift({
+					addr: addr,
+					data: [EACK_UPDATE,5,0]
+				});
+			}
+			//console.log(global.lazuriteConfig.sensorInfo.enhanceAck);
+			node.send([,,{payload:global.lazuriteConfig.sensorInfo.enhanceAck}]);
 		}
 	}
 	RED.nodes.registerType("lazurite-factory-params", LazuriteFactoryParams);
@@ -281,25 +304,33 @@ module.exports = function(RED) {
 			var machineInfo = global.lazuriteConfig.machineInfo;
 			if(rxdata.dst_panid == global.gateway.panid) {
 				rxdata.payload = rxdata.payload.split(",");
-				// updated database
 				if(rxdata.payload[0] === "update") {
 					var id = rxdata.src_addr[0];
-					node.send({
+					// delete EACK for update
+					var enhanceAck = global.lazuriteConfig.sensorInfo.enhanceAck;
+					for(var i in enhanceAck) {
+						if(enhanceAck[i].addr == id) {
+							enhanceAck.splice(i,1);
+							break;
+						}
+					}
+					node.send([,,,{payload: global.lazuriteConfig.sensorInfo.enhanceAck}]);		// update EACK
+					// send parameters;
+					node.send([,{											// send update informaton by uni-cast
 						dst_panid: gateway.panid,
 						dst_addr: rxdata.src_addr,
 						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${machineInfo[id].thres0},${machineInfo[id].detect0},${machineInfo[id].thres1},${machineInfo[id].detect1}`
-					});
+					}]);
 				} else {
 					// state information
-					node.send([,rxdata]);
+					node.send([,,rxdata]);											// send capacity information
 					var id = rxdata.src_addr[0];
 					if(machineInfo[id] !== undefined) {
 						if(machineInfo[id].disp) {
-							node.send([,,{payload: rxdata}]);
+							node.send([,,,,{payload: rxdata}]);			// send rxdata to log
 						}
 					}
 				}
-				node.send([,rxdata]);
 			} else if((rxdata.dst_panid == 0xffff) &&
 				// state information
 				(rxdata.dst_addr[0] == 0xffff) &&
