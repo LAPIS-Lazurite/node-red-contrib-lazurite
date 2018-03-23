@@ -187,11 +187,19 @@ module.exports = function(RED) {
 				});
 			} else {
 				if(sensorInfo[id].currentStatus !== state) {
-					sensorInfo[id].from = rxtime;
 					sensorInfo[id].currentStatus = state;
+                    var detect;
+                    if (sensorInfo[id].currentStatus === "on") {
+                        detect = global.lazuriteConfig.machineInfo[id].detect0;
+                    }else{
+                        detect = global.lazuriteConfig.machineInfo[id].detect1;
+                    }
+                    detect = detect * 1000;
+					sensorInfo[id].from.setTime(rxtime.getTime() - detect);
+			        //console.log({rxtime: rxtime, from: sensorInfo[id].from});
 					node.send({
 						payload: {
-							timestamp: rxtime.getTime(),
+							timestamp: rxtime.getTime() - detect,
 							from: sensorInfo[id].from.getTime(),
 							machine: id,
 							type: "log",
