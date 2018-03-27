@@ -41,7 +41,7 @@ module.exports = function(RED) {
 			host: "api.lazurite.io",
 			//host: "192.168.30.27",
 			//port: 8081,
-			mothod: 'GET',
+			method: 'GET',
 			headers: {
 				"Accept": "application/json",
 				"Content-Type" : "application/json",
