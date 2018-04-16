@@ -19,6 +19,10 @@
 		<label for="node-input-name"><i class="fa fa-tag"></i> </span> Name</label>
 		<input type="text" id="node-input-name"></input>
 	</div>
+	<div class="form-row">
+		<label for="node-input-dbname"><i class="fa fa-tag"></i> </span> DB Name</label>
+		<input type="text" id="node-input-dbname"></input>
+	</div>
 </script>
 
 <script type="text/x-red" data-help-name="lazurite-capacity">
@@ -34,7 +38,8 @@ RED.nodes.registerType('lazurite-capacity', {
 	color: "#E2D96E",
 	category: 'Lazurite',
 	defaults: {
-		name: {value:""}
+		name: {value:""},
+		dbname: {value:""}
 	},
 	inputs: 1,
 	inputLabels: "",

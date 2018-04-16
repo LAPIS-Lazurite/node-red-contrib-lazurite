@@ -22,7 +22,7 @@ module.exports = function(RED) {
 		var hour = {};
 		var day = {};
 		RED.nodes.createNode(this,config);
-
+		node.config = config;
 		var now = new Date();
 		sensorInfo.reported = now;
 		// check timing to send capacity data to cloud
@@ -178,6 +178,7 @@ module.exports = function(RED) {
 				};
 				node.send({
 					payload: {
+						dbname: node.config.dbname,
 						timestamp: rxtime.getTime(),
 						machine: id,
 						from: sensorInfo[id].from.getTime(),
@@ -188,17 +189,18 @@ module.exports = function(RED) {
 			} else {
 				if(sensorInfo[id].currentStatus !== state) {
 					sensorInfo[id].currentStatus = state;
-                    var detect;
-                    if (sensorInfo[id].currentStatus === "on") {
-                        detect = global.lazuriteConfig.machineInfo[id].detect0;
-                    }else{
-                        detect = global.lazuriteConfig.machineInfo[id].detect1;
-                    }
-                    detect = detect * 1000;
+					var detect;
+					if (sensorInfo[id].currentStatus === "on") {
+						detect = global.lazuriteConfig.machineInfo[id].detect0;
+					}else{
+						detect = global.lazuriteConfig.machineInfo[id].detect1;
+					}
+					detect = detect * 1000;
 					sensorInfo[id].from.setTime(rxtime.getTime() - detect);
-			        //console.log({rxtime: rxtime, from: sensorInfo[id].from});
+					//console.log({rxtime: rxtime, from: sensorInfo[id].from});
 					node.send({
 						payload: {
+							dbname: node.config.dbname,
 							timestamp: rxtime.getTime() - detect,
 							from: sensorInfo[id].from.getTime(),
 							machine: id,
@@ -209,6 +211,7 @@ module.exports = function(RED) {
 				} else if(sensorInfo[id].last.getDate() !== rxtime.getDate()) {
 					node.send({
 						payload: {
+							dbname: node.config.dbname,
 							timestamp: rxtime.getTime(),
 							from: sensorInfo[id].from.getTime(),
 							machine: id,
