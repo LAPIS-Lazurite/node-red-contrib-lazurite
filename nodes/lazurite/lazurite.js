@@ -184,6 +184,7 @@ module.exports = function(RED) {
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
+		setBroadcast(node);
 		if(!lib.setRxMode(node.latestpacket)) { Warn("setRxMode fail"); return; }
 		if(this.enbinterval) {
 			var readStream = new ReadStream(node);
