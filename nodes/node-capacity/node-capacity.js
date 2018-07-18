@@ -49,14 +49,20 @@ module.exports = function(RED) {
 					rssi: {},
 				};
 
+				var count = 0;
 				for(var id in hourCapacity) {
 					if((now - sensorInfo[id].last) <3600*1000) {
+						// generate hour capacity data
 						payload.capacity[id] = parseInt(hourCapacity[id].ontime/hourCapacity[id].meastime*1000)/10;
 						payload.vbat[id] = sensorInfo[id].battery;
 						payload.rssi[id] = sensorInfo[id].rssi;
+						count+=1;
+						// generate battery data
 					}
 				}
-				node.send({payload:payload});
+				if(count > 0) {
+					node.send({payload:payload});
+				}
 				hour = { reported: now };
 				hourCapacity = {};
 			}
@@ -71,6 +77,7 @@ module.exports = function(RED) {
 					off:{},
 				};
 
+				var count = 0;
 				for(var id in dayCapacity) {
 					if((now - sensorInfo[id].last) <3600*1000*24) {
 						payload.capacity[id] = parseInt(dayCapacity[id].ontime/dayCapacity[id].meastime*1000)/10;
@@ -85,9 +92,12 @@ module.exports = function(RED) {
 							max: sensorInfo[id].off.max,
 							min: sensorInfo[id].off.min
 						}
+						count += 1;
 					}
 				}
-				node.send({payload:payload});
+				if(count > 0) {
+					node.send({payload:payload});
+				}
 				day = { reported: now };
 				dayCapacity = {};
 				/*
@@ -157,6 +167,17 @@ module.exports = function(RED) {
 			var reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 			//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
 			//
+			var vbat = {
+				payload: {
+					type: "battery",
+					timestamp: id,
+					vbat: battery,
+					rssi: rssi,
+					time: rxtime.getTime()
+				}
+			};
+			node.send(vbat);
+			//console.log(vbat);
 			// first data
 			// worklog
 			if(global.lazuriteConfig.machineInfo.worklog[id].log === true) {
@@ -188,7 +209,7 @@ module.exports = function(RED) {
 							machine: id,
 							from: sensorInfo[id].from.getTime(),
 							type: "log",
-							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 						}
 					};
 					if(reason) {
@@ -231,7 +252,7 @@ module.exports = function(RED) {
 								from: sensorInfo[id].from.getTime(),
 								machine: id,
 								type: "log",
-								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop"),
+								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 							}
 						};
 						if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
@@ -282,7 +303,7 @@ module.exports = function(RED) {
 								timestamp: rxtime.getTime(),
 								type: `graph-${id}-hour`,
 								min: graph[id].hour.min,
-								max: graph[id].hour.max,
+								max: graph[id].hour.max
 							}
 						});
 						graph[id].hour.min = current;
@@ -301,7 +322,7 @@ module.exports = function(RED) {
 								timestamp: rxtime.getTime(),
 								type: `graph-${id}-day`,
 								min: graph[id].day.min,
-								max: graph[id].day.max,
+								max: graph[id].day.max
 							}
 						});
 						graph[id].day.min = current;
@@ -317,6 +338,10 @@ module.exports = function(RED) {
 					//console.log({payload: msg.payload, graph: graph[id]});
 				}
 			}
+		});
+		node.on('close',function(done) {
+			clearInterval(timer);
+			done();
 		});
 	}
 	RED.nodes.registerType("lazurite-capacity", LazuriteCapacity);
