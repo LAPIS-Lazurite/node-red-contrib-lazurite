@@ -314,7 +314,7 @@ module.exports = function(RED) {
 						node.send({
 							payload: {
 								dbname: node.config.dbname,
-								timestamp: rxtime.getTime(),
+								timestamp: rxtime.getTime() - 3600*1000,
 								type: `graph-${id}-hour`,
 								min: graph[id].hour.min,
 								max: graph[id].hour.max
@@ -333,7 +333,7 @@ module.exports = function(RED) {
 						node.send({
 							payload: {
 								dbname: node.config.dbname,
-								timestamp: rxtime.getTime(),
+								timestamp: rxtime.getTime() - 24*3600*1000,
 								type: `graph-${id}-day`,
 								min: graph[id].day.min,
 								max: graph[id].day.max
