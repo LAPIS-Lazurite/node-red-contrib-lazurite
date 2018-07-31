@@ -24,17 +24,13 @@ module.exports = function(RED) {
 	global.lazuriteConfig = {
 		machineInfo: {
 			worklog: {},
-			graph: {}
+			graph: {},
+			vbat: {}
 		},
 		optimeInfo: []
 	}
 
-	const KEEP_ALIVE = 3480*1000;
-	const MEAS_INTERVAL = 5*1000;
-	const EACK_NOP = 0;
-	const EACK_DEBUG = 1;
-	const EACK_UPDATE = 2;
-	const EACK_DISCONNECT = 3;
+	const KEEP_ALIVE = 3480*1000; const MEAS_INTERVAL = 5*1000; const EACK_NOP = 0; const EACK_DEBUG = 1; const EACK_UPDATE = 2; const EACK_DISCONNECT = 3;
 	const EACK_FIRMWARE_UPDATE = 0xF0;
 
 	function LazuriteFactoryParams(config) {
@@ -321,7 +317,7 @@ module.exports = function(RED) {
 				//console.log({id:id, src: rxdata.src_addr[0]});
 				if(worklogs[id]){
 					updateEnhanceAck(false,calEnhanceAck(id));
-					node.send([,,{payload: global.lazuriteConfig.machineInfo.enhanceAck}]);
+					node.send([,,,{payload: global.lazuriteConfig.machineInfo.enhanceAck}]);
 					var txdata = {
 						dst_panid: 0xffff,
 						dst_addr: rxdata.src_addr,

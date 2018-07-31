@@ -15,6 +15,8 @@
  **/
 module.exports = function(RED) {
 	const INTERVAL_GRAPH = 29*1000;
+	const INTERVAL_VBAT = 58 * 60*1000;
+	//const INTERVAL_VBAT = 60*1000;
 	function LazuriteCapacity(config) {
 		var node = this;
 		var sensorInfo = {};
@@ -162,21 +164,33 @@ module.exports = function(RED) {
 			var state = msg.payload[0];
 			var current = parseFloat(msg.payload[1]);
 			var battery = parseFloat(msg.payload[2]);
-			var graph = global.lazuriteConfig.machineInfo.graph;
 			var rssi = msg.rssi;
+			var graph = global.lazuriteConfig.machineInfo.graph;
+			var vbat = global.lazuriteConfig.machineInfo.vbat;
 			var reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 			//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
 			//
-			var vbat = {
-				payload: {
+			if(vbat[id] === undefined) {
+				vbat[id] = {
 					type: "battery",
 					timestamp: id,
 					vbat: battery,
 					rssi: rssi,
 					time: rxtime.getTime()
+				};
+				node.send({payload: vbat[id]});
+			} else {
+				if((rxtime.getTime() - vbat[id].time) > INTERVAL_VBAT) {
+					vbat[id] = {
+						type: "battery",
+						timestamp: id,
+						vbat: battery,
+						rssi: rssi,
+						time: rxtime.getTime()
+					};
+					node.send({payload: vbat[id]});
 				}
-			};
-			node.send(vbat);
+			}
 			//console.log(vbat);
 			// first data
 			// worklog
