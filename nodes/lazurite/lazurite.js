@@ -68,7 +68,7 @@ module.exports = function(RED) {
 				param.lot += (lo[i] < 16 ? "0":"") + lo[i].toString(16);
 			}
 			var panid;
-			if(node.panid === 0xffff) {
+			if((node.panid === 0xffff)||(node.panid === 0xfffe)) {
 				panid = parseInt(Math.random() * 0xfffd);
 			} else {
 				panid = node.panid;
