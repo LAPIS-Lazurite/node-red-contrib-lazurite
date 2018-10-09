@@ -591,7 +591,7 @@ static void send(const FunctionCallbackInfo<Value>& args) {
 	uint16_t dst_addr  = args[1]->NumberValue();;
 	String::Utf8Value payload(args[2]->ToString());
 
-	int result = sendfunc(dst_panid, dst_addr, ToCString(payload), payload.length());
+	int result = sendfunc(dst_panid, dst_addr, ToCString(payload), payload.length()+1);
 	if(result < 0) {
 		fprintf (stderr, "tx error = %d\n",result);
 #ifdef V8_VER_0
@@ -663,7 +663,7 @@ static void send64le(const FunctionCallbackInfo<Value>& args) {
 
 	String::Utf8Value payload(args[1]->ToString());
 
-	int result = sendfunc64le(dst_addr, ToCString(payload), payload.length());
+	int result = sendfunc64le(dst_addr, ToCString(payload), payload.length()+1);
 	if(result < 0) {
 		fprintf (stderr, "tx64be error = %d\n",result);
 #ifdef V8_VER_0
@@ -736,7 +736,7 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 
 	String::Utf8Value payload(args[1]->ToString());
 
-	int result = sendfunc64be(dst_addr, ToCString(payload), payload.length());
+	int result = sendfunc64be(dst_addr, ToCString(payload), payload.length()+1);
 	if(result < 0) {
 		fprintf (stderr, "tx64be error = %d\n",result);
 #ifdef V8_VER_0
