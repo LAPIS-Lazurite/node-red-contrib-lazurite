@@ -173,9 +173,6 @@ module.exports = function(RED) {
 					if (node.connecting) {
 						node.client.end();
 						node.connecting = false;
-						setTimeout(function(){
-						node.connect();
-						},10000);
 					}
 				});
 			}
@@ -221,21 +218,21 @@ module.exports = function(RED) {
 		};
 
 		this.publish = function (msg) {
-			if (node.connected) {
-				if (!Buffer.isBuffer(msg.payload)) {
-					if (typeof msg.payload === "object") {
-						msg.payload = JSON.stringify(msg.payload);
-					} else if (typeof msg.payload !== "string") {
-						msg.payload = "" + msg.payload;
-					}
+			//if (node.connected) {
+			if (!Buffer.isBuffer(msg.payload)) {
+				if (typeof msg.payload === "object") {
+					msg.payload = JSON.stringify(msg.payload);
+				} else if (typeof msg.payload !== "string") {
+					msg.payload = "" + msg.payload;
 				}
-
-				var options = {
-					qos: msg.qos || 0,
-					retain: false
-				};
-				node.client.publish(msg.topic, msg.payload, options, function (err){return});
 			}
+
+			var options = {
+				qos: msg.qos || 0,
+				retain: false
+			};
+			node.client.publish(msg.topic, msg.payload, options, function (err){return});
+			//}
 		};
 
 		this.on('close', function(done) {
