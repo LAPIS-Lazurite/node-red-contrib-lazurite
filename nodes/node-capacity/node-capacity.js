@@ -15,7 +15,7 @@
  **/
 module.exports = function(RED) {
 	const INTERVAL_GRAPH = 29*1000;
-	const INTERVAL_VBAT = 58 * 60*1000;
+	const INTERVAL_VBAT = 0 * 60*1000;
 	//const INTERVAL_VBAT = 60*1000;
 	function LazuriteCapacity(config) {
 		var node = this;
@@ -59,11 +59,13 @@ module.exports = function(RED) {
 						payload.vbat[id] = sensorInfo[id].battery;
 						payload.rssi[id] = sensorInfo[id].rssi;
 						count+=1;
+						delete payload.rssi[id].battery;
+						delete payload.rssi[id].rssi;
 						// generate battery data
 					}
 				}
 				if(count > 0) {
-					node.send({payload:payload});
+					node.send({payload:payload,topic:global.lazuriteConfig.capacity.topic});
 				}
 				hour = { reported: now };
 				hourCapacity = {};
@@ -98,7 +100,7 @@ module.exports = function(RED) {
 					}
 				}
 				if(count > 0) {
-					node.send({payload:payload});
+					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
 				}
 				day = { reported: now };
 				dayCapacity = {};
@@ -178,7 +180,7 @@ module.exports = function(RED) {
 					rssi: rssi,
 					time: rxtime.getTime()
 				};
-				node.send({payload: vbat[id]});
+				node.send({payload: vbat[id],topic: global.lazuriteConfig.capacity.topic});
 			} else {
 				if((rxtime.getTime() - vbat[id].time) > INTERVAL_VBAT) {
 					vbat[id] = {
@@ -188,7 +190,7 @@ module.exports = function(RED) {
 						rssi: rssi,
 						time: rxtime.getTime()
 					};
-					node.send({payload: vbat[id]});
+					node.send({payload: vbat[id],topic: global.lazuriteConfig.capacity.topic});
 				}
 			}
 			//console.log(vbat);
@@ -224,11 +226,13 @@ module.exports = function(RED) {
 							from: sensorInfo[id].from.getTime(),
 							type: "log",
 							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-						}
+						},
+						topic: global.lazuriteConfig.capacity.topic
 					};
 					if(reason) {
 						sensorInfo[id].reasonId = reason;
 						output.payload.reasonId = reason;
+						output.topic = global.lazuriteConfig.capacity.topic
 					}
 					node.send(output);
 				} else {
@@ -254,7 +258,8 @@ module.exports = function(RED) {
 								machine: id,
 								type: "log",
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-							}
+							},
+							topic : global.lazuriteConfig.capacity.topic
 						};
 						if(reason) output.payload.reasonId = reason;
 						node.send(output);
@@ -267,7 +272,8 @@ module.exports = function(RED) {
 								machine: id,
 								type: "log",
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-							}
+							},
+							topic : global.lazuriteConfig.capacity.topic
 						};
 						if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
 						node.send(output);
@@ -279,7 +285,8 @@ module.exports = function(RED) {
 				if( sensorInfo[id][state].min > current ) sensorInfo[id][state].min = current;
 				if( sensorInfo[id][state].max < current ) sensorInfo[id][state].max = current;
 				sensorInfo[id].battery = battery;
-				if(sensorInfo[id].rssi > rssi) sensorInfo[id].rssi = rssi;
+				if(sensorInfo[id].rssi === undefined) sensorInfo[id].rssi = rssi;
+				else if(sensorInfo[id].rssi > rssi) sensorInfo[id].rssi = rssi;
 			}
 			// data output for graph
 			if(graph[id].enabled ===true) {
@@ -299,7 +306,8 @@ module.exports = function(RED) {
 							timestamp: rxtime.getTime(),
 							type: `graph-${id}-raw`,
 							value: current
-						}
+						},
+						topic : global.lazuriteConfig.capacity.topic
 					});
 				} else if(rxtime - graph[id].reported > INTERVAL_GRAPH) {
 					node.send({
@@ -308,7 +316,8 @@ module.exports = function(RED) {
 							timestamp: rxtime.getTime(),
 							type: `graph-${id}-raw`,
 							value: current
-						}
+						},
+						topic : global.lazuriteConfig.capacity.topic
 					});
 					if(graph[id].reported.getHours() !== rxtime.getHours()){
 						node.send({
@@ -337,7 +346,8 @@ module.exports = function(RED) {
 								type: `graph-${id}-day`,
 								min: graph[id].day.min,
 								max: graph[id].day.max
-							}
+						},
+						topic : global.lazuriteConfig.capacity.topic
 						});
 						graph[id].day.min = current;
 						graph[id].day.max = current;

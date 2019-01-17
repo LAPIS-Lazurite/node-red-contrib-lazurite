@@ -313,9 +313,12 @@ module.exports = function(RED) {
 				}
 				msg.qos = Number(node.qos || msg.qos || 0);
 				msg.retain = false;
+				msg.topic = msg.topic || node.topic;
+				/*
 				if (node.topic) {
 					msg.topic = node.topic;
 				}
+				*/
 				if ( msg.hasOwnProperty("payload")) {
 					if (msg.hasOwnProperty("topic") && (typeof msg.topic === "string") && (msg.topic !== "")) { // topic must exist
 						this.brokerConn.publish(msg);  // send the message

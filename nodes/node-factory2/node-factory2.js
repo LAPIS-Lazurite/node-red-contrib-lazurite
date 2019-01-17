@@ -16,10 +16,16 @@
 module.exports = function(RED) {
 	//const server = api.lazurite.io
 	//const https = require('http');
-	var fs = require('fs');
-	var url = require('url');
+	const fs = require('fs');
+	const url = require('url');
+	const KEEP_ALIVE = 1800*1000;
+	const MEAS_INTERVAL = 5*1000;
+	const EACK_NOP = 0;
+	const EACK_DEBUG = 1;
+	const EACK_UPDATE = 2;
+	const EACK_DISCONNECT = 3;
+	const EACK_FIRMWARE_UPDATE = 0xF0;
 	var addr2id = {};
-	var isGatewayActive = false;
 	var timerThread = null;
 	global.lazuriteConfig = {
 		machineInfo: {
@@ -27,20 +33,69 @@ module.exports = function(RED) {
 			graph: {},
 			vbat: {}
 		},
-		optimeInfo: []
+		optimeInfo: {
+			Items:[],
+			getNextEvent: function(currentStatus) {
+				var data = {};
+				var alertTime = [];
+				var now = new Date();
+				var currentState = null;
+				var time;
+				for(var i = 0; i < 8; i++) {
+					var v = this.Items[(now.getDay()+i)%7];
+					if(v.setOff === 0) {
+						if(v.setTime === 1) {
+							var tmp = v.stTime.split(":");
+							var hours = parseInt(tmp[0]);
+							var minutes = parseInt(tmp[1]);
+							time = new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,0,0,0);
+							//console.log({i:i, now: now.toLocaleString(), time: time.toLocaleString(),v:v});
+							alertTime.push({state: false,time: time});
+							time = new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,hours,minutes,0);
+							time.setTime(time.getTime() - KEEP_ALIVE);
+							alertTime.push({state: true,time: time});
+							tmp = v.endTime.split(":");
+							hours = parseInt(tmp[0]);
+							minutes = parseInt(tmp[1]);
+							time = new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,hours,minutes,0);
+							alertTime.push({state: false ,time: time});
+						} else {
+							time = new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,0,0,0);
+							time.setTime(time.getTime() - KEEP_ALIVE);
+							alertTime.push({state: true,time: time});
+						}
+					} else {
+						time = new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,0,0,0);
+						alertTime.push({state: false,time: time});
+					}
+				}
+				/*
+				for(var a of alertTime) {
+					console.log({state:a.state,time: a.time.toLocaleString()});
+				}
+				*/
+				for(var a of alertTime) {
+					if(currentState === null) {currentState = a.state};
+					console.log({currentState: currentState, state: a.state, time: a.time.toLocaleString(), now: now.toLocaleString()});
+					if((now < a.time) && (a.state !== currentState)) return {state:currentState, time: a.time};
+					currentState = a.state;
+				}
+				return {state:currentState};
+			},
+		},
+		isGatewayActive:  false,
 	}
-
-	const KEEP_ALIVE = 3480*1000; const MEAS_INTERVAL = 5*1000; const EACK_NOP = 0; const EACK_DEBUG = 1; const EACK_UPDATE = 2; const EACK_DISCONNECT = 3;
-	const EACK_FIRMWARE_UPDATE = 0xF0;
 
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
 		var u = url.parse(config.server);
+		const https = require(u.protocol.slice(0,-1));
 		var node = this;
-		var https = require(u.protocol.slice(0,-1));
 		//node.config = config;
 		node.awsiotConfig = JSON.parse(fs.readFileSync(config.awsiotConfig,'utf8'));
-
+		global.lazuriteConfig.log = {topic: node.awsiotConfig.topic.split('/')[0]+'/log'};
+		global.lazuriteConfig.capacity = {topic: node.awsiotConfig.topic.split('/')[0]+'/capacity'};
+		//console.log(global.lazuriteConfig);
 		const httpOptions = {
 			//host: "api.lazurite.io",
 			host: u.hostname,
@@ -54,13 +109,11 @@ module.exports = function(RED) {
 			}
 		};
 		new Promise((resolve,reject) => {
-			var index = 0;
 			getParameter(u.pathname+'/info/machine',(err,res) => {
 				if(err){
 					reject(err);
 				} else {
 					node.send({payload:res});
-					//console.log(JSON.stringify({cmd:"getParameter.Machine",data:res},null,2));
 					genAddressMap(res.Items);
 					resolve();
 				}
@@ -72,83 +125,67 @@ module.exports = function(RED) {
 						reject(err);
 					} else {
 						node.send([,{payload:res}]);
-						global.lazuriteConfig.optimeInfo = remapOpTime(res.Items);
-						initEnhanceAck();
-						if(timerThread === null ) {
-							timerThread = setInterval(function() {
-								if(tickEnhanceAck() === true ) {
-									node.send([,,{payload: global.lazuriteConfig.machineInfo.enhanceAck}]);
-									//console.log(JSON.stringify(global.lazuriteConfig.machineInfo.enhanceAck,null,2));
-								};
-							},10000);
-						}
-						isGatewayActive = true;
+						global.lazuriteConfig.optimeInfo.Items = res.Items;
 						resolve();
 					}
 				});
 			});
 		}).then((values) => {
+			var optime = global.lazuriteConfig.optimeInfo;
+			//optime.nextEvent = optime.getNextEvent(null);
+			initEnhanceAck();
+			global.lazuriteConfig.isGatewayActive = true;
 		}).catch((err) => {
-			console.log(err);
 			node.send([,,,{payload:err}]);
 		});
-		function getParameter(path,callback) {
-			var retry = 0;
-			function loop () {
-				new Promise((resolve,reject) => {
-					var body = "";
-					httpOptions.path = path;
-					//console.log(httpOptions);
-					https.get(httpOptions,(res) => {
-						res.setEncoding('utf8');
-						res.on('data',(chunk) => {
-							body += chunk;
-						});
-						res.on('end',() => {
-							//console.log(body);
-							resolve(body);
-						});
-					}).on('error',(e) => {
-						//console.log(e);
-						reject(e)
-					});
-				}).then((values) => {
-					callback(null,JSON.parse(values));
-				}).catch((err) => {
-					console.log(err);
-					retry += 1;
-					if(retry < 10) {
-						setTimeout(loop,30000);
-					} else {
-						callback(err,null);
-					}
-				});
-			}
-			loop();
-		}
 
 		node.on('input', function (msg) {
-			try {
-				var data = JSON.parse(msg.payload);
-				switch(data.type) {
+			if(timerThread) {
+				clearTimeout(timerThread);
+				timerThread = null;
+			}
+			new Promise((resolve,reject) => {
+				var m = JSON.parse(msg.payload);
+				switch(m.type) {
 					case 'machine':
-						//console.log({cmd:'updateMachine',data: data.Items});
-						genAddressMap(data.Items);
-						initEnhanceAck();
-						node.send({payload:data.Items});
+						getParameter(u.pathname+'/info/machine',(err,res) => {
+							if(err){
+								reject(err);
+							} else {
+								node.send({payload:res});
+								genAddressMap(res.Items);
+								resolve();
+							}
+						});
 						break;
 					case 'optime':
-						global.lazuriteConfig.optimeInfo = remapOpTime(data.Items);
-						initEnhanceAck();
-						//console.log({cmd:'updateOptime',data: data.Items});
-						node.send([,{payload:data.Items}]);
+						getParameter(u.pathname+'/info/optime',(err,res) => {
+							if(err){
+								reject(err);
+							} else {
+								node.send([,{payload:res}]);
+								global.lazuriteConfig.optimeInfo.Items = res.Items;
+								//console.log(JSON.stringify(global.lazuriteConfig.optimeInfo,null,"  "));
+								resolve();
+							}
+						});
 						break;
 					default:
-						node.send([,,,{payload:{message: 'invalid type', data: data}}]);
+						reject('LazuriteFactoryParams unsupported message type');
 						break;
 				}
-			} catch (e) {
-				node.send([,,,{payload:{message: 'invalid data', data: data}}]);
+			}).then(() => {
+				var optime = global.lazuriteConfig.optimeInfo;
+				//optime.nextEvent = optime.getNextEvent();
+				initEnhanceAck();
+			}).catch((err) => {
+				node.send([,,,{payload:err}]);
+			});
+		});
+		node.on('close',() => {
+			if(timerThread) {
+				clearInterval(timerThread);
+				timerThread = null;
 			}
 		});
 		function genAddressMap(data) {
@@ -206,48 +243,103 @@ module.exports = function(RED) {
 			}
 			//console.log(JSON.stringify({cmd: 'genAddressMap',info: global.lazuriteConfig.machineInfo},undefined,2));
 		}
-		function remapOpTime(values) {
-			var data = {};
-			for (var i in values) {
-				data[values[i].day] = {
-					setOff: values[i].setOff,
-					setTime : {
-						flag: values[i].setTime
-					}
-				}
-				if(values[i].setTime > 0) {
-					var tmp = values[i].stTime.split(":");
-					data[values[i].day].setTime.st = {
-						hour : parseInt(tmp[0]),
-						min : parseInt(tmp[1])
-					}
-					tmp = values[i].endTime.split(":");
-					data[values[i].day].setTime.end = {
-						hour : parseInt(tmp[0]),
-						min : parseInt(tmp[1])
-					}
-				}
-			}
-			//console.log(JSON.stringify(data,null,"  "});
-			return data;
-		}
-		function initEnhanceAck() {
-			global.lazuriteConfig.machineInfo.enhanceAck = [];
+		function initEnhanceAck(mode) {
+			// mode: true		DBが更新された時
+			// mode: false	DBが更新されていない時(timer割り込み時)
+			global.lazuriteConfig.enhanceAck = [];
+			var optime = global.lazuriteConfig.optimeInfo;
+			var enhanceAck = global.lazuriteConfig.enhanceAck;
 			var worklogs = global.lazuriteConfig.machineInfo.worklog;
-			for(var i in worklogs) {
-				var interval = parseInt(worklogs[i].interval/1000);
-				//updateEnhanceAck(false,calEnhanceAck(i));
-				updateEnhanceAck(true,{
-					addr: parseInt(i),
-					data:[EACK_UPDATE,interval&0xFF,(interval>>8)&0xFF]
-				});
+			//イベントを更新
+			optime.nextEvent = optime.getNextEvent();
+			if(optime.nextEvent.time === undefined) {
+				console.log(optime.nextEvent);
+			} else {
+				console.log({state: optime.nextEvent.state, time: optime.nextEvent.time.toLocaleString()});
 			}
-			updateEnhanceAck(true,{
+			// 次のenhanceAckを作成
+			//console.log({initEnhanceAck:mode,optime: optime.nextEvent});
+			for(var i in worklogs) {
+				if(mode === true) {
+					var interval = parseInt(MEAS_INTERVAL / 1000);
+					enhanceAck.push({
+						addr: parseInt(i),
+						data: [EACK_UPDATE,interval & 0x00FF,(interval >> 8) & 0x00FF]
+					});
+				} else {
+					if(optime.nextEvent.state === true) {
+						var interval = parseInt(worklogs[i].interval / 1000);
+						enhanceAck.push({
+							addr: parseInt(i),
+							data: [worklogs[i].debug?EACK_DEBUG:EACK_NOP,interval & 0x00FF,(interval >> 8) & 0x00FF]
+						});
+					} else {
+						var interval = parseInt(KEEP_ALIVE / 1000);
+						enhanceAck.push({
+							addr: parseInt(i),
+							data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
+						});
+					}
+				}
+			}
+			enhanceAck.push({
 				addr: 0xffff,
 				data:[EACK_DISCONNECT,5,0]
 			});
-			//console.log(JSON.stringify(global.lazuriteConfig.machineInfo.enhanceAck,null,2));
-			node.send([,,{payload: global.lazuriteConfig.machineInfo.enhanceAck}]);
+			node.send([,,{payload: global.lazuriteConfig.enhanceAck}]);
+
+			// setTrigger
+			var now = new Date();
+			if(timerThread) {
+				clearTimeout(timerThread);
+				timerThread = null;
+			}
+			if(optime.nextEvent.time) {
+				timerThread = setTimeout(function() {
+					initEnhanceAck(false);
+				},optime.nextEvent.time - now);
+			}
+			/*
+			console.log({msg: "hello",
+				state: optime.nextEvent.state,
+				nextEvent: optime.nextEvent.time.toLocaleString(),
+				now: (new Date()).toLocaleString()});
+				*/
+		}
+		function getParameter(path,callback) {
+			var retry = 0;
+			function loop () {
+				new Promise((resolve,reject) => {
+					var body = "";
+					httpOptions.path = path;
+					//console.log(httpOptions);
+					https.get(httpOptions,(res) => {
+						res.setEncoding('utf8');
+						res.on('data',(chunk) => {
+							body += chunk;
+						});
+						res.on('end',() => {
+							//console.log(body);
+							resolve(body);
+						});
+					}).on('error',(e) => {
+						//console.log(e);
+						reject(e)
+					});
+				}).then((values) => {
+					timerThread = null;
+					callback(null,JSON.parse(values));
+				}).catch((err) => {
+					console.log(err);
+					retry += 1;
+					if(retry < 10) {
+						timerThread = setTimeout(loop,30000);
+					} else {
+						callback(err,null);
+					}
+				});
+			}
+			loop();
 		}
 	}
 	RED.nodes.registerType("lazurite-factory-params", LazuriteFactoryParams);
@@ -258,12 +350,14 @@ module.exports = function(RED) {
 		RED.nodes.createNode(this,config);
 		var node = this;
 		node.on('input', function (msg) {
-			if(Array.isArray(msg.payload)) {
-				for(var i in msg.payload) {
-					checkRxData(msg.payload[i]);
+			if(global.lazuriteConfig.isGatewayActive === true) {
+				if(Array.isArray(msg.payload)) {
+					for(var i in msg.payload) {
+						checkRxData(msg.payload[i]);
+					}
+				} else {
+					checkRxData(msg.payload);
 				}
-			} else {
-				checkRxData(msg.payload);
 			}
 		});
 		function checkRxData(rxdata) {
@@ -276,22 +370,27 @@ module.exports = function(RED) {
 				if(rxdata.payload[0] === "update") {
 					var id = rxdata.src_addr[0];
 					if(worklogs[id]){
-						updateEnhanceAck(false,calEnhanceAck(id));
-						node.send([,,,{payload: global.lazuriteConfig.machineInfo.enhanceAck}]);		// update EACK
-						// send parameters;
-						node.send([,{											// send update informaton by uni-cast
-							dst_panid: gateway.panid,
-							dst_addr: rxdata.src_addr,
-							payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
-						}]);
-					} else {
-						//console.log(`invalid id = ${rxdata.src_addr[0]}`);
+						for(var eack of global.lazuriteConfig.enhanceAck) {
+							if(eack.addr === id) {
+								// update enhanceAck
+								var optime = global.lazuriteConfig.optimeInfo;
+								if(optime.nextEvent.state === false) {
+									eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
+								} else {
+									eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
+								}
+								node.send([,{
+									dst_panid: rxdata.dst_panid,
+									dst_addr: rxdata.src_addr,
+									payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
+								},,{payload: global.lazuriteConfig.enhanceAck}]);
+								break;
+							}
+						}
 					}
 				} else {
 					// state information
 					var id = rxdata.src_addr[0];
-					//console.log({id: id});
-					// invert
 					if(worklogs[id]){
 						if(worklogs[id].invert === true) {
 							rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
@@ -299,10 +398,15 @@ module.exports = function(RED) {
 						}
 						node.send([,,rxdata]);											// send capacity information
 						if(worklogs[id].disp) {
-							node.send([,,,,{payload: rxdata}]);			// send rxdata to log
+							node.send([,,,,{
+								payload: {
+									a: rxdata.src_addr,
+									t: parseInt(rxdata.sec*1000+rxdata.nsec/1000000),
+									d: rxdata.payload
+								},
+								topic: global.lazuriteConfig.log.topic
+							}]);			// send rxdata to log
 						}
-					} else {
-						//console.log(global.lazuriteConfig.machineInfo.enhanceAck);
 					}
 				}
 			} else if((rxdata.dst_panid == 0xffff) &&
@@ -316,124 +420,27 @@ module.exports = function(RED) {
 				var id = addr2id[rxdata.src_addr[0]];
 				//console.log({id:id, src: rxdata.src_addr[0]});
 				if(worklogs[id]){
-					updateEnhanceAck(false,calEnhanceAck(id));
-					node.send([,,,{payload: global.lazuriteConfig.machineInfo.enhanceAck}]);
-					var txdata = {
-						dst_panid: 0xffff,
-						dst_addr: rxdata.src_addr,
-						payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
-					};
-					updateEnhanceAck(false,calEnhanceAck(id));
-					node.send(txdata);
-				} else {
-					//console.log(`invalid id = ${rxdata.src_addr[0]}`);
-				}
-			} else {
-				// broadcast
-			}
-			//console.log(global.lazuriteConfig.machineInfo.enhanceAck);
-		}
-	}
-	RED.nodes.registerType("lazurite-device-manager", LazuriteDeviceManager);
-	function calEnhanceAck(id) {
-		var now = new Date();
-		var day = now.getDay();
-		var optime = global.lazuriteConfig.optimeInfo[day];
-		var worklogs = global.lazuriteConfig.machineInfo.worklog;
-		var enhanceAck = global.lazuriteConfig.machineInfo.enhanceAck;
-		//console.log(optime);
-		// off day
-		if(optime.setOff > 0) {
-			return {
-				addr: parseInt(id),
-				data: [EACK_DEBUG,parseInt(KEEP_ALIVE/1000)&0xFF,(parseInt(KEEP_ALIVE/1000)>>8)&0xFF]
-			};
-		} else if(optime.setTime.flag > 0) {
-			var stTime = new Date(now.getFullYear(),now.getMonth(),now.getDate(),optime.setTime.st.hour,optime.setTime.st.min);
-			var endTime = new Date(now.getFullYear(),now.getMonth(),now.getDate(),optime.setTime.end.hour,optime.setTime.end.min);
-			//console.log({cmd:"calEnhanceAck", data: worklogs[id] });
-			var diff = stTime - now;
-			// workday   now < stTime - KEEP_ALIVE  or  endTime < now
-			if(((diff > KEEP_ALIVE) || (now >  endTime )) && (worklogs[id].debug === false)){
-				//console.log("off");
-				return {
-					addr: parseInt(id),
-					data: [EACK_DEBUG,parseInt(KEEP_ALIVE/1000)&0xFF,(parseInt(KEEP_ALIVE/1000)>>8)&0xFF]
-				};
-				// workday   KEEP_ALIVE < now < stTime
-			} else if ((diff > 0) && (worklogs[id].debug === false)) {
-				//console.log("prepare");
-				var interval = diff+worklogs[id].interval
-				//console.log({interval: interval, diff:diff, log: worklogs[id].interval});
-				return {
-					addr: parseInt(id),
-					data: [EACK_DEBUG,parseInt(interval/1000)&0xFF,(parseInt(interval/1000)>>8)&0xFF]
-				};
-				// workday   stTime < now < endTime
-			} else {
-				/*
-				 * console.log({
-					worktime:"worktime1",
-					mode: worklogs[id].debug === true ? EACK_DEBUG: EACK_NOP,
-					debug: worklogs[id].debug,
-					interval: worklogs[id].interval
-				});
-				*/
-				return {
-					addr: parseInt(id),
-					data: [worklogs[id].debug === true? EACK_DEBUG: EACK_NOP,parseInt(worklogs[id].interval/1000)&0xFF,(parseInt(worklogs[id].interval/1000)>>8)&0xFF]
-				};
-			}
-		} else {
-			//console.log("workingtime2");
-			return {
-				addr: parseInt(id),
-				data: [worklogs[id].debug === true? EACK_DEBUG: EACK_NOP,parseInt(worklogs[id].interval/1000)&0xFF,(parseInt(worklogs[id].interval/1000)>>8)&0xFF]
-			};
-		}
-	}
-	function updateEnhanceAck(rst,data) {
-		var enhanceAck = global.lazuriteConfig.machineInfo.enhanceAck;
-		if(rst === true) {
-			enhanceAck.push(data);
-		} else {
-			for(var i of enhanceAck) {
-				if(i.addr === data.addr) {
-					i.data = data.data;
-				}
-			}
-		}
-	}
-	function tickEnhanceAck() {
-		var worklogs = global.lazuriteConfig.machineInfo.worklog;
-		var result = false;
-		for(var id in worklogs) {
-			var enhanceAck = pickupEnhanceAck(id);
-			//console.log({func: 'tick',worklog: worklogs[id],enhanceAck: enhanceAck});
-			if(enhanceAck.data[0] !== EACK_UPDATE) {
-				if(enhanceAck.data[0] !== EACK_UPDATE) {
-					var newEnhanceAck = calEnhanceAck(id);
-					//console.log(newEnhanceAck);
-					if((enhanceAck.data[0] !== newEnhanceAck.data[0]) ||
-						(enhanceAck.data[1] !== newEnhanceAck.data[1]) ||
-						(enhanceAck.data[2] !== newEnhanceAck.data[2])) {
-						updateEnhanceAck(false,newEnhanceAck);
-						//console.log({now: enhanceAck,new: newEnhanceAck});
-						result = true;
+					for(var eack of global.lazuriteConfig.enhanceAck) {
+						if(eack.addr === id) {
+							// update enhanceAck
+							var optime = global.lazuriteConfig.optimeInfo;
+							if(optime.nextEvent.state === false) {
+								eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
+							} else {
+								eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
+							}
+							node.send([{dst_panid: 0xffff,
+								dst_addr: rxdata.src_addr,
+								payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
+							},,,{payload: global.lazuriteConfig.enhanceAck}]);
+							break;
+						}
 					}
 				}
 			}
 		}
-		return result;
 	}
-	function pickupEnhanceAck(id) {
-		//console.log({cmd:"pickupEnhanceAck", id: id, data:global.lazuriteConfig.machineInfo.enhanceAck});
-		for(var data of global.lazuriteConfig.machineInfo.enhanceAck) {
-			//console.log({cmd:"pickupEnhanceAck",id:id, data:data});
-			if(data.addr === parseInt(id)) {
-				return data;
-			}
-		}
-		return null;
-	}
+	RED.nodes.registerType("lazurite-device-manager", LazuriteDeviceManager);
 }
+
+
