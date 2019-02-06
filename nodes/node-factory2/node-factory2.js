@@ -17,7 +17,9 @@ module.exports = function(RED) {
 	//const server = api.lazurite.io
 	//const https = require('http');
 	const fs = require('fs');
+	const os = require('os');
 	const url = require('url');
+	const execSync = require('child_process').execSync;
 	const KEEP_ALIVE = 1800*1000;
 	const MEAS_INTERVAL = 5*1000;
 	const EACK_NOP = 0;
@@ -32,6 +34,62 @@ module.exports = function(RED) {
 			worklog: {},
 			graph: {},
 			vbat: {}
+		},
+		sendLogMessage: function(msg,callback) {
+			//check network
+			//console.log(this);
+			let enbNetwork = false;
+			for(var socket in os.networkInterfaces()) {
+				if(socket !== "lo") {
+					enbNetwork = true;
+				}
+			}
+			if(enbNetwork === false) {
+				callback({message: 'network error'});
+				return;
+			}
+			if(this.line === undefined) {
+				callback({message: 'line config error'});
+				return;
+			}
+			const u = url.parse("https://api.line.me/v2/bot/message/push")
+			const lineHttpOptions = {
+				host: u.hostname,
+				port: u.port,
+				path: u.path,
+				method: 'POST',
+				headers: {
+					"Content-Type": "application/json; charset=UTF-8",
+					"Authorization" : "Bearer "+this.line.access_token
+				}
+			};
+			// checkNetwork
+			let postData = {
+				to: this.line.id,
+				messages: [
+					{
+						type: 'text',
+						text: msg
+					}
+				]
+			}
+			try {
+				let req = httpsLine.request(lineHttpOptions,(res) => {
+					res.setEncoding("utf8");
+					res.on('data',(chunk) => {
+						console.log("[awsiot] LINE POST MESSAGE: "+chunk);
+						callback(null,chunk);
+					});
+					res.on('error',(e) => {
+						console.log("[awsiot] LINE POST ERROR: " + e.message);
+						callback(e,null);
+					});
+				});
+				req.write(JSON.stringify(postData));
+				req.end();
+			} catch(e) {
+				callback(e,null);
+			}
 		},
 		optimeInfo: {
 			Items:[],
@@ -76,7 +134,7 @@ module.exports = function(RED) {
 				*/
 				for(var a of alertTime) {
 					if(currentState === null) {currentState = a.state};
-					console.log({currentState: currentState, state: a.state, time: a.time.toLocaleString(), now: now.toLocaleString()});
+					//console.log({currentState: currentState, state: a.state, time: a.time.toLocaleString(), now: now.toLocaleString()});
 					if((now < a.time) && (a.state !== currentState)) return {state:currentState, time: a.time};
 					currentState = a.state;
 				}
@@ -92,9 +150,9 @@ module.exports = function(RED) {
 		const https = require(u.protocol.slice(0,-1));
 		var node = this;
 		//node.config = config;
-		node.awsiotConfig = JSON.parse(fs.readFileSync(config.awsiotConfig,'utf8'));
-		global.lazuriteConfig.log = {topic: node.awsiotConfig.topic.split('/')[0]+'/log'};
-		global.lazuriteConfig.capacity = {topic: node.awsiotConfig.topic.split('/')[0]+'/capacity'};
+		global.lazuriteConfig.awsiotConfig = JSON.parse(fs.readFileSync(config.awsiotConfig,'utf8'));
+		global.lazuriteConfig.log = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/log'};
+		global.lazuriteConfig.capacity = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/capacity'};
 		//console.log(global.lazuriteConfig);
 		const httpOptions = {
 			//host: "api.lazurite.io",
@@ -104,8 +162,8 @@ module.exports = function(RED) {
 			headers: {
 				"Accept": "application/json",
 				"Content-Type" : "application/json",
-				"LAZURITE-API-KEY": node.awsiotConfig.access.key,
-				"LAZURITE-API-TOKEN": node.awsiotConfig.access.token
+				"LAZURITE-API-KEY": global.lazuriteConfig.awsiotConfig.access.key,
+				"LAZURITE-API-TOKEN": global.lazuriteConfig.awsiotConfig.access.token
 			}
 		};
 		new Promise((resolve,reject) => {
@@ -127,6 +185,17 @@ module.exports = function(RED) {
 						node.send([,{payload:res}]);
 						global.lazuriteConfig.optimeInfo.Items = res.Items;
 						resolve();
+					}
+				});
+			});
+		}).then((values) => {
+			return new Promise((resolve,reject) => {
+				getParameter(u.pathname+'/info/gateway/line',(err,res) => {
+					if(err) {
+						reject(err);
+					} else {
+						global.lazuriteConfig.line = res.line;
+						resolve(values);
 					}
 				});
 			});
@@ -253,9 +322,9 @@ module.exports = function(RED) {
 			//イベントを更新
 			optime.nextEvent = optime.getNextEvent();
 			if(optime.nextEvent.time === undefined) {
-				console.log(optime.nextEvent);
+				//console.log(optime.nextEvent);
 			} else {
-				console.log({state: optime.nextEvent.state, time: optime.nextEvent.time.toLocaleString()});
+				//console.log({state: optime.nextEvent.state, time: optime.nextEvent.time.toLocaleString()});
 			}
 			// 次のenhanceAckを作成
 			//console.log({initEnhanceAck:mode,optime: optime.nextEvent});
@@ -328,7 +397,11 @@ module.exports = function(RED) {
 					});
 				}).then((values) => {
 					timerThread = null;
-					callback(null,JSON.parse(values));
+					try {
+						callback(null,JSON.parse(values));
+					} catch(err) {
+						console.log({path:path,values: values,err:err});
+					}
 				}).catch((err) => {
 					console.log(err);
 					retry += 1;
@@ -388,6 +461,20 @@ module.exports = function(RED) {
 							}
 						}
 					}
+				} else if (rxdata.payload[0] === "error") {
+					let msg = `[nodered] Lazurite Enhance ACK ERROR\n`;
+					msg += `DATE: ${(new Date).toLocaleString()}\n`;
+					msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`
+					msg += `SRC_ADDR: ${"0x"+("0000"+rxdata.src_addr[0].toString(16)).slice(-4)}\n`;
+					msg += `MSG: ${rxdata.payload}\n`;
+					console.log(msg);
+					global.lazuriteConfig.sendLogMessage(msg,(err,res) => {
+						if(err) {
+							msg += `ERR: ${JSON.stringify(err,null,"  ")}\n`;
+							fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
+						}
+						execSync("sudo reboot");
+					});
 				} else {
 					// state information
 					var id = rxdata.src_addr[0];
