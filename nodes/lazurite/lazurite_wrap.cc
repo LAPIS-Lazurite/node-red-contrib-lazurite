@@ -469,22 +469,22 @@ static void send64le(const FunctionCallbackInfo<Value>& args) {
 #ifdef V8_VER_6
 	if(args[1]->IsString() == true) {
 		String::Utf8Value payload(isolate,args[1]->ToString(context).ToLocalChecked());
-		result = sendfunc64be(dst_addr, ToCString(payload), payload.length()+1);
+		result = sendfunc64le(dst_addr, ToCString(payload), payload.length()+1);
 	} else if(args[1]->IsUint8Array() == true) {
 		Local<Uint8Array> obj = Local<Uint8Array>::Cast(args[1]);
 		uint8_t *data = (uint8_t*)obj->Buffer()->GetContents().Data();
-		result = sendfunc64be(dst_addr,data,obj->Length());
+		result = sendfunc64le(dst_addr,data,obj->Length());
 	} else {
 		result = -1;
 	} 
 #else
 	if(args[1]->IsString() == true) {
 		String::Utf8Value payload(args[1]->ToString());
-		result = sendfunc(dst_addr, ToCString(payload), payload.length()+1);
+		result = sendfunc64le(dst_addr, ToCString(payload), payload.length()+1);
 	} else if(args[1]->IsUint8Array() == true) {
 		Local<Uint8Array> obj = Local<Uint8Array>::Cast(args[1]);
 		uint8_t *data = (uint8_t*)obj->Buffer()->GetContents().Data();
-		result = sendfunc64be(dst_addr,data,obj->Length());
+		result = sendfunc64le(dst_addr,data,obj->Length());
 	} else {
 		result = -1;
 	}
@@ -508,7 +508,7 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
-	if(!sendfunc64le) {
+	if(!sendfunc64be) {
 		fprintf (stderr, "lazurite_send64be fail.\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
@@ -555,7 +555,7 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 #else
 	if(args[1]->IsString() == true) {
 		String::Utf8Value payload(args[1]->ToString());
-		result = sendfunc(dst_addr, ToCString(payload), payload.length()+1);
+		result = sendfunc64be(dst_addr, ToCString(payload), payload.length()+1);
 	} else if(args[1]->IsUint8Array() == true) {
 		Local<Uint8Array> obj = Local<Uint8Array>::Cast(args[1]);
 		uint8_t *data = (uint8_t*)obj->Buffer()->GetContents().Data();
