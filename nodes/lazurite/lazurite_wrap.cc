@@ -546,7 +546,6 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 		String::Utf8Value payload(isolate,args[1]->ToString(context).ToLocalChecked());
 		result = sendfunc64be(dst_addr, ToCString(payload), payload.length()+1);
 	} else if(args[1]->IsUint8Array() == true) {
-		printf("iUint8Array:: %d\n",args[1]->IsUint8Array());
 		Local<Uint8Array> obj = Local<Uint8Array>::Cast(args[1]);
 		uint8_t *data = (uint8_t*)obj->Buffer()->GetContents().Data();
 		result = sendfunc64be(dst_addr,data,obj->Length());
