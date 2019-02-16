@@ -26,12 +26,12 @@ module.exports = function(RED) {
 	var util = require('util');
 	var latest_rfparam_id="";
 	var isConnect = false;
-    const lazurite_err = {
-        14: "TX FAIL",
-        16: "CCA BUSY",
-        52: "CCA FAIL",
-        110: "NO ACK"
-    };
+	const lazurite_err = {
+		14: "TX FAIL",
+		16: "CCA BUSY",
+		52: "CCA FAIL",
+		110: "NO ACK"
+	};
 
 	function Warn(message){
 		RED.log.warn("LazuriteInNode: " + message);
@@ -42,13 +42,13 @@ module.exports = function(RED) {
 	}
 
 	function setAckReq(node) {
-			if(!lib.setAckReq(node.ackreq)) { Warn("lazurite_setAckReq fail"); return; }
+		if(!lib.setAckReq(node.ackreq)) { Warn("lazurite_setAckReq fail"); return; }
 	}
 	function setBroadcast(node) {
-			if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
+		if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
 	}
 	function setEnhanceAck(data,size) {
-			if(!lib.setEnhanceAck(data,size)) { Warn("lazurite_setEnhanceAck fail"); return; }
+		if(!lib.setEnhanceAck(data,size)) { Warn("lazurite_setEnhanceAck fail"); return; }
 	}
 	function connect(node) {
 		if(!isConnect) {
@@ -80,7 +80,12 @@ module.exports = function(RED) {
 			}
 			if(!lib.begin(node.ch, panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		}
-		node.status({fill:"green",shape:"dot",text:"connected"},true);
+		if(node.channel.config.status === true) {
+			node.status({fill:"green",shape:"dot",text:"connected"},true);
+		} else {
+			node.status({fill:"yellow",shape:"dot",text:"connected"},true);
+			node.warn("Different LazuriteConfigNode is loaded\nUsing the parameters\n"+JSON.stringify(node.channel.config,null,"  "))
+		}
 		isConnect = true;
 		return isConnect;
 	}
@@ -113,7 +118,7 @@ module.exports = function(RED) {
 				if(!lib.rxEnable()) { Warn("lazurite_rxEnable fail"); clearInterval(this.timer); return; }
 				this.enable = true;
 			}
-			this.emit('data', lib.read());
+			this.emit('data', lib.read(this.node.binary));
 		}.bind(this), this.interval);
 	};
 
@@ -138,6 +143,7 @@ module.exports = function(RED) {
 		this.enbinterval  = config.enbinterval;
 		this.broadcastenb  = config.broadcastenb;
 		this.latestpacket  = config.latestpacket;
+		this.binary = config.binary;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
@@ -158,7 +164,7 @@ module.exports = function(RED) {
 		}
 
 		node.on('input', function(msg) {
-			var data = lib.read();
+			var data = lib.read(node.binary);
 			if(data['length'] > 0) {
 				var msg = data;
 				node.send(msg);
@@ -188,6 +194,7 @@ module.exports = function(RED) {
 		this.name	 = config.name;
 		this.enable   = false;
 		this.ackreq   = config.ackreq;
+		this.binary = config.binary;
 		var node = this;
 		node.status({fill:"red",shape:"ring",text:"disconnected"});
 		connect(node);
@@ -205,12 +212,22 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
-			var ret = lib.send(dst_panid, dst_addr, msg.payload.toString());
-            var edat = lib.getEnhanceAck();
-            if(edat.length = 0) { edat = null; }
-            msg.payload = { "result":ret, "EACK":edat }
-            node.send(msg);
-            if (ret < 0) { Warn("lazurite_send fail::" + lazurite_err[-ret]); }
+			if(typeof msg.payload === 'string') {
+					msg.result = lib.send(dst_panid, dst_addr, msg.payload.toString());
+			} else if (msg.payload instanceof Buffer) {
+				var payload = new Uint8Array(msg.payload);
+				msg.result = lib.send(dst_panid, dst_addr, payload);
+			} else if (msg.payload instanceof Uint8Array){
+				msg.result = lib.send(dst_panid, dst_addr, msg.payload);
+			} else {
+				Warn(`LazuriteTxNode fail:: payload is unsupported type(${typeof msg.payload})`); 
+				msg.result = -1;
+				node.send(msg);
+				return;
+			}
+			let edat = lib.getEnhanceAck();
+			if(edat.length !== 0) { msg.eack = edat; }
+			node.send(msg);
 		});
 		node.on('close', function(done) {
 			disconnect(node);
@@ -233,6 +250,7 @@ module.exports = function(RED) {
 		this.name	 = config.name;
 		this.enable   = false;
 		this.ackreq   = config.ackreq;
+		this.binary = config.binary;
 		this.dst_addr = [
 			parseInt("0x"+config.dst_addr0.substr(0,2)),
 			parseInt("0x"+config.dst_addr0.substr(2,2)),
@@ -264,12 +282,23 @@ module.exports = function(RED) {
 				dst_addr = node.dst_addr;
 			}
 			setAckReq(node);
-			var ret = lib.send64be(dst_addr, msg.payload.toString());
-            var edat = lib.getEnhanceAck();
-            if(edat.length = 0) { edat = null; }
-            msg.payload = { "result":ret, "EACK":edat }
-            node.send(msg);
-            if (ret < 0) { Warn("lazurite_send64 fail::" + lazurite_err[-ret]); }
+			if(typeof msg.payload === 'string') {
+				msg.result = lib.send64be(dst_addr, msg.payload.toString());
+			} else if (msg.payload instanceof Buffer) {
+				var payload = new Uint8Array(msg.payload);
+				msg.result = lib.send64be(dst_addr, payload);
+			} else if (msg.payload instanceof Uint8Array) {
+				msg.result = lib.send64be(dst_addr, payload);
+			} else {
+				Warn(`LazuriteTx64Node fail:: payload is unsupported type(${typeof msg.payload})`); 
+				msg.result = -1;
+				node.send(msg);
+				return;
+			}
+			var edat = lib.getEnhanceAck();
+			if(edat.length !== 0) { msg.eack = edat; }
+			node.send(msg);
+			//if (ret < 0) { Warn("lazurite_send64 fail::" + lazurite_err[-ret]); }
 		});
 		node.on('close', function(done) {
 			disconnect(node);
@@ -318,10 +347,8 @@ module.exports = function(RED) {
 						uint8Array[index] = msg.payload[i].data[j],index += 1;
 					}
 				}
-				//                console.log(uint8Array);
 			}
 
-			//          console.log('DEBUG  #%s',uint8Array);
 			setEnhanceAck(uint8Array,buffSize);
 			node.send(uint8Array);
 		});
@@ -332,54 +359,37 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("SetEnhanceACK",SetEnhanceACKNode);
 
-
+	var configParams = null;
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
-		var key = "";
-		if(typeof config.key == 'string') {
-			if (config.key.length == 32) {
-				key = config.key;
+		if(configParams === null) {
+			var key = "";
+			if(typeof config.key == 'string') {
+				if (config.key.length == 32) {
+					key = config.key;
+				}
 			}
+			this.config = {
+				ch: config.ch,
+				panid: parseInt(config.panid),
+				rate: config.rate,
+				pwr: config.pwr,
+				defaultaddress: config.defaultaddress,
+				myaddr: parseInt(config.myaddr),
+				key: key,
+				status: true
+			}
+			configParams = this.config;
+		} else {
+			this.config = {}
+			for(var key in configParams) {
+				this.config[key] = configParams[key];
+			}
+			this.config.status = false;
 		}
-		this.config = {
-			ch: config.ch,
-			panid: parseInt(config.panid),
-			rate: config.rate,
-			pwr: config.pwr,
-			defaultaddress: config.defaultaddress,
-			myaddr: parseInt(config.myaddr),
-			key: key
-		}
+		this.on("close",()=> {
+			configParams = null;
+		});
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
-	RED.httpAdmin.post("/lazurite-tx/:id/:state", RED.auth.needsPermission("lazurite-tx.write"), function(req,res) {
-		var node = RED.nodes.getNode(req.params.id);
-		var state = req.params.state;
-		if (node !== null && typeof node !== "undefined" ) {
-			latest_rfparam_id = state;
-			res.sendStatus(200);
-		} else {
-			res.sendStatus(404);
-		}
-	});
-	RED.httpAdmin.post("/lazurite-tx64/:id/:state", RED.auth.needsPermission("lazurite-tx64.write"), function(req,res) {
-		var node = RED.nodes.getNode(req.params.id);
-		var state = req.params.state;
-		if (node !== null && typeof node !== "undefined" ) {
-			latest_rfparam_id = state;
-			res.sendStatus(200);
-		} else {
-			res.sendStatus(404);
-		}
-	});
-	RED.httpAdmin.post("/lazurite-rx/:id/:state", RED.auth.needsPermission("lazurite-rx.write"), function(req,res) {
-		var node = RED.nodes.getNode(req.params.id);
-		var state = req.params.state;
-		if (node !== null && typeof node !== "undefined" ) {
-			latest_rfparam_id = state;
-			res.sendStatus(200);
-		} else {
-			res.sendStatus(404);
-		}
-	});
 }

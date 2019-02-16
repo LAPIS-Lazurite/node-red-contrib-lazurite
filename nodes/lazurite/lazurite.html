@@ -42,6 +42,10 @@
 		<label for="node-input-broadcastenb"><i class="fa fa-chain"></i> Broadcast</label>
 		<input type="checkbox" id="node-input-broadcastenb" style="width:20px;"> enable</input>
 	</div>
+	<div class="form-row">
+		<label for="node-input-binary"><i class="fa fa-chain"></i> Binary Mode</label>
+		<input type="checkbox" id="node-input-binary" style="width:20px;"> enable</input>
+	</div>
 </script>
 <script type="text/javascript">
 	RED.nodes.registerType('lazurite-rx',{
@@ -64,24 +68,8 @@
 			enbinterval: {value:true},
 			latestpacket: {value:false},
 			broadcastenb: {value:true},
+			binary: {value:false},
 			name   : {value:""}
-		},
-		oneditprepare: function() {
-			if(lazurite_rf_param != false) {
-				$("#node-input-channel").val(lazurite_rf_param);
-			}
-		},
-		oneditsave: function() {
-			console.log($("#node-input-channel").val());
-			lazurite_rf_param = $("#node-input-channel").val();
-			$.ajax({
-				url: "lazurite-rx/"+this.id+"/"+lazurite_rf_param,
-				type: "POST",
-				success: function(resp, textStatus, xhr) {
-				},
-				error: function(jqXHR,textStatus,errorThrown) {
-				}
-			});
 		}
 	});
 </script>
@@ -148,6 +136,10 @@
 		<label for="node-input-ackreq"><i class="fa fa-chain"></i> Ack</label>
 		<input type="checkbox" id="node-input-ackreq" style="width:20px;"> enable</input>
 	</div>
+	<div class="form-row">
+		<label for="node-input-binary"><i class="fa fa-chain"></i> Binary Mode</label>
+		<input type="checkbox" id="node-input-binary" style="width:20px;"> enable</input>
+	</div>
 </script>
 <script type="text/javascript">
 	RED.nodes.registerType('lazurite-tx',{
@@ -169,24 +161,8 @@
 			dst_addr: {value:"0xffff", required:true},
 			dst_panid: {value:"0xffff", required:true},
 			ackreq: {value:true},
+			binary: {value:false},
 			name: {value:""}
-		},
-		oneditprepare: function() {
-			if(lazurite_rf_param != false) {
-				$("#node-input-channel").val(lazurite_rf_param);
-			}
-		},
-		oneditsave: function() {
-			console.log($("#node-input-channel").val());
-			lazurite_rf_param = $("#node-input-channel").val();
-			$.ajax({
-				url: "lazurite-tx/"+this.id+"/"+lazurite_rf_param,
-				type: "POST",
-				success: function(resp, textStatus, xhr) {
-				},
-				error: function(jqXHR,textStatus,errorThrown) {
-				}
-			});
 		}
 	});
 </script>
@@ -221,6 +197,10 @@
 		<label for="node-input-ackreq"><i class="fa fa-chain"></i> Ack</label>
 		<input type="checkbox" id="node-input-ackreq" style="width:20px;"> enable</input>
 	</div>
+	<div class="form-row">
+		<label for="node-input-binary"><i class="fa fa-chain"></i> Binary Mode</label>
+		<input type="checkbox" id="node-input-binary" style="width:20px;"> enable</input>
+	</div>
 </script>
 <script type="text/javascript">
 	RED.nodes.registerType('lazurite-tx64',{
@@ -244,24 +224,8 @@
 			dst_addr2: {value:"0004", required:true},
 			dst_addr3: {value:"0000", required:true},
 			ackreq: {value:true},
+			binary: {value:false},
 			name: {value:""}
-		},
-		oneditprepare: function() {
-			if(lazurite_rf_param != false) {
-				$("#node-input-channel").val(lazurite_rf_param);
-			}
-		},
-		oneditsave: function() {
-			console.log($("#node-input-channel").val());
-			lazurite_rf_param = $("#node-input-channel").val();
-			$.ajax({
-				url: "lazurite-tx/"+this.id+"/"+lazurite_rf_param,
-				type: "POST",
-				success: function(resp, textStatus, xhr) {
-				},
-				error: function(jqXHR,textStatus,errorThrown) {
-				}
-			});
 		}
 	});
 </script>
@@ -365,8 +329,6 @@
 			} else {
 				return "ch:" + this.ch + " addr:" + this.panid + ","+this.myaddr;
 			}
-		},
-		oneditprepare: function() {
 		}
 	});
 </script>
