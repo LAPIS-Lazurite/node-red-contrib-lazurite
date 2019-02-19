@@ -617,8 +617,7 @@ static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 
 	Local<Array> payload = Local<Array>::Cast(args[0]);
 #ifdef V8_VER_6
-	uint16_t size = args[0]->IsUndefined() ?
-		0 : args[0]->NumberValue(context).FromMaybe(0);
+	uint16_t size = args[1]->IsUint32() ? args[1]->Uint32Value(context).FromMaybe(0) : 0;
 #else
 	uint16_t size  = args[1]->NumberValue();;
 #endif
