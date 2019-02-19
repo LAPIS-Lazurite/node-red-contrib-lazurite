@@ -311,8 +311,8 @@ module.exports = function(RED) {
 	function SetEnhanceACKNode(config) {
 		RED.nodes.createNode(this,config);
 		var node = this;
-		node.status({fill:"red",shape:"ring",text:"disconnected"});
-		connect(node);
+		//node.status({fill:"red",shape:"ring",text:"disconnected"});
+		//connect(node);
 		node.on('input', function(msg) {
 			//          console.log('DEBUG lazurite.js: Payload:#%s Length:#%d',msg.payload,msg.payload.length);
 			var numOfRcv = Array.isArray(msg.payload) ? msg.payload.length : 0;
