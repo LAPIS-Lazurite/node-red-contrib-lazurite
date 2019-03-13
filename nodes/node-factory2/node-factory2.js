@@ -29,6 +29,7 @@ module.exports = function(RED) {
 	const EACK_FIRMWARE_UPDATE = 0xF0;
 	var addr2id = {};
 	var timerThread = null;
+	var server;
 	global.lazuriteConfig = {
 		machineInfo: {
 			worklog: {},
@@ -146,6 +147,7 @@ module.exports = function(RED) {
 
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
+		server = config.server;
 		var u = url.parse(config.server);
 		const https = require(u.protocol.slice(0,-1));
 		var node = this;
@@ -524,10 +526,58 @@ module.exports = function(RED) {
 						}
 					}
 				}
+				let payload = rxdata.payload.split(",");
+				if (payload.length >= 2) {
+					let prog_sensor;
+					if (payload[1] === 'CT_Sensor_vDet2') {
+						prog_sensor = 'CTSensor2_'+payload[2];
+					} else {
+						prog_sensor = payload[1];
+					}
+					postActivate(id,prog_sensor);
+				}
+			}
+		}
+
+		function postActivate(id,prog_sensor) {
+			const u = url.parse(server);
+			const https = require(u.protocol.slice(0,-1));
+			const httpsOptions = {
+				//host: "api.lazurite.io",
+				host: u.hostname,
+				port: u.port,
+				path: u.pathname+'/info/sensor/activate',
+				method: 'POST',
+				headers: {
+					"Accept": "application/json",
+					"Content-Type" : "application/json",
+					"LAZURITE-API-KEY": global.lazuriteConfig.awsiotConfig.access.key,
+					"LAZURITE-API-TOKEN": global.lazuriteConfig.awsiotConfig.access.token
+				}
+			};
+			// checkNetwork
+			let postData = {
+				id: id,
+				prog_sensor: prog_sensor
+			};
+			// console.log({postData:postData});
+			try {
+				let req = https.request(httpsOptions,(res) => {
+					res.setEncoding("utf8");
+					res.on('data',(chunk) => {
+				//		console.log("[activate] "+chunk);
+					});
+					res.on('error',(e) => {
+				//		console.log("[activate] " + e);
+					});
+				});
+				req.write(JSON.stringify(postData));
+				req.end();
+			} catch(e) {
+				// console.log("[activate] " + e);
 			}
 		}
 	}
 	RED.nodes.registerType("lazurite-device-manager", LazuriteDeviceManager);
 }
-
 
