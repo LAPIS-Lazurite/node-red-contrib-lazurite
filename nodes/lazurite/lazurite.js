@@ -34,15 +34,15 @@ module.exports = function(RED) {
 	};
 
 	function Warn(message){
-		RED.log.warn("LazuriteInNode: " + message);
+		RED.log.warn(message);
 	}
 
 	function Info(message){
-		RED.log.info("LazuriteInNode: " + message);
+		RED.log.info(message);
 	}
 
-	function setAckReq(node) {
-		if(!lib.setAckReq(node.ackreq)) { Warn("lazurite_setAckReq fail"); return; }
+	function setAckReq(ackreq) {
+		if(!lib.setAckReq(ackreq)) { Warn("lazurite_setAckReq fail"); return; }
 	}
 	function setBroadcast(node) {
 		if(!lib.setBroadcastEnb(node.broadcastenb)) { Warn("lazurite_setBroadcastEnb fail"); return; }
@@ -211,7 +211,7 @@ module.exports = function(RED) {
 			} else {
 				dst_addr = node.dst_addr;
 			}
-			setAckReq(node);
+			setAckReq(msg.ackreq || node.ackreq);
 			if(typeof msg.payload === 'string') {
 					msg.result = lib.send(dst_panid, dst_addr, msg.payload.toString());
 			} else if (msg.payload instanceof Buffer) {
@@ -225,8 +225,12 @@ module.exports = function(RED) {
 				node.send(msg);
 				return;
 			}
-			let edat = lib.getEnhanceAck();
-			if(edat.length !== 0) { msg.eack = edat; }
+			if(msg.result > 0) {
+				var edat = lib.getEnhanceAck();
+				if(edat.length !== 0) { msg.eack = edat; }
+			} else {
+				Warn(`LazuriteTxNode fail:: ${lazurite_err[-msg.result]}, PANID: 0x${('000'+dst_panid.toString(16)).slice(-4)}, DST:0x${('000'+dst_addr.toString(16)).slice(-4)}, payload: ${msg.payload}`);
+			}
 			node.send(msg);
 		});
 		node.on('close', function(done) {
@@ -281,24 +285,35 @@ module.exports = function(RED) {
 			} else {
 				dst_addr = node.dst_addr;
 			}
-			setAckReq(node);
+			setAckReq(msg.ackreq || node.ackreq);
 			if(typeof msg.payload === 'string') {
 				msg.result = lib.send64be(dst_addr, msg.payload.toString());
 			} else if (msg.payload instanceof Buffer) {
 				var payload = new Uint8Array(msg.payload);
 				msg.result = lib.send64be(dst_addr, payload);
 			} else if (msg.payload instanceof Uint8Array) {
-				msg.result = lib.send64be(dst_addr, payload);
+				msg.result = lib.send64be(dst_addr, msg.payload);
 			} else {
 				Warn(`LazuriteTx64Node fail:: payload is unsupported type(${typeof msg.payload})`); 
 				msg.result = -1;
 				node.send(msg);
 				return;
 			}
-			var edat = lib.getEnhanceAck();
-			if(edat.length !== 0) { msg.eack = edat; }
+			if(msg.result > 0) {
+				var edat = lib.getEnhanceAck();
+				if(edat.length !== 0) { msg.eack = edat; }
+			} else {
+				let dst = ('0'+dst_addr[0].toString(16)).slice(-2)+
+					('0'+dst_addr[1].toString(16)).slice(-2)+
+					('0'+dst_addr[2].toString(16)).slice(-2)+
+					('0'+dst_addr[3].toString(16)).slice(-2)+
+					('0'+dst_addr[4].toString(16)).slice(-2)+
+					('0'+dst_addr[5].toString(16)).slice(-2)+
+					('0'+dst_addr[6].toString(16)).slice(-2)+
+					('0'+dst_addr[7].toString(16)).slice(-2);
+				Warn(`LazuriteTx64Node fail:: ${lazurite_err[-msg.result]}, DST:${dst}, payload: ${msg.payload}`);
+			}
 			node.send(msg);
-			//if (ret < 0) { Warn("lazurite_send64 fail::" + lazurite_err[-ret]); }
 		});
 		node.on('close', function(done) {
 			disconnect(node);
@@ -348,14 +363,19 @@ module.exports = function(RED) {
 					}
 				}
 			}
-
-			setEnhanceAck(uint8Array,buffSize);
-			node.send(uint8Array);
+			if (isConnect === true) {
+				setEnhanceAck(uint8Array,buffSize);
+				node.send(uint8Array);
+			} else {
+				Warn("EnhanceAckNode error, cannot file lazurite_wrap");
+			}
 		});
+		/*
 		node.on('close', function(done) {
 			disconnect(node);
 			done();
 		});
+		*/
 	}
 	RED.nodes.registerType("SetEnhanceACK",SetEnhanceACKNode);
 
