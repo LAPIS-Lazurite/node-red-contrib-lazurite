@@ -23,8 +23,8 @@ module.exports = function(RED) {
 	var awsIot = require('aws-iot-device-sdk');
 	var util = require("util");
 	var isUtf8 = require('is-utf8');
-	let rebootTime = 30*1000;
-	//const restartTime = 60*60*1000;
+	var Store = require('./store');
+	var rebootTime = 600*1000;
 	function matchTopic(ts,t) {
 		if (ts == "#") {
 			return true;
@@ -51,13 +51,19 @@ module.exports = function(RED) {
 		this.queue = [];
 		this.subscriptions = {};
 
+		this.inflights = {};
+		this.offlinePublishQueue = [];
+		const queueFile = `./.awsiot-queue-${this.id}.dat`;
+		this.queueSaved = false;
+		this.options.inflights = this.inflights;
+		this.options.outgoingStore = new Store(this.options);
+		this.packetreceiveTimer = null;
+		this.initialConnect = true;
+
 		this.keypath = n.keypath;
 		this.certpath = n.certpath;
 		this.capath = n.capath;
-		this.errHandler = {
-			timer: null,
-			mode: 'init'
-		};
+
 		if (n.birthTopic) {
 			this.birthMessage = {
 				topic: n.birthTopic,
@@ -93,6 +99,22 @@ module.exports = function(RED) {
 		this.options.caPath = this.capath;
 		this.options.port =  this.port;
 		this.options.host = this.broker;
+
+		// restore offline publish queue from file
+		let queueData;
+		try {
+			queueData = fs.readFileSync(queueFile);
+		} catch(e) {
+		}
+		if (queueData) {
+			this.offlinePublishQueue = stringToArray(queueData);
+			// remove queue file
+			fs.unlink(queueFile, function(err) {
+				if (err && err.code !== 'ENOENT') console.log(err);
+			});
+		}
+		this.options.offlinePublishQueue = this.offlinePublishQueue;
+		this.options.drainTimeMs = 1000;
 		// Define functions called by MQTT in and out nodes
 		var node = this;
 		this.users = {};
@@ -123,28 +145,15 @@ module.exports = function(RED) {
 				node.client = awsIot.device(node.options);
 				node.client.setMaxListeners(0);
 				if(typeof global.lazuriteConfig !== "undefined") {
-					if(typeof global.lazuriteConfig.reboot === "undefined") {
-						global.lazuriteConfig.reboot = {nodered : rebootTime};
-						console.log(`[nodered] awsiot disconnect detection time is updated:: ${rebootTime}`)
+					if (node.packetreceiveTimer === null) {
+						node.packetreceiveTimer = setTimeout(timeoutFunc,rebootTime);
 					}
-					if(node.errHandler.timer !== null) {
-						clearTimeout(node.errHandler.timer);
-						node.errHandler.timer = null;
-					}
-					node.errHandler.timer = setTimeout(timeoutFunc,global.lazuriteConfig.reboot.nodered);
 					// Register successful connect or reconnect handler
 				}
 				node.client.on('connect', function () {
-					node.errHandler.mode = 'normal';
 					node.connecting = false;
 					node.connected = true;
-					if(typeof global.lazuriteConfig !== "undefined") {
-						if(node.errHandler.timer !== null) {
-							console.log('[nodered] awsiot clearTimeout in connect function');
-							clearTimeout(node.errHandler.timer);
-							node.errHandler.timer = null;
-						}
-					}
+					node.initialConnect = false;
 					node.log(RED._("aws-iot.state.connected",{broker:(node.options.clientId?node.options.clientId+"@":"")+node.broker}));
 					for (var id in node.users) {
 						if (node.users.hasOwnProperty(id)) {
@@ -178,16 +187,15 @@ module.exports = function(RED) {
 							node.users[id].status({fill:"yellow",shape:"ring",text:"common.status.connecting"});
 						}
 					}
-				})
+				});
+
 				// Register disconnect handlers
 				node.client.on('close', function () {
 					if (node.connected) {
 						node.connected = false;
-						if(typeof global.lazuriteConfig !== "undefined") {
-							if(node.errHandler.timer !== null) {
-								console.log("node.client.close clearTimeout");
-								clearTimeout(node.errHander.timer);
-							}
+						if (node.packetreceiveTimer !== null) {
+							clearTimeout(node.packetreceiveTimer);
+							node.packetreceiveTimer = null;
 						}
 						node.log(RED._("aws-iot.state.disconnected",{broker:(node.options.clientId?node.options.clientId+"@":"")+node.broker}));
 						for (var id in node.users) {
@@ -206,6 +214,12 @@ module.exports = function(RED) {
 					if (node.connecting) {
 						node.client.end();
 						node.connecting = false;
+					}
+				});
+				node.client.on('packetreceive', function (packet) {
+					if (node.packetreceiveTimer !== null) {
+						clearTimeout(node.packetreceiveTimer);
+						node.packetreceiveTimer = null;
 					}
 				});
 			}
@@ -264,14 +278,21 @@ module.exports = function(RED) {
 				qos: msg.qos || 0,
 				retain: false
 			};
-			node.client.publish(msg.topic, msg.payload, options, function (err){return});
+			node.client.publish(msg.topic, msg.payload, options, publishCb);
+
+			if (node.packetreceiveTimer === null) {
+				node.packetreceiveTimer = setTimeout(timeoutFunc,rebootTime);
+			}
 			//}
 		};
+		function publishCb(err) {
+			return;
+		}
 
 		this.on('close', function(done) {
-			if(node.errHandler.timer !== null) {
-				clearTimeouit(node.errHandler.timer);
-				node.errHandler.timer = null;
+			if (node.packetreceiveTimer !== null) {
+				clearTimeout(node.packetreceiveTimer);
+				node.packetreceiveTimer = null;
 			}
 			this.closing = true;
 			if (this.connected) {
@@ -283,51 +304,84 @@ module.exports = function(RED) {
 				done();
 			}
 		});
+
 		function timeoutFunc() {
-			if(node.connected === false) {
-				if(node.errHandler.mode === 'init') {
-					console.log('[nodered] rebooting system because of aws-iot disconnected');
-					var msg = `[nodered] disconnect AWS-IOT in init process\n`;
-					msg += `DATE: ${(new Date()).toLocaleString()}\n`;
-					msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`;
-					msg += `MSG: restart node-red`;
-					global.lazuriteConfig.sendLogMessage(msg,(err,res) => {
-						if(err) {
-							var msg = `[nodered] disconnect AWS-IOT in init process\n`;
-							msg += `DATE: ${(new Date()).toLocaleString()}\n`;
-							msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`;
-							msg += `MSG: rebooting system`;
-							msg += `\nERR: ${JSON.stringify(err,null,"  ")}`;
-							fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
-							execSync("sudo reboot");
-						} else {
-							execSync("sudo systemctl restart nodered");
-						}
-					});
-				} else {
-					console.log('[nodered] rebooting system because of aws-iot disconnected');
-					var msg = `[nodered] disconnect AWS-IOT\n`;
-					msg += `DATE: ${(new Date()).toLocaleString()}\n`;
-					msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`;
-					msg += `MSG: rebooting system`;
-					global.lazuriteConfig.sendLogMessage(msg,(err,res) => {
-						if(err) {
-							msg += `\nERR: ${JSON.stringify(err,null,"  ")}`;
-							fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
-						}
-						execSync("sudo reboot");
-					});
+			if (!node.queueSaved) {
+				node.queueSaved = true;
+				// save offline publish queue to file
+				let tmp = [];
+				if (Object.keys(node.inflights).length !== 0) {
+					for (let key in node.inflights) {
+						tmp.push({
+							topic: node.inflights[key].topic,
+							message: node.inflights[key].payload,
+							options: {qos:node.inflights[key].qos,retain:node.inflights[key].retain},
+							callback: publishCb
+						});
+					}
 				}
-			} else if(node.errHandler.timer !== null) {
-				console.log('[nodered] clearTimeout in timeoutFunc');
-				clearTimeout(node.errHandler.timer);
-				node.errHandler.timer = null;
+				if (node.offlinePublishQueue.length !== 0) {
+					tmp = tmp.concat(node.offlinePublishQueue);
+				}
+				if (tmp.length !== 0) {
+					try {
+						fs.writeFileSync(queueFile,arrayToString(tmp));
+					} catch(e) {
+					}
+				}
+				node.inflights = {};
+				node.offlinePublishQueue = [];
+			}
+			if(node.initialConnect === true) {
+				console.log('[nodered] rebooting system because of aws-iot disconnected');
+				var msg = `[nodered] disconnect AWS-IOT in init process\n`;
+				msg += `DATE: ${(new Date()).toLocaleString()}\n`;
+				msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`;
+				msg += `MSG: restart node-red`;
+				global.lazuriteConfig.sendLogMessage(msg,(err,res) => {
+					if(err) {
+						var msg = `[nodered] disconnect AWS-IOT in init process\n`;
+						msg += `DATE: ${(new Date()).toLocaleString()}\n`;
+						msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`;
+						msg += `MSG: rebooting system`;
+						msg += `\nERR: ${JSON.stringify(err,null,"  ")}`;
+						fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
+						execSync("sudo reboot");
+					} else {
+						execSync("sudo systemctl restart nodered");
+					}
+				});
+			} else {
+				console.log('[nodered] rebooting system because of aws-iot disconnected');
+				var msg = `[nodered] disconnect AWS-IOT\n`;
+				msg += `DATE: ${(new Date()).toLocaleString()}\n`;
+				msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`;
+				msg += `MSG: rebooting system`;
+				global.lazuriteConfig.sendLogMessage(msg,(err,res) => {
+					if(err) {
+						msg += `\nERR: ${JSON.stringify(err,null,"  ")}`;
+						fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
+					}
+					execSync("sudo reboot");
+				});
 			}
 		}
-		function rebootErrFunc(err,stdout,stderr) {
-			if((err !== null) || (stderr !== "")) {
-				console.log({line:360, timer:node.errHandler});
-				node.errHandler.timer = setTimeout(timeoutFunc,rebootTime);
+		function arrayToString(value) {
+			return JSON.stringify(value, replacer);
+			function replacer(k, v) {
+				if (typeof v === 'function') {
+					return v.toString()
+				}
+				return v;
+			}
+		}
+		function stringToArray(value) {
+			return JSON.parse(value, reviver);
+			function reviver(k, v) {
+				if (typeof v === 'string' && v.match(/^function/)) {
+					return Function.call(this, 'return ' + v)();
+				}
+				return v;
 			}
 		}
 	}
