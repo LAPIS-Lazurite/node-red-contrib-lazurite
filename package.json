@@ -32,7 +32,7 @@
     "Lazurite"
   ],
   "dependencies": {
-    "aws-iot-device-sdk": "",
+    "aws-iot-device-sdk": "git+https://github.com/LAPIS-Lazurite/aws-iot-device-sdk-js.git",
     "util": "",
     "is-utf8": ""
   },
