@@ -1,5 +1,5 @@
 {
-  "name": "red-contrib-lazurite",
+  "name": "node-red-contrib-lazurite",
   "version": "0.0.26",
   "description": "R/W data of Lazurite-Gateway.",
   "main": "lazurite.js",
@@ -14,7 +14,6 @@
       "node-factory2": "nodes/node-factory2/node-factory2.js",
       "node-capacity": "nodes/node-capacity/node-capacity.js",
       "aws-iot": "nodes/aws-iot/aws-iot.js",
-      "aws-iot-device-sdk": "nodes/aws-iot-device-sdk",
       "calcurator": "nodes/calculator/calculator.js"
     }
   },
@@ -33,10 +32,10 @@
     "Lazurite"
   ],
   "dependencies": {
-    "mqtt": "",
-    "minimist": "",
+    "mqtt": "2.15.1",
+    "minimist": "1.2.0",
     "websocket-stream": "^5.0.1",
-    "crypto-js": "",
+    "crypto-js": "3.1.6",
     "util": "",
     "is-utf8": ""
   },
