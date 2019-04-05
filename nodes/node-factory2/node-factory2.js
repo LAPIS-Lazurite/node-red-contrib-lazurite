@@ -532,7 +532,7 @@ module.exports = function(RED) {
 					if (payload[1] === 'CT_Sensor_vDet2') {
 						prog_sensor = 'CTSensor2_'+payload[2];
 					} else {
-						prog_sensor = payload[1];
+						prog_sensor = payload[1]+"_"+payload[2];
 					}
 					postActivate(id,prog_sensor);
 				}
