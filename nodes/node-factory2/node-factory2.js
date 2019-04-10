@@ -155,6 +155,7 @@ module.exports = function(RED) {
 		global.lazuriteConfig.awsiotConfig = JSON.parse(fs.readFileSync(config.awsiotConfig,'utf8'));
 		global.lazuriteConfig.log = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/log'};
 		global.lazuriteConfig.capacity = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/capacity'};
+		global.lazuriteConfig.gwid = parseInt((global.lazuriteConfig.awsiotConfig.name).slice(-3));
 		//console.log(global.lazuriteConfig);
 		const httpOptions = {
 			//host: "api.lazurite.io",

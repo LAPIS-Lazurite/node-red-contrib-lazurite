@@ -43,8 +43,9 @@ module.exports = function(RED) {
 			}
 
 			if(hour.reported.getHours() != now.getHours()) {
+				let msec = now.getTime()%1000;
 				var payload = {
-					timestamp : now.getTime(),
+					timestamp : now.getTime()-msec+global.lazuriteConfig.gwid,
 					type : "hour",
 					capacity: {},
 					vbat: {},
@@ -100,7 +101,7 @@ module.exports = function(RED) {
 					}
 				}
 				if(count > 0) {
-					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
+//					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
 				}
 				day = { reported: now };
 				dayCapacity = {};
