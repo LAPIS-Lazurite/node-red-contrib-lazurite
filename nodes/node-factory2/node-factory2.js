@@ -527,14 +527,18 @@ module.exports = function(RED) {
 						}
 					}
 				}
+				console.log(rxdata.payload);
 				let payload = rxdata.payload.split(",");
-				if (payload.length >= 2) {
+				if (payload.length >= 3) {
 					let prog_sensor;
 					if (payload[1] === 'CT_Sensor_vDet2') {
 						prog_sensor = 'CTSensor2_'+payload[2];
 					} else {
 						prog_sensor = payload[1]+"_"+payload[2];
 					}
+					postActivate(id,prog_sensor);
+				} else if (payload.length === 2) {
+					prog_sensor = payload[1];
 					postActivate(id,prog_sensor);
 				}
 			}
