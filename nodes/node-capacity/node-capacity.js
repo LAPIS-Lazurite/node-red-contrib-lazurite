@@ -1,3 +1,4 @@
+'use strict'
 /**
  * Copyright 2017 Lapis Semiconducor Ltd,.
  *
@@ -14,22 +15,55 @@
  * limitations under the License.
  **/
 module.exports = function(RED) {
+	let fs = require('fs');
 	const INTERVAL_GRAPH = 29*1000;
 	const INTERVAL_VBAT = 0 * 60*1000;
 	//const INTERVAL_VBAT = 60*1000;
 	function LazuriteCapacity(config) {
-		var node = this;
-		var sensorInfo = {};
-		var hourCapacity = {};
-		var dayCapacity = {};
-		var hour = {};
-		var day = {};
+		let node = this;
+		let sensorInfo = {};
+		let hourCapacity = {};
+		let dayCapacity = {};
+		let hour = {};
+		let day = {};
+		/*
+		 * Restore previous data
+		 */
+		try {
+			fs.statSync('/home/pi/.lazurite/temp/capacity.json');
+			let tmp = JSON.parse(fs.readFileSync('/home/pi/.lazurite/temp/capacity.json','utf8'));
+			for(let t0 in tmp){
+				for(let t1 in tmp[t0]) {
+					if(typeof tmp[t0][t1] === 'object') {
+						for(let t2 in tmp[t0][t1]) {
+							if((t2 === 'from') || (t2 === 'last')) {
+								tmp[t0][t1][t2] = new Date(tmp[t0][t1][t2]);
+							}
+						}
+					} else if((t1 === 'reported') || (t1 === 'checked')) {
+						tmp[t0][t1] = new Date(tmp[t0][t1]);
+					}
+				}
+			}
+			// restore data is valid less than one hour
+			sensorInfo = tmp.sensorInfo;
+			hourCapacity = tmp.hourCapacity;
+			dayCapacity = tmp.dayCapacity;
+			hour = tmp.hour;
+			day = tmp.day;
+		} catch(e) {
+			sensorInfo = {};
+			hourCapacity = {};
+			dayCapacity = {};
+			hour = {};
+			day = {};
+		}
 		RED.nodes.createNode(this,config);
 		node.config = config;
-		var now = new Date();
+		let now = new Date();
 		sensorInfo.reported = now;
 		// check timing to send capacity data to cloud
-		var timer = setInterval(function() {
+		let timer = setInterval(function() {
 			now = new Date();
 			//now = new Date(now.getTime()-1300*1000);
 			//console.log(now);
@@ -43,17 +77,17 @@ module.exports = function(RED) {
 			}
 
 			if(hour.reported.getHours() != now.getHours()) {
-				let msec = now.getTime()%1000;
-				var payload = {
-					timestamp : now.getTime()-msec+global.lazuriteConfig.gwid,
+				let timestamp = new Date(hour.reported.getFullYear(), hour.reported.getMonth(), hour.reported.getDate(),hour.reported.getHours()+1);
+				let payload = {
+					timestamp : timestamp.getTime()+global.lazuriteConfig.gwid,
 					type : "hour",
 					capacity: {},
 					vbat: {},
 					rssi: {},
 				};
 
-				var count = 0;
-				for(var id in hourCapacity) {
+				let count = 0;
+				for(let id in hourCapacity) {
 					if((now - sensorInfo[id].last) <3600*1000) {
 						// generate hour capacity data
 						payload.capacity[id] = parseInt(hourCapacity[id].ontime/hourCapacity[id].meastime*1000)/10;
@@ -73,8 +107,9 @@ module.exports = function(RED) {
 			}
 
 			if(day.reported.getDate() != now.getDate()) {
-				var payload = {
-					timestamp : now.getTime(),
+				let timestamp = new Date(day.reported.getFullYear(), day.reported.getMonth(), day.reported.getDate()+1);
+				let payload = {
+					timestamp : timestamp.getTime()+global.lazuriteConfig.gwid,
 					type : "day",
 					capacity: {},
 					count : {},
@@ -82,8 +117,8 @@ module.exports = function(RED) {
 					off:{},
 				};
 
-				var count = 0;
-				for(var id in dayCapacity) {
+				let count = 0;
+				for(let id in dayCapacity) {
 					if((now - sensorInfo[id].last) <3600*1000*24) {
 						payload.capacity[id] = parseInt(dayCapacity[id].ontime/dayCapacity[id].meastime*1000)/10;
 						payload.count[id] = sensorInfo[id].on.count + sensorInfo[id].off.count;
@@ -101,12 +136,12 @@ module.exports = function(RED) {
 					}
 				}
 				if(count > 0) {
-//					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
+					//					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
 				}
 				day = { reported: now };
 				dayCapacity = {};
 				/*
-				for(var id in sensorInfo) {
+				for(let id in sensorInfo) {
 					node.send({
 						payload: {
 							timestamp: rxtime.getTime() + 1 + id, // change index of dynamoDB
@@ -120,7 +155,7 @@ module.exports = function(RED) {
 				*/
 			}
 
-			for (var id in sensorInfo) {
+			for (let id in sensorInfo) {
 				if((now - sensorInfo[id].last)<3600*1000)  {
 					if(hourCapacity[id] === undefined){
 						hourCapacity[id] = {
@@ -162,15 +197,15 @@ module.exports = function(RED) {
 					return;
 				}
 			}
-			var rxtime = new Date(parseInt(msg.sec * 1000 + msg.nsec / 1000000));
-			var id = msg.src_addr[0];
-			var state = msg.payload[0];
-			var current = parseFloat(msg.payload[1]);
-			var battery = parseFloat(msg.payload[2]);
-			var rssi = msg.rssi;
-			var graph = global.lazuriteConfig.machineInfo.graph;
-			var vbat = global.lazuriteConfig.machineInfo.vbat;
-			var reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
+			let rxtime = new Date(parseInt(msg.sec * 1000 + msg.nsec / 1000000));
+			let id = msg.src_addr[0];
+			let state = msg.payload[0];
+			let current = parseFloat(msg.payload[1]);
+			let battery = parseFloat(msg.payload[2]);
+			let rssi = msg.rssi;
+			let graph = global.lazuriteConfig.machineInfo.graph;
+			let vbat = global.lazuriteConfig.machineInfo.vbat;
+			let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 			//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
 			//
 			if(vbat[id] === undefined) {
@@ -219,7 +254,7 @@ module.exports = function(RED) {
 						battery: 0,
 						rssi: rssi,
 					};
-					var output = {
+					let output = {
 						payload: {
 							dbname: node.config.dbname,
 							timestamp: rxtime.getTime(),
@@ -239,7 +274,7 @@ module.exports = function(RED) {
 				} else {
 					if(sensorInfo[id].currentStatus !== state) {
 						sensorInfo[id].currentStatus = state;
-						var detect;
+						let detect;
 						//console.log(global.lazuriteConfig.machineInfo);
 						if (sensorInfo[id].currentStatus === "on") {
 							detect = global.lazuriteConfig.machineInfo.worklog[id].detect0;
@@ -251,7 +286,7 @@ module.exports = function(RED) {
 						detect = detect * 1000;
 						sensorInfo[id].from.setTime(rxtime.getTime() - detect);
 						//console.log({rxtime: rxtime, from: sensorInfo[id].from});
-						var output = {
+						let output = {
 							payload: {
 								dbname: node.config.dbname,
 								timestamp: rxtime.getTime() ,
@@ -265,7 +300,7 @@ module.exports = function(RED) {
 						if(reason) output.payload.reasonId = reason;
 						node.send(output);
 					} else if(sensorInfo[id].last.getDate() !== rxtime.getDate()) {
-						var output = {
+						let output = {
 							payload: {
 								dbname: node.config.dbname,
 								timestamp: rxtime.getTime(),
@@ -347,8 +382,8 @@ module.exports = function(RED) {
 								type: `graph-${id}-day`,
 								min: graph[id].day.min,
 								max: graph[id].day.max
-						},
-						topic : global.lazuriteConfig.capacity.topic
+							},
+							topic : global.lazuriteConfig.capacity.topic
 						});
 						graph[id].day.min = current;
 						graph[id].day.max = current;
@@ -366,6 +401,13 @@ module.exports = function(RED) {
 		});
 		node.on('close',function(done) {
 			clearInterval(timer);
+			fs.writeFileSync('/home/pi/.lazurite/temp/capacity.json',JSON.stringify({
+				sensorInfo : sensorInfo,
+				hourCapacity: hourCapacity,
+				dayCapacity: dayCapacity,
+				hour: hour,
+				day: day
+			}));
 			done();
 		});
 	}

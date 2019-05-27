@@ -144,11 +144,17 @@ module.exports = function(RED) {
 		},
 		isGatewayActive:  false,
 	}
+	try {
+		fs.statSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json');
+		global.lazuriteConfig.machineInfo = JSON.parse(fs.readFileSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json','utf8'));
+	} catch(e) {
+	}
 
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
 		server = config.server;
 		var u = url.parse(config.server);
+		//console.log(u);
 		const https = require(u.protocol.slice(0,-1));
 		var node = this;
 		//node.config = config;
@@ -205,7 +211,7 @@ module.exports = function(RED) {
 		}).then((values) => {
 			var optime = global.lazuriteConfig.optimeInfo;
 			//optime.nextEvent = optime.getNextEvent(null);
-			initEnhanceAck();
+			initEnhanceAck(true);
 			global.lazuriteConfig.isGatewayActive = true;
 		}).catch((err) => {
 			node.send([,,,{payload:err}]);
@@ -249,7 +255,7 @@ module.exports = function(RED) {
 			}).then(() => {
 				var optime = global.lazuriteConfig.optimeInfo;
 				//optime.nextEvent = optime.getNextEvent();
-				initEnhanceAck();
+				initEnhanceAck(true);
 			}).catch((err) => {
 				node.send([,,,{payload:err}]);
 			});
@@ -259,6 +265,7 @@ module.exports = function(RED) {
 				clearInterval(timerThread);
 				timerThread = null;
 			}
+			fs.writeFileSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json',JSON.stringify(global.lazuriteConfig.machineInfo));
 		});
 		function genAddressMap(data) {
 			global.lazuriteConfig.machineInfo.worklog = {};
@@ -470,7 +477,7 @@ module.exports = function(RED) {
 					msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`
 					msg += `SRC_ADDR: ${"0x"+("0000"+rxdata.src_addr[0].toString(16)).slice(-4)}\n`;
 					msg += `MSG: ${rxdata.payload}\n`;
-					console.log(msg);
+					//console.log(msg);
 					global.lazuriteConfig.sendLogMessage(msg,(err,res) => {
 						if(err) {
 							msg += `ERR: ${JSON.stringify(err,null,"  ")}\n`;
@@ -527,7 +534,7 @@ module.exports = function(RED) {
 						}
 					}
 				}
-				console.log(rxdata.payload);
+				//console.log(rxdata.payload);
 				let payload = rxdata.payload.split(",");
 				if (payload.length >= 3) {
 					let prog_sensor;
@@ -570,10 +577,10 @@ module.exports = function(RED) {
 				let req = https.request(httpsOptions,(res) => {
 					res.setEncoding("utf8");
 					res.on('data',(chunk) => {
-				//		console.log("[activate] "+chunk);
+						//		console.log("[activate] "+chunk);
 					});
 					res.on('error',(e) => {
-				//		console.log("[activate] " + e);
+						//		console.log("[activate] " + e);
 					});
 				});
 				req.write(JSON.stringify(postData));
