@@ -536,8 +536,8 @@ module.exports = function(RED) {
 				}
 				//console.log(rxdata.payload);
 				let payload = rxdata.payload.split(",");
+				let prog_sensor;
 				if (payload.length >= 3) {
-					let prog_sensor;
 					if (payload[1] === 'CT_Sensor_vDet2') {
 						prog_sensor = 'CTSensor2_'+payload[2];
 					} else {
