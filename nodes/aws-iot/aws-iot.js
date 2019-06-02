@@ -18,7 +18,7 @@ module.exports = function(RED) {
 	"use strict";
 	const execSync = require("child_process").execSync;
 	const url = require("url");
-	const httpsLine = require("https");
+	//const httpsLine = require("https");
 	const fs = require("fs");
 	var awsIot = require('../aws-iot-device-sdk');
 	var util = require("util");

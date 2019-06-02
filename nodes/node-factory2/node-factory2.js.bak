@@ -1,4 +1,3 @@
-'use strict'
 /**
  * Copyright 2017 Lapis Semiconducor Ltd,.
  *
@@ -28,13 +27,9 @@ module.exports = function(RED) {
 	const EACK_UPDATE = 2;
 	const EACK_DISCONNECT = 3;
 	const EACK_FIRMWARE_UPDATE = 0xF0;
-	let addr2id = {};
-	let timerThread = null;
-
-	let https;
-	let api_server;
-	let api_server_uri;
-
+	var addr2id = {};
+	var timerThread = null;
+	var server;
 	global.lazuriteConfig = {
 		machineInfo: {
 			worklog: {},
@@ -45,7 +40,7 @@ module.exports = function(RED) {
 			//check network
 			//console.log(this);
 			let enbNetwork = false;
-			for(let socket in os.networkInterfaces()) {
+			for(var socket in os.networkInterfaces()) {
 				if(socket !== "lo") {
 					enbNetwork = true;
 				}
@@ -60,9 +55,9 @@ module.exports = function(RED) {
 			}
 			const u = url.parse("https://api.line.me/v2/bot/message/push")
 			const lineHttpOptions = {
-				host: api_server_uri.hostname,
-				port: api_server_uri.port,
-				path: api_server_uri.path,
+				host: u.hostname,
+				port: u.port,
+				path: u.path,
 				method: 'POST',
 				headers: {
 					"Content-Type": "application/json; charset=UTF-8",
@@ -100,18 +95,18 @@ module.exports = function(RED) {
 		optimeInfo: {
 			Items:[],
 			getNextEvent: function(currentStatus) {
-				let data = {};
-				let alertTime = [];
-				let now = new Date();
-				let currentState = null;
-				let time;
-				for(let i = 0; i < 8; i++) {
-					let v = this.Items[(now.getDay()+i)%7];
+				var data = {};
+				var alertTime = [];
+				var now = new Date();
+				var currentState = null;
+				var time;
+				for(var i = 0; i < 8; i++) {
+					var v = this.Items[(now.getDay()+i)%7];
 					if(v.setOff === 0) {
 						if(v.setTime === 1) {
-							let tmp = v.stTime.split(":");
-							let hours = parseInt(tmp[0]);
-							let minutes = parseInt(tmp[1]);
+							var tmp = v.stTime.split(":");
+							var hours = parseInt(tmp[0]);
+							var minutes = parseInt(tmp[1]);
 							time = new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,0,0,0);
 							//console.log({i:i, now: now.toLocaleString(), time: time.toLocaleString(),v:v});
 							alertTime.push({state: false,time: time});
@@ -134,11 +129,11 @@ module.exports = function(RED) {
 					}
 				}
 				/*
-				for(let a of alertTime) {
+				for(var a of alertTime) {
 					console.log({state:a.state,time: a.time.toLocaleString()});
 				}
 				*/
-				for(let a of alertTime) {
+				for(var a of alertTime) {
 					if(currentState === null) {currentState = a.state};
 					//console.log({currentState: currentState, state: a.state, time: a.time.toLocaleString(), now: now.toLocaleString()});
 					if((now < a.time) && (a.state !== currentState)) return {state:currentState, time: a.time};
@@ -149,7 +144,6 @@ module.exports = function(RED) {
 		},
 		isGatewayActive:  false,
 	}
-
 	try {
 		fs.statSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json');
 		global.lazuriteConfig.machineInfo = JSON.parse(fs.readFileSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json','utf8'));
@@ -158,23 +152,21 @@ module.exports = function(RED) {
 
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
-		let node = this;
-
-		api_server = config.server;
-		api_server_uri = url.parse(config.server);
-		https = require(api_server_uri.protocol.slice(0,-1));
-
+		server = config.server;
+		var u = url.parse(config.server);
+		//console.log(u);
+		const https = require(u.protocol.slice(0,-1));
+		var node = this;
+		//node.config = config;
 		global.lazuriteConfig.awsiotConfig = JSON.parse(fs.readFileSync(config.awsiotConfig,'utf8'));
 		global.lazuriteConfig.log = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/log'};
 		global.lazuriteConfig.capacity = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/capacity'};
 		global.lazuriteConfig.gwid = parseInt((global.lazuriteConfig.awsiotConfig.name).slice(-3));
-
-		//node.config = config;
 		//console.log(global.lazuriteConfig);
-		let httpOptions = {
+		const httpOptions = {
 			//host: "api.lazurite.io",
-			host: api_server_uri.hostname,
-			port: api_server_uri.port,
+			host: u.hostname,
+			port: u.port,
 			method: 'GET',
 			headers: {
 				"Accept": "application/json",
@@ -184,7 +176,7 @@ module.exports = function(RED) {
 			}
 		};
 		new Promise((resolve,reject) => {
-			getParameter(api_server_uri.pathname+'/info/machine',(err,res) => {
+			getParameter(u.pathname+'/info/machine',(err,res) => {
 				if(err){
 					reject(err);
 				} else {
@@ -195,7 +187,7 @@ module.exports = function(RED) {
 			});
 		}).then(() => {
 			return new Promise((resolve,reject) => {
-				getParameter(api_server_uri.pathname+'/info/optime',(err,res) => {
+				getParameter(u.pathname+'/info/optime',(err,res) => {
 					if(err){
 						reject(err);
 					} else {
@@ -207,7 +199,7 @@ module.exports = function(RED) {
 			});
 		}).then((values) => {
 			return new Promise((resolve,reject) => {
-				getParameter(api_server_uri.pathname+'/info/gateway/line',(err,res) => {
+				getParameter(u.pathname+'/info/gateway/line',(err,res) => {
 					if(err) {
 						reject(err);
 					} else {
@@ -217,7 +209,7 @@ module.exports = function(RED) {
 				});
 			});
 		}).then((values) => {
-			let optime = global.lazuriteConfig.optimeInfo;
+			var optime = global.lazuriteConfig.optimeInfo;
 			//optime.nextEvent = optime.getNextEvent(null);
 			initEnhanceAck(true);
 			global.lazuriteConfig.isGatewayActive = true;
@@ -234,7 +226,7 @@ module.exports = function(RED) {
 				var m = JSON.parse(msg.payload);
 				switch(m.type) {
 					case 'machine':
-						getParameter(api_server_uri.pathname+'/info/machine',(err,res) => {
+						getParameter(u.pathname+'/info/machine',(err,res) => {
 							if(err){
 								reject(err);
 							} else {
@@ -245,7 +237,7 @@ module.exports = function(RED) {
 						});
 						break;
 					case 'optime':
-						getParameter(api_server_uri.pathname+'/info/optime',(err,res) => {
+						getParameter(u.pathname+'/info/optime',(err,res) => {
 							if(err){
 								reject(err);
 							} else {
@@ -546,29 +538,32 @@ module.exports = function(RED) {
 							break;
 						}
 					}
-					//console.log(rxdata.payload);
-					let payload = rxdata.payload.split(",");
-					let prog_sensor;
-					if (payload.length >= 3) {
-						if (payload[1] === 'CT_Sensor_vDet2') {
-							prog_sensor = 'CTSensor2_'+payload[2];
-						} else {
-							prog_sensor = payload[1]+"_"+payload[2];
-						}
-					} else if (payload.length === 2) {
-						prog_sensor = payload[1];
+				}
+				//console.log(rxdata.payload);
+				let payload = rxdata.payload.split(",");
+				let prog_sensor;
+				if (payload.length >= 3) {
+					if (payload[1] === 'CT_Sensor_vDet2') {
+						prog_sensor = 'CTSensor2_'+payload[2];
+					} else {
+						prog_sensor = payload[1]+"_"+payload[2];
 					}
+					postActivate(id,prog_sensor);
+				} else if (payload.length === 2) {
+					prog_sensor = payload[1];
 					postActivate(id,prog_sensor);
 				}
 			}
 		}
 
 		function postActivate(id,prog_sensor) {
-			//host: "api.lazurite.io",
+			const u = url.parse(server);
+			const https = require(u.protocol.slice(0,-1));
 			const httpsOptions = {
-				host: api_server_uri.hostname,
-				port: api_server_uri.port,
-				path: api_server_uri.pathname+'/info/sensor/activate',
+				//host: "api.lazurite.io",
+				host: u.hostname,
+				port: u.port,
+				path: u.pathname+'/info/sensor/activate',
 				method: 'POST',
 				headers: {
 					"Accept": "application/json",
@@ -582,15 +577,12 @@ module.exports = function(RED) {
 				id: id,
 				prog_sensor: prog_sensor
 			};
+			// console.log({postData:postData});
 			try {
-				let body = "postActivate:: ";
 				let req = https.request(httpsOptions,(res) => {
 					res.setEncoding("utf8");
 					res.on('data',(chunk) => {
-						body += chunk;
 						//		console.log("[activate] "+chunk);
-					});
-					res.on('end',() => {
 					});
 					res.on('error',(e) => {
 						//		console.log("[activate] " + e);
