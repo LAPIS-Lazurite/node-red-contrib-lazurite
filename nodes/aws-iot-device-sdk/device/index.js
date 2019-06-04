@@ -360,8 +360,12 @@ function DeviceClient(options) {
    // Validate options, set default reconnect period if not specified.
    //
    var metricPrefix = "?SDK=JavaScript&Version=";
+	try {
    var pjson = require('../package.json');
    var sdkVersion = pjson.version;
+	} catch(e) {
+   var sdkVersion = "2.2.1";
+	}
    var defaultUsername = metricPrefix + sdkVersion;
 
    if (isUndefined(options) ||
