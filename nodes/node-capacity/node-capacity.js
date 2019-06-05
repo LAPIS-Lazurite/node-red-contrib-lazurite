@@ -30,8 +30,8 @@ module.exports = function(RED) {
 		 * Restore previous data
 		 */
 		try {
-			fs.statSync('/home/pi/.lazurite/temp/capacity.json');
-			let tmp = JSON.parse(fs.readFileSync('/home/pi/.lazurite/temp/capacity.json','utf8'));
+			fs.statSync('/home/pi/.lazurite/tmp/capacity.json');
+			let tmp = JSON.parse(fs.readFileSync('/home/pi/.lazurite/tmp/capacity.json','utf8'));
 			for(let t0 in tmp){
 				for(let t1 in tmp[t0]) {
 					if(typeof tmp[t0][t1] === 'object') {
@@ -401,7 +401,12 @@ module.exports = function(RED) {
 		});
 		node.on('close',function(done) {
 			clearInterval(timer);
-			fs.writeFileSync('/home/pi/.lazurite/temp/capacity.json',JSON.stringify({
+			try {
+				fs.statSync('/home/pi/.lazurite/tmp');
+			} catch(e) {
+				fs.mkdirSync('/home/pi/.lazurite/tmp');
+			}
+			fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
 				sensorInfo : sensorInfo,
 				hourCapacity: hourCapacity,
 				dayCapacity: dayCapacity,

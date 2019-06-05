@@ -151,8 +151,8 @@ module.exports = function(RED) {
 	}
 
 	try {
-		fs.statSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json');
-		global.lazuriteConfig.machineInfo = JSON.parse(fs.readFileSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json','utf8'));
+		fs.statSync('/home/pi/.lazurite/tmp/lazuriteConfigMachineInfo.json');
+		global.lazuriteConfig.machineInfo = JSON.parse(fs.readFileSync('/home/pi/.lazurite/tmp/lazuriteConfigMachineInfo.json','utf8'));
 	} catch(e) {
 	}
 
@@ -268,12 +268,18 @@ module.exports = function(RED) {
 				node.send([,,,{payload:err}]);
 			});
 		});
-		node.on('close',() => {
+		node.on('close',(done) => {
 			if(timerThread) {
 				clearInterval(timerThread);
 				timerThread = null;
 			}
-			fs.writeFileSync('/home/pi/.lazurite/temp/lazuriteConfigMachineInfo.json',JSON.stringify(global.lazuriteConfig.machineInfo));
+			try {
+				fs.statSync('/home/pi/.lazurite/tmp');
+			} catch(e) {
+				fs.mkdifSync('/home/pi/.lazurite/tmp');
+			}
+			fs.writeFileSync('/home/pi/.lazurite/tmp/lazuriteConfigMachineInfo.json',JSON.stringify(global.lazuriteConfig.machineInfo));
+			done();
 		});
 		function genAddressMap(data) {
 			global.lazuriteConfig.machineInfo.worklog = {};
