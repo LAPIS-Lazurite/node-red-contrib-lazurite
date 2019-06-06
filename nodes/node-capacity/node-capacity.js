@@ -61,7 +61,7 @@ module.exports = function(RED) {
 		RED.nodes.createNode(this,config);
 		node.config = config;
 		let now = new Date();
-		sensorInfo.reported = now;
+		//sensorInfo.reported = now;
 		// check timing to send capacity data to cloud
 		let timer = setInterval(function() {
 			now = new Date();
@@ -412,7 +412,7 @@ module.exports = function(RED) {
 				dayCapacity: dayCapacity,
 				hour: hour,
 				day: day
-			}));
+			},null,"  "));
 			done();
 		});
 	}
