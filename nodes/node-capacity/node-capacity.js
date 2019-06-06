@@ -23,9 +23,9 @@ module.exports = function(RED) {
 		let node = this;
 		let sensorInfo = {};
 		let hourCapacity = {};
-		let dayCapacity = {};
+		//let dayCapacity = {};
 		let hour = {};
-		let day = {};
+		//let day = {};
 		/*
 		 * Restore previous data
 		 */
@@ -48,15 +48,15 @@ module.exports = function(RED) {
 			// restore data is valid less than one hour
 			sensorInfo = tmp.sensorInfo;
 			hourCapacity = tmp.hourCapacity;
-			dayCapacity = tmp.dayCapacity;
+			//dayCapacity = tmp.dayCapacity;
 			hour = tmp.hour;
-			day = tmp.day;
+			//day = tmp.day;
 		} catch(e) {
 			sensorInfo = {};
 			hourCapacity = {};
-			dayCapacity = {};
+			//dayCapacity = {};
 			hour = {};
-			day = {};
+			//day = {};
 		}
 		RED.nodes.createNode(this,config);
 		node.config = config;
@@ -71,12 +71,14 @@ module.exports = function(RED) {
 				hour.reported = now;
 				hour.checked = now;
 			}
+			/*
 			if(day.reported === undefined) {
 				day.reported = now;
 				day.checked = now;
 			}
+			*/
 
-			if(hour.reported.getHours() != now.getHours()) {
+			if ((hour.reported.getMonth() != now.getMonth()) || (hour.reported.getDate() != now.getDate()) || (hour.reported.getHours() != now.getHours())) {
 				let timestamp = new Date(hour.reported.getFullYear(), hour.reported.getMonth(), hour.reported.getDate(),hour.reported.getHours()+1);
 				let payload = {
 					timestamp : timestamp.getTime()+global.lazuriteConfig.gwid,
@@ -106,6 +108,7 @@ module.exports = function(RED) {
 				hourCapacity = {};
 			}
 
+			/*
 			if(day.reported.getDate() != now.getDate()) {
 				let timestamp = new Date(day.reported.getFullYear(), day.reported.getMonth(), day.reported.getDate()+1);
 				let payload = {
@@ -136,11 +139,11 @@ module.exports = function(RED) {
 					}
 				}
 				if(count > 0) {
-					//					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
+			//					node.send({payload:payload,topic: global.lazuriteConfig.capacity.topic});
 				}
 				day = { reported: now };
 				dayCapacity = {};
-				/*
+
 				for(let id in sensorInfo) {
 					node.send({
 						payload: {
@@ -152,8 +155,8 @@ module.exports = function(RED) {
 						}
 					});
 				}
-				*/
 			}
+			*/
 
 			for (let id in sensorInfo) {
 				if((now - sensorInfo[id].last)<3600*1000)  {
@@ -169,6 +172,7 @@ module.exports = function(RED) {
 						hourCapacity[id].meastime += (now - hour.checked);
 					}
 				}
+				/*
 				if((now - sensorInfo[id].last)<3600*1000*24)  {
 					if(dayCapacity[id] === undefined){
 						dayCapacity[id] = {
@@ -182,9 +186,10 @@ module.exports = function(RED) {
 						dayCapacity[id].meastime += (now - day.checked);
 					}
 				}
+				*/
 			}
 			hour.checked = now;
-			day.checked = now;
+			//day.checked = now;
 			//console.log({hour:hourCapacity,day:dayCapacity});
 		}, 1000);
 
@@ -367,6 +372,21 @@ module.exports = function(RED) {
 						});
 						graph[id].hour.min = current;
 						graph[id].hour.max = current;
+
+						// update temprary file
+						try {
+							fs.statSync('/home/pi/.lazurite/tmp');
+						} catch(e) {
+							fs.mkdirSync('/home/pi/.lazurite/tmp');
+						}
+						fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
+							sensorInfo : sensorInfo,
+							hourCapacity: hourCapacity,
+							//dayCapacity: dayCapacity,
+							hour: hour,
+							//day: day
+						},null,"  "));
+
 					} else {
 						if(graph[id].hour.min > current) {
 							graph[id].hour.min =  current;
@@ -374,6 +394,7 @@ module.exports = function(RED) {
 							graph[id].hour.max =  current;
 						}
 					}
+					/*
 					if(graph[id].reported.getDate() !== rxtime.getDate()){
 						node.send({
 							payload: {
@@ -394,6 +415,7 @@ module.exports = function(RED) {
 							graph[id].day.max =  current;
 						}
 					}
+					*/
 					graph[id].reported = rxtime;
 					//console.log({payload: msg.payload, graph: graph[id]});
 				}
@@ -409,9 +431,9 @@ module.exports = function(RED) {
 			fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
 				sensorInfo : sensorInfo,
 				hourCapacity: hourCapacity,
-				dayCapacity: dayCapacity,
+				//dayCapacity: dayCapacity,
 				hour: hour,
-				day: day
+				//day: day
 			},null,"  "));
 			done();
 		});
