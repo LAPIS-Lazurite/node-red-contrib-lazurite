@@ -90,7 +90,7 @@ module.exports = function(RED) {
 
 				let count = 0;
 				for(let id in hourCapacity) {
-					if((now - sensorInfo[id].last) <3600*1000) {
+					if((hour.checked - sensorInfo[id].last) <3600*1000) {
 						// generate hour capacity data
 						payload.capacity[id] = parseInt(hourCapacity[id].ontime/hourCapacity[id].meastime*1000)/10;
 						payload.vbat[id] = sensorInfo[id].battery;
