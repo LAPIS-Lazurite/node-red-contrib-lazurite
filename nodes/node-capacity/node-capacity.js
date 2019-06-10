@@ -103,22 +103,22 @@ module.exports = function(RED) {
 				}
 				if(count > 0) {
 					node.send({payload:payload,topic:global.lazuriteConfig.capacity.topic});
-					// update temprary file
-					try {
-						fs.statSync('/home/pi/.lazurite/tmp');
-					} catch(e) {
-						fs.mkdirSync('/home/pi/.lazurite/tmp');
-					}
-					fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
-						sensorInfo : sensorInfo,
-						hourCapacity: hourCapacity,
-						//dayCapacity: dayCapacity,
-						hour: hour,
-						//day: day
-					},null,"  "));
 				}
 				hour = { reported: now };
 				hourCapacity = {};
+				// update temprary file
+				try {
+					fs.statSync('/home/pi/.lazurite/tmp');
+				} catch(e) {
+					fs.mkdirSync('/home/pi/.lazurite/tmp');
+				}
+				fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
+					sensorInfo : sensorInfo,
+					hourCapacity: hourCapacity,
+					//dayCapacity: dayCapacity,
+					hour: hour,
+					//day: day
+				},null,"  "));
 			}
 
 			/*
