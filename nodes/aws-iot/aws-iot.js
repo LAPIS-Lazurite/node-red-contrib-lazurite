@@ -151,6 +151,7 @@ module.exports = function(RED) {
 					// Register successful connect or reconnect handler
 				}
 				node.client.on('connect', function () {
+					let init_flag = node.initialConnect;
 					node.connecting = false;
 					node.connected = true;
 					node.initialConnect = false;
@@ -179,6 +180,19 @@ module.exports = function(RED) {
 					// Send any birth message
 					if (node.birthMessage) {
 						node.publish(node.birthMessage);
+					}
+					if ((init_flag === true) && (typeof global.lazuriteConfig !== "undefined")) {
+						console.log('node-red-start');
+						node.publish({
+							topic: global.lazuriteConfig.capacity.topic,
+							payload: {
+								type: "monitor",
+								timestamp: new Date().getTime(),
+								event: "node-red-start",
+								gateway: global.lazuriteConfig.gwid
+							},
+							qos: 1
+						});
 					}
 				});
 				node.client.on("reconnect", function() {

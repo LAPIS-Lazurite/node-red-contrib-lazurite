@@ -283,6 +283,7 @@ module.exports = function(RED) {
 		});
 		function genAddressMap(data) {
 			global.lazuriteConfig.machineInfo.worklog = {};
+			addr2id = {};
 			var worklog = global.lazuriteConfig.machineInfo.worklog;
 			var graph = global.lazuriteConfig.machineInfo.graph;
 			for(var i in data) {
