@@ -287,14 +287,20 @@ module.exports = function(RED) {
 			var worklog = global.lazuriteConfig.machineInfo.worklog;
 			var graph = global.lazuriteConfig.machineInfo.graph;
 			for(var i in data) {
-				var addr;
+				let addr;
 				if ((!isNaN(parseInt("0x"+data[i].addr)) && (data[i].addr.length == 16))){
 					addr = parseInt("0x"+data[i].addr);
 					addr = addr & 0xffff;
-				} else if(!isNaN(parseInt(data[i].addr))){
-					addr = parseInt(data[i].addr);
+				} else if(!isNaN(Number(data[i].addr))){
+					addr = Number(data[i].addr);
 				} else {
-					continue;
+					let tmp = data[i].addr.split('_');  // multi sensor type such as 0x4321_0, 0x4321_1,...
+					if ((tmp.length === 2) && !isNaN(Number(tmp[0])) && !isNaN(Number(tmp[1]))) {
+						//console.log({addr:tmp[0],index:tmp[1]});
+						addr = Number(tmp[0])+Number(tmp[1])*0x10000;
+					} else {
+						continue;
+					}
 				}
 				if(data[i].type.match(/worklog/)) {
 					//console.log({id: data[i].id,type: "worklog"});
@@ -354,6 +360,12 @@ module.exports = function(RED) {
 			// 次のenhanceAckを作成
 			//console.log({initEnhanceAck:mode,optime: optime.nextEvent});
 			for(var i in worklogs) {
+				// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
+				let real_addr = Object.keys(addr2id).find((key) => {
+					return addr2id[key] === parseInt(i);
+				});
+				// multi sensor typeの従属アドレスはスキップ
+				if (parseInt(real_addr) > 0x10000) continue;
 				if(mode === true) {
 					var interval = parseInt(MEAS_INTERVAL / 1000);
 					enhanceAck.push({
@@ -472,6 +484,14 @@ module.exports = function(RED) {
 				rxdata.payload = rxdata.payload.split(",");
 				if(rxdata.payload[0] === "update") {
 					var id = rxdata.src_addr[0];
+					// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
+					let real_addr = Object.keys(addr2id).find((key) => {
+						return addr2id[key] === id;
+					});
+					// 下4桁が同一のMACアドレスを持つキーの配列
+					let multi_addrs = Object.keys(addr2id).filter((key) => {
+						return ((key ^ real_addr) & 0xffff) === 0;
+					});
 					if(worklogs[id]){
 						for(var eack of global.lazuriteConfig.enhanceAck) {
 							if(eack.addr === id) {
@@ -482,11 +502,29 @@ module.exports = function(RED) {
 								} else {
 									eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
 								}
-								node.send([,{
-									dst_panid: rxdata.dst_panid,
-									dst_addr: rxdata.src_addr,
-									payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
-								},,{payload: global.lazuriteConfig.enhanceAck}]);
+								if (multi_addrs.length > 1) {
+									// multi sensor type
+									let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr},${id}`;
+									for (let addr of multi_addrs) {
+										let index = addr >> 16;
+										let new_id = addr2id[addr];
+										if (worklogs[new_id]) {
+											payload += `,${index},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
+										}
+									}
+									node.send([,{
+										dst_panid: rxdata.dst_panid,
+										dst_addr: rxdata.src_addr,
+										payload: payload,
+									},,{payload: global.lazuriteConfig.enhanceAck}]);
+								} else {
+									// single sensor type
+									node.send([,{
+										dst_panid: rxdata.dst_panid,
+										dst_addr: rxdata.src_addr,
+										payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
+									},,{payload: global.lazuriteConfig.enhanceAck}]);
+								}
 								break;
 							}
 						}
@@ -508,21 +546,66 @@ module.exports = function(RED) {
 				} else {
 					// state information
 					var id = rxdata.src_addr[0];
-					if(worklogs[id]){
-						if(worklogs[id].invert === true) {
-							rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
-							//	console.log({id:id, rxdata:rxdata,worklog: worklogs[id]});
+					if (rxdata.payload[0] === 'v2') {
+						// multi sensor type
+						// payload format
+						// 'v2',(index),'on'/'off',(value),(voltage),[reason],(index), ...
+
+						// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
+						let real_addr = Object.keys(addr2id).find((key) => {
+							return addr2id[key] === id;
+						});
+						for (let i=0;i<(rxdata.payload.length-1)/5;i++) {
+							(function(n) {
+								let index,new_id,new_rxdata;
+								setTimeout(function() {
+									new_rxdata = Object.assign({},rxdata); // clone object
+									new_rxdata.payload = [];
+									index = rxdata.payload[1+5*n];
+									new_id = addr2id[parseInt(real_addr)+index*0x10000];
+									if(worklogs[new_id]){
+										new_rxdata.src_addr[0] = new_id;
+										new_rxdata.payload[0] = rxdata.payload[2+5*n];
+										new_rxdata.payload[1] = rxdata.payload[3+5*n];
+										new_rxdata.payload[2] = rxdata.payload[4+5*n];
+										new_rxdata.payload[3] = rxdata.payload[5+5*n];
+										new_rxdata.nsec += 1000000 * n; // 1msずらす
+										if(worklogs[new_id].invert === true) {
+											new_rxdata.payload[0] = (new_rxdata.payload[0] === "on") ? "off" : "on";
+										}
+										node.send([,,new_rxdata]);											// send capacity information
+										if(worklogs[id].disp) {
+											node.send([,,,,{
+												payload: {
+													a: new_id,
+													t: parseInt(new_rxdata.sec*1000+new_rxdata.nsec/1000000),
+													d: new_rxdata.payload
+												},
+												topic: global.lazuriteConfig.log.topic
+											}]);			// send rxdata to log
+										}
+									}
+								},10*n);
+							})(i);
 						}
-						node.send([,,rxdata]);											// send capacity information
-						if(worklogs[id].disp) {
-							node.send([,,,,{
-								payload: {
-									a: rxdata.src_addr,
-									t: parseInt(rxdata.sec*1000+rxdata.nsec/1000000),
-									d: rxdata.payload
-								},
-								topic: global.lazuriteConfig.log.topic
-							}]);			// send rxdata to log
+					} else {
+						// single sensor type
+						if(worklogs[id]){
+							if(worklogs[id].invert === true) {
+								rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
+								//	console.log({id:id, rxdata:rxdata,worklog: worklogs[id]});
+							}
+							node.send([,,rxdata]);											// send capacity information
+							if(worklogs[id].disp) {
+								node.send([,,,,{
+									payload: {
+										a: rxdata.src_addr,
+										t: parseInt(rxdata.sec*1000+rxdata.nsec/1000000),
+										d: rxdata.payload
+									},
+									topic: global.lazuriteConfig.log.topic
+								}]);			// send rxdata to log
+							}
 						}
 					}
 				}
@@ -535,6 +618,10 @@ module.exports = function(RED) {
 				// broadcast
 				//console.log({rxdata:rxdata});
 				var id = addr2id[rxdata.src_addr[0]];
+				// 下4桁が同一のMACアドレスを持つキーの配列
+				let multi_addrs = Object.keys(addr2id).filter((key) => {
+					return ((parseInt(key) ^ rxdata.src_addr[0]) & 0xffff) === 0;
+				});
 				//console.log({id:id, src: rxdata.src_addr[0]});
 				if(worklogs[id]){
 					for(var eack of global.lazuriteConfig.enhanceAck) {
@@ -546,10 +633,27 @@ module.exports = function(RED) {
 							} else {
 								eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
 							}
-							node.send([{dst_panid: 0xffff,
-								dst_addr: rxdata.src_addr,
-								payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
-							},,,{payload: global.lazuriteConfig.enhanceAck}]);
+							if (multi_addrs.length > 1) {
+								// multi sensor type
+								let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr},${id}`;
+								for (let addr of multi_addrs) {
+									let index = addr >> 16;
+									let new_id = addr2id[addr];
+									if (worklogs[new_id]) {
+										payload += `,${index},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
+									}
+								}
+								node.send([{dst_panid: 0xffff,
+									dst_addr: rxdata.src_addr,
+									payload: payload
+								},,,{payload: global.lazuriteConfig.enhanceAck}]);
+							} else {
+								// single sensor type
+								node.send([{dst_panid: 0xffff,
+									dst_addr: rxdata.src_addr,
+									payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
+								},,,{payload: global.lazuriteConfig.enhanceAck}]);
+							}
 							break;
 						}
 					}
@@ -565,7 +669,15 @@ module.exports = function(RED) {
 					} else if (payload.length === 2) {
 						prog_sensor = payload[1];
 					}
-					postActivate(id,prog_sensor);
+					if (multi_addrs.length > 1) {
+						// multi sensor type
+						multi_addrs.forEach((v,i) => {
+							setTimeout(postActivate,100*i,addr2id[v],prog_sensor);
+						});
+					} else {
+						// single sensor type
+						postActivate(id,prog_sensor);
+					}
 				}
 			}
 		}
