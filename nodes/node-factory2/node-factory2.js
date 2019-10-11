@@ -28,6 +28,7 @@ module.exports = function(RED) {
 	const EACK_UPDATE = 2;
 	const EACK_DISCONNECT = 3;
 	const EACK_FIRMWARE_UPDATE = 0xF0;
+	const UNIT_SIZE_V2 = 6; // index,'on'/'off',value,voltage,[reason],[deltaT]
 	let addr2id = {};
 	let timerThread = null;
 
@@ -546,32 +547,38 @@ module.exports = function(RED) {
 				} else {
 					// state information
 					var id = rxdata.src_addr[0];
-					if (rxdata.payload[0] === 'v2') {
+					if ((rxdata.payload[0] === 'v2') && ((rxdata.payload.length-1)%UNIT_SIZE_V2 === 0)) {
 						// multi sensor type
 						// payload format
-						// 'v2',(index),'on'/'off',(value),(voltage),[reason],(index), ...
+						// 'v2',index,'on'/'off',value,voltage,[reason],[deltaT], ...
 
 						// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
 						let real_addr = Object.keys(addr2id).find((key) => {
 							return addr2id[key] === id;
 						});
-						for (let i=0;i<(rxdata.payload.length-1)/5;i++) {
+						for (let i=0;i<(rxdata.payload.length-1)/UNIT_SIZE_V2;i++) {
 							(function(n) {
 								let index,new_id,new_rxdata;
 								setTimeout(function() {
 									new_rxdata = Object.assign({},rxdata); // clone object
 									new_rxdata.payload = [];
-									index = rxdata.payload[1+5*n];
+									index = rxdata.payload[1+UNIT_SIZE_V2*n];
 									new_id = addr2id[parseInt(real_addr)+index*0x10000];
 									if(worklogs[new_id]){
 										new_rxdata.src_addr[0] = new_id;
-										new_rxdata.payload[0] = rxdata.payload[2+5*n];
-										new_rxdata.payload[1] = rxdata.payload[3+5*n];
-										new_rxdata.payload[2] = rxdata.payload[4+5*n];
-										new_rxdata.payload[3] = rxdata.payload[5+5*n];
+										new_rxdata.payload[0] = rxdata.payload[2+UNIT_SIZE_V2*n];
+										new_rxdata.payload[1] = rxdata.payload[3+UNIT_SIZE_V2*n];
+										new_rxdata.payload[2] = rxdata.payload[4+UNIT_SIZE_V2*n];
+										new_rxdata.payload[3] = rxdata.payload[5+UNIT_SIZE_V2*n];
 										new_rxdata.nsec += 1000000 * n; // 1msずらす
 										if(worklogs[new_id].invert === true) {
 											new_rxdata.payload[0] = (new_rxdata.payload[0] === "on") ? "off" : "on";
+										}
+										let deltaT = rxdata.payload[6+UNIT_SIZE_V2*n];
+										if (deltaT) {
+											let time_nsec = new_rxdata.sec*1000*1000*1000 + new_rxdata.nsec - parseInt(deltaT*1000*1000);
+											new_rxdata.nsec = time_nsec%(1000*1000*1000);
+											new_rxdata.sec = parseInt((time_nsec - new_rxdata.nsec)/(1000*1000*1000));
 										}
 										node.send([,,new_rxdata]);											// send capacity information
 										if(worklogs[id].disp) {
@@ -588,8 +595,17 @@ module.exports = function(RED) {
 								},10*n);
 							})(i);
 						}
-					} else {
+					} else if ((rxdata.payload.length >= 3) && (rxdata.payload.length <= 5)) {
 						// single sensor type
+						if (rxdata.payload.length === 5) {
+							let deltaT = rxdata.payload[4];
+							if (deltaT) {
+								let time_nsec = rxdata.sec*1000*1000*1000 + rxdata.nsec - parseInt(deltaT*1000*1000);
+								rxdata.nsec = time_nsec%(1000*1000*1000);
+								rxdata.sec = parseInt((time_nsec - rxdata.nsec)/(1000*1000*1000));
+							}
+							rxdata.payload.pop();
+						}
 						if(worklogs[id]){
 							if(worklogs[id].invert === true) {
 								rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
