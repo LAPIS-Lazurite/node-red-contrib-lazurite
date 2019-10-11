@@ -225,7 +225,7 @@ module.exports = function(RED) {
 				node.send(msg);
 				return;
 			}
-			if(msg.result > 0) {
+			if(msg.result >= 0) {
 				var edat = lib.getEnhanceAck();
 				if(edat.length !== 0) { msg.eack = edat; }
 			} else {
@@ -299,7 +299,7 @@ module.exports = function(RED) {
 				node.send(msg);
 				return;
 			}
-			if(msg.result > 0) {
+			if(msg.result >= 0) {
 				var edat = lib.getEnhanceAck();
 				if(edat.length !== 0) { msg.eack = edat; }
 			} else {
