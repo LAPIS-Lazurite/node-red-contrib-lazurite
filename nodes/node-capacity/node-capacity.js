@@ -251,6 +251,13 @@ module.exports = function(RED) {
 			// first data
 			// worklog
 			if(global.lazuriteConfig.machineInfo.worklog[id].log === true) {
+				// override state to off
+				let pause = global.lazuriteConfig.machineInfo.worklog[id].pause;
+				if ((pause !== undefined) && (pause !== 0)) {
+					state = 'off';
+					reason = pause;
+					//console.log({id:id,reason:reason});
+				}
 				if(sensorInfo[id] === undefined ) {
 					sensorInfo[id] = {
 						from: rxtime,
@@ -290,7 +297,7 @@ module.exports = function(RED) {
 					}
 					node.send(output);
 				} else {
-					if(sensorInfo[id].currentStatus !== state) {
+					if ((sensorInfo[id].currentStatus !== state) || ((pause !== undefined) && (pause !== 0) && (sensorInfo[id].reasonId !== reason))) {
 						sensorInfo[id].currentStatus = state;
 						let detect;
 						//console.log(global.lazuriteConfig.machineInfo);

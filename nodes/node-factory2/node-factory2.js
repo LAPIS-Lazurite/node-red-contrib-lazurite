@@ -315,7 +315,8 @@ module.exports = function(RED) {
 						interval: data[i].interval?data[i].interval*1000:MEAS_INTERVAL,
 						invert: (data[i].invert == 1)? true:false,
 						debug: (data[i].debug == 0)? false: true,
-						disp: (data[i].disp == 0)? false: true
+						disp: (data[i].disp == 0)? false: true,
+						pause: data[i].pause
 					}
 				}
 				if(data[i].type.match(/graph/)) {
@@ -334,7 +335,8 @@ module.exports = function(RED) {
 							interval: data[i].interval?data[i].interval*1000:MEAS_INTERVAL,
 							invert: (data[i].invert == 1)?true:false,
 							debug: true,
-							disp: false
+							disp: false,
+							pause: 0
 						}
 					}
 				} else {
@@ -351,6 +353,7 @@ module.exports = function(RED) {
 			var optime = global.lazuriteConfig.optimeInfo;
 			var enhanceAck = global.lazuriteConfig.enhanceAck;
 			var worklogs = global.lazuriteConfig.machineInfo.worklog;
+			let interval;
 			//イベントを更新
 			optime.nextEvent = optime.getNextEvent();
 			if(optime.nextEvent.time === undefined) {
@@ -368,20 +371,29 @@ module.exports = function(RED) {
 				// multi sensor typeの従属アドレスはスキップ
 				if (parseInt(real_addr) > 0x10000) continue;
 				if(mode === true) {
-					var interval = parseInt(MEAS_INTERVAL / 1000);
-					enhanceAck.push({
-						addr: parseInt(i),
-						data: [EACK_UPDATE,interval & 0x00FF,(interval >> 8) & 0x00FF]
-					});
+					// 一時停止の場合は強制的にKeep Alive時間寝かせる
+					if (worklogs[i].pause !== 0) {
+						interval = parseInt(KEEP_ALIVE / 1000);
+						enhanceAck.push({
+							addr: parseInt(i),
+							data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
+						});
+					} else {
+						interval = parseInt(MEAS_INTERVAL / 1000);
+						enhanceAck.push({
+							addr: parseInt(i),
+							data: [EACK_UPDATE,interval & 0x00FF,(interval >> 8) & 0x00FF]
+						});
+					}
 				} else {
 					if(optime.nextEvent.state === true) {
-						var interval = parseInt(worklogs[i].interval / 1000);
+						interval = parseInt(worklogs[i].interval / 1000);
 						enhanceAck.push({
 							addr: parseInt(i),
 							data: [worklogs[i].debug?EACK_DEBUG:EACK_NOP,interval & 0x00FF,(interval >> 8) & 0x00FF]
 						});
 					} else {
-						var interval = parseInt(KEEP_ALIVE / 1000);
+						interval = parseInt(KEEP_ALIVE / 1000);
 						enhanceAck.push({
 							addr: parseInt(i),
 							data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
@@ -498,7 +510,7 @@ module.exports = function(RED) {
 							if(eack.addr === id) {
 								// update enhanceAck
 								var optime = global.lazuriteConfig.optimeInfo;
-								if(optime.nextEvent.state === false) {
+								if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) {
 									eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
 								} else {
 									eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
@@ -644,7 +656,7 @@ module.exports = function(RED) {
 						if(eack.addr === id) {
 							// update enhanceAck
 							var optime = global.lazuriteConfig.optimeInfo;
-							if(optime.nextEvent.state === false) {
+							if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) {
 								eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
 							} else {
 								eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
