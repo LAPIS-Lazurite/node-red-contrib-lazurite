@@ -28,7 +28,7 @@ module.exports = function(RED) {
 	const EACK_UPDATE = 2;
 	const EACK_DISCONNECT = 3;
 	const EACK_FIRMWARE_UPDATE = 0xF0;
-	const UNIT_SIZE_V2 = 6; // index,'on'/'off',value,voltage,[reason],[deltaT]
+	const UNIT_SIZE_V2 = 6; // id,'on'or'off',value,voltage,[reason],[deltaT]
 	let addr2id = {};
 	let timerThread = null;
 
@@ -517,12 +517,11 @@ module.exports = function(RED) {
 								}
 								if (multi_addrs.length > 1) {
 									// multi sensor type
-									let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr},${id}`;
+									let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr}`;
 									for (let addr of multi_addrs) {
-										let index = addr >> 16;
 										let new_id = addr2id[addr];
 										if (worklogs[new_id]) {
-											payload += `,${index},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
+											payload += `,${new_id},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
 										}
 									}
 									node.send([,{
@@ -562,7 +561,7 @@ module.exports = function(RED) {
 					if ((rxdata.payload[0] === 'v2') && ((rxdata.payload.length-1)%UNIT_SIZE_V2 === 0)) {
 						// multi sensor type
 						// payload format
-						// 'v2',index,'on'/'off',value,voltage,[reason],[deltaT], ...
+						// 'v2',id,'on'/'off',value,voltage,[reason],[deltaT], ...
 
 						// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
 						let real_addr = Object.keys(addr2id).find((key) => {
@@ -574,10 +573,9 @@ module.exports = function(RED) {
 								setTimeout(function() {
 									new_rxdata = Object.assign({},rxdata); // clone object
 									new_rxdata.payload = [];
-									index = rxdata.payload[1+UNIT_SIZE_V2*n];
-									new_id = addr2id[parseInt(real_addr)+index*0x10000];
+									new_id = rxdata.payload[1+UNIT_SIZE_V2*n];
 									if(worklogs[new_id]){
-										new_rxdata.src_addr[0] = new_id;
+										new_rxdata.src_addr[0] = parseInt(new_id);
 										new_rxdata.payload[0] = rxdata.payload[2+UNIT_SIZE_V2*n];
 										new_rxdata.payload[1] = rxdata.payload[3+UNIT_SIZE_V2*n];
 										new_rxdata.payload[2] = rxdata.payload[4+UNIT_SIZE_V2*n];
@@ -663,12 +661,11 @@ module.exports = function(RED) {
 							}
 							if (multi_addrs.length > 1) {
 								// multi sensor type
-								let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr},${id}`;
+								let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr}`;
 								for (let addr of multi_addrs) {
-									let index = addr >> 16;
 									let new_id = addr2id[addr];
 									if (worklogs[new_id]) {
-										payload += `,${index},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
+										payload += `,${new_id},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
 									}
 								}
 								node.send([{dst_panid: 0xffff,
