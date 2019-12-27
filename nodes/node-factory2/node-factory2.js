@@ -370,34 +370,41 @@ module.exports = function(RED) {
 				});
 				// multi sensor typeの従属アドレスはスキップ
 				if (parseInt(real_addr) > 0x10000) continue;
-				if(mode === true) {
-					// 一時停止の場合は強制的にKeep Alive時間寝かせる
-					if (worklogs[i].pause !== 0) {
-						interval = parseInt(KEEP_ALIVE / 1000);
-						enhanceAck.push({
-							addr: parseInt(i),
-							data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
-						});
-					} else {
-						interval = parseInt(MEAS_INTERVAL / 1000);
-						enhanceAck.push({
-							addr: parseInt(i),
-							data: [EACK_UPDATE,interval & 0x00FF,(interval >> 8) & 0x00FF]
-						});
-					}
+				if (worklogs[i].debug === true) { // グラフ描画を再優先
+					enhanceAck.push({
+						addr: parseInt(i),
+						data: [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF]
+					});
 				} else {
-					if(optime.nextEvent.state === true) {
-						interval = parseInt(worklogs[i].interval / 1000);
-						enhanceAck.push({
-							addr: parseInt(i),
-							data: [worklogs[i].debug?EACK_DEBUG:EACK_NOP,interval & 0x00FF,(interval >> 8) & 0x00FF]
-						});
+					if(mode === true) {
+						// 一時停止の場合は強制的にKeep Alive時間寝かせる
+						if (worklogs[i].pause !== 0) {
+							interval = parseInt(KEEP_ALIVE / 1000);
+							enhanceAck.push({
+								addr: parseInt(i),
+								data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
+							});
+						} else {
+							interval = parseInt(MEAS_INTERVAL / 1000);
+							enhanceAck.push({
+								addr: parseInt(i),
+								data: [EACK_UPDATE,interval & 0x00FF,(interval >> 8) & 0x00FF]
+							});
+						}
 					} else {
-						interval = parseInt(KEEP_ALIVE / 1000);
-						enhanceAck.push({
-							addr: parseInt(i),
-							data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
-						});
+						if(optime.nextEvent.state === true) {
+							interval = parseInt(worklogs[i].interval / 1000);
+							enhanceAck.push({
+								addr: parseInt(i),
+								data: [EACK_NOP,interval & 0x00FF,(interval >> 8) & 0x00FF]
+							});
+						} else {
+							interval = parseInt(KEEP_ALIVE / 1000);
+							enhanceAck.push({
+								addr: parseInt(i),
+								data: [EACK_DEBUG,interval & 0x00FF,(interval >> 8) & 0x00FF]
+							});
+						}
 					}
 				}
 			}
@@ -510,10 +517,12 @@ module.exports = function(RED) {
 							if(eack.addr === id) {
 								// update enhanceAck
 								var optime = global.lazuriteConfig.optimeInfo;
-								if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) {
+								if (worklogs[id].debug === true) { // グラフ描画を再優先
+									eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
+								} else if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) { // 稼働時間のイベントがない、一時停止はKEEP ALIVE
 									eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
-								} else {
-									eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
+								} else { // その他は指定のインターバル
+									eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
 								}
 								if (multi_addrs.length > 1) {
 									// multi sensor type
@@ -654,10 +663,12 @@ module.exports = function(RED) {
 						if(eack.addr === id) {
 							// update enhanceAck
 							var optime = global.lazuriteConfig.optimeInfo;
-							if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) {
+							if (worklogs[id].debug === true) { // グラフ描画を再優先
+								eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
+							} else if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) { // 稼働時間のイベントがない、一時停止はKEEP ALIVE
 								eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
-							} else {
-								eack.data = [worklogs[id].debug?EACK_DEBUG:EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
+							} else { // その他は指定のインターバル
+								eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
 							}
 							if (multi_addrs.length > 1) {
 								// multi sensor type
