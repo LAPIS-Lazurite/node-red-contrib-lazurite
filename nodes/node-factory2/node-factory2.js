@@ -644,12 +644,8 @@ module.exports = function(RED) {
 						}
 					}
 				}
-			} else if((rxdata.dst_panid == 0xffff) &&
+			} else if((rxdata.dst_panid == 0xffff) && (rxdata.dst_addr[0] == 0xffff)) {
 				// state information
-				(rxdata.dst_addr[0] == 0xffff) &&
-				(rxdata.dst_addr[1] == 0xffff) &&
-				(rxdata.dst_addr[2] == 0xffff) &&
-				(rxdata.dst_addr[3] == 0xffff)) {
 				// broadcast
 				//console.log({rxdata:rxdata});
 				var id = addr2id[rxdata.src_addr[0]];
