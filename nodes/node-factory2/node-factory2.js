@@ -316,7 +316,8 @@ module.exports = function(RED) {
 						invert: (data[i].invert == 1)? true:false,
 						debug: (data[i].debug == 0)? false: true,
 						disp: (data[i].disp == 0)? false: true,
-						pause: data[i].pause || 0
+						pause: data[i].pause || 0,
+						prevPause: 0 // 0 means 'unselected'
 					}
 				}
 				if(data[i].type.match(/graph/)) {
