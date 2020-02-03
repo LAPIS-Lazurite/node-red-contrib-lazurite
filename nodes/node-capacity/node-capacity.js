@@ -250,12 +250,18 @@ module.exports = function(RED) {
 			//console.log(vbat);
 			// first data
 			// worklog
-			if(global.lazuriteConfig.machineInfo.worklog[id].log === true) {
+			let worklog = global.lazuriteConfig.machineInfo.worklog[id];
+			if (worklog.log === true) {
 				// override state to off
-				let pause = global.lazuriteConfig.machineInfo.worklog[id].pause;
-				if ((pause !== undefined) && (pause !== 0)) {
-					state = 'off';
-					reason = pause;
+				let isPauseChanged = false;
+				if (state === 'off') {
+					if (worklog.pause !== 0) {
+						if (worklog.pause !== worklog.prevPause) {
+							isPauseChanged = true;
+						}
+						reason = worklog.pause;
+					}
+					worklog.prevPause = worklog.pause;
 					//console.log({id:id,reason:reason});
 				}
 				if(sensorInfo[id] === undefined ) {
@@ -293,19 +299,19 @@ module.exports = function(RED) {
 					if(reason) {
 						sensorInfo[id].reasonId = reason;
 						output.payload.reasonId = reason;
-						output.topic = global.lazuriteConfig.capacity.topic
+						output.topic = global.lazuriteConfig.capacity.topic;
 					}
 					node.send(output);
 				} else {
-					if ((sensorInfo[id].currentStatus !== state) || ((pause !== undefined) && (pause !== 0) && (sensorInfo[id].reasonId !== reason))) {
+					if ((sensorInfo[id].currentStatus !== state) || (isPauseChanged === true)) {
 						sensorInfo[id].currentStatus = state;
 						let detect;
 						//console.log(global.lazuriteConfig.machineInfo);
 						if (sensorInfo[id].currentStatus === "on") {
-							detect = global.lazuriteConfig.machineInfo.worklog[id].detect0;
+							detect = worklog.detect0;
 							sensorInfo[id].reasonId = null;
 						}else{
-							detect = global.lazuriteConfig.machineInfo.worklog[id].detect1;
+							detect = worklog.detect1;
 							sensorInfo[id].reasonId = reason;
 						}
 						detect = detect * 1000;
