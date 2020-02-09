@@ -253,16 +253,18 @@ module.exports = function(RED) {
 			let worklog = global.lazuriteConfig.machineInfo.worklog[id];
 			if (worklog.log === true) {
 				// override state to off
-				let isPauseChanged = false;
+				let stopReasonChanged = false;
 				if (state === 'off') {
-					if (worklog.pause !== 0) {
-						if (worklog.pause !== worklog.prevPause) {
-							isPauseChanged = true;
-						}
-						reason = worklog.pause;
+					if (worklog.stopReason !== 0) {
+						reason = worklog.stopReason;
+					} else if (reason === null) {
+						reason = 0;
 					}
-					worklog.prevPause = worklog.pause;
-					//console.log({id:id,reason:reason});
+					if (reason !== worklog.prevStopReason) {
+						stopReasonChanged = true;
+					}
+					worklog.prevStopReason = reason;
+					//console.log({reason:reason,worklog:worklog});
 				}
 				if(sensorInfo[id] === undefined ) {
 					sensorInfo[id] = {
@@ -303,7 +305,7 @@ module.exports = function(RED) {
 					}
 					node.send(output);
 				} else {
-					if ((sensorInfo[id].currentStatus !== state) || (isPauseChanged === true)) {
+					if ((sensorInfo[id].currentStatus !== state) || (stopReasonChanged === true)) {
 						sensorInfo[id].currentStatus = state;
 						let detect;
 						//console.log(global.lazuriteConfig.machineInfo);

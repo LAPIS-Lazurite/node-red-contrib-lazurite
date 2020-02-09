@@ -316,8 +316,9 @@ module.exports = function(RED) {
 						invert: (data[i].invert == 1)? true:false,
 						debug: (data[i].debug == 0)? false: true,
 						disp: (data[i].disp == 0)? false: true,
-						pause: data[i].pause || 0,
-						prevPause: 0 // 0 means 'unselected'
+						lowPower: data[i].low_power || 0,
+						stopReason: data[i].stop_reason || 0, // 0 means 'unselected'
+						prevStopReason: null
 					}
 				}
 				if(data[i].type.match(/graph/)) {
@@ -337,7 +338,9 @@ module.exports = function(RED) {
 							invert: (data[i].invert == 1)?true:false,
 							debug: true,
 							disp: false,
-							pause: 0
+							lowPower: 0,
+							stopReason: 0,
+							prevStopReason: null
 						}
 					}
 				} else {
@@ -378,8 +381,8 @@ module.exports = function(RED) {
 					});
 				} else {
 					if(mode === true) {
-						// 一時停止の場合は強制的にKeep Alive時間寝かせる
-						if (worklogs[i].pause !== 0) {
+						// 低消費電力モードの場合は強制的にKeep Alive時間寝かせる
+						if (worklogs[i].lowPower !== 0) {
 							interval = parseInt(KEEP_ALIVE / 1000);
 							enhanceAck.push({
 								addr: parseInt(i),
@@ -520,7 +523,7 @@ module.exports = function(RED) {
 								var optime = global.lazuriteConfig.optimeInfo;
 								if (worklogs[id].debug === true) { // グラフ描画を再優先
 									eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
-								} else if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) { // 稼働時間のイベントがない、一時停止はKEEP ALIVE
+								} else if ((optime.nextEvent.state === false) || (worklogs[id].lowPower !== 0)) { // 稼働時間のイベントがない、低消費電力モードはKEEP ALIVE
 									eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
 								} else { // その他は指定のインターバル
 									eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
@@ -662,7 +665,7 @@ module.exports = function(RED) {
 							var optime = global.lazuriteConfig.optimeInfo;
 							if (worklogs[id].debug === true) { // グラフ描画を再優先
 								eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
-							} else if ((optime.nextEvent.state === false) || (worklogs[id].pause !== 0)) { // 稼働時間のイベントがない、一時停止はKEEP ALIVE
+							} else if ((optime.nextEvent.state === false) || (worklogs[id].lowPower !== 0)) { // 稼働時間のイベントがない、低消費電力モードはKEEP ALIVE
 								eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
 							} else { // その他は指定のインターバル
 								eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
