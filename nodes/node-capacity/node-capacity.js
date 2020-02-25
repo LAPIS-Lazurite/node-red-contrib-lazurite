@@ -293,7 +293,7 @@ module.exports = function(RED) {
 							timestamp: rxtime.getTime(),
 							machine: id,
 							from: sensorInfo[id].from.getTime(),
-							type: "log",
+							type: global.lazuriteConfig.logPlusId ? `log-${id}` : "log",
 							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 						},
 						topic: global.lazuriteConfig.capacity.topic
@@ -325,21 +325,27 @@ module.exports = function(RED) {
 								timestamp: rxtime.getTime() ,
 								from: sensorInfo[id].from.getTime(),
 								machine: id,
-								type: "log",
+								type: global.lazuriteConfig.logPlusId ? `log-${id}` : "log",
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 							},
 							topic : global.lazuriteConfig.capacity.topic
 						};
 						if(reason) output.payload.reasonId = reason;
 						node.send(output);
-					} else if(sensorInfo[id].last.getDate() !== rxtime.getDate()) {
+					} else if ((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) || (sensorInfo[id].last.getDate() !== rxtime.getDate())) {
+						let from;
+						if (rxtime.getHours() >= 1) { // after 1:00 AM
+							from = rxtime.getTime(); // override
+						} else {
+							from = sensorInfo[id].from.getTime();
+						}
 						let output = {
 							payload: {
 								dbname: node.config.dbname,
 								timestamp: rxtime.getTime(),
-								from: sensorInfo[id].from.getTime(),
+								from: from,
 								machine: id,
-								type: "log",
+								type: global.lazuriteConfig.logPlusId ? `log-${id}` : "log",
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 							},
 							topic : global.lazuriteConfig.capacity.topic

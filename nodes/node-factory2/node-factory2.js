@@ -29,6 +29,7 @@ module.exports = function(RED) {
 	const EACK_DISCONNECT = 3;
 	const EACK_FIRMWARE_UPDATE = 0xF0;
 	const UNIT_SIZE_V2 = 6; // id,'on'or'off',value,voltage,[reason],[deltaT]
+	const logPlusIdMap = ['v2'];
 	let addr2id = {};
 	let timerThread = null;
 
@@ -149,6 +150,7 @@ module.exports = function(RED) {
 			},
 		},
 		isGatewayActive:  false,
+		logPlusId: false // if true, add machine id to primary partition key 'type'
 	}
 
 	try {
@@ -218,6 +220,20 @@ module.exports = function(RED) {
 				});
 			});
 		}).then((values) => {
+			return new Promise((resolve,reject) => {
+				getParameter(api_server_uri.pathname+'/info/gateway/version',(err,res) => {
+					if(err) {
+						reject(err);
+					} else {
+						if (logPlusIdMap.indexOf(res.version) !== -1) {
+							global.lazuriteConfig.logPlusId = true;
+						}
+						//console.log({logPlusId:global.lazuriteConfig.logPlusId});
+						resolve(values);
+					}
+				});
+			});
+		}).then((values) => {
 			let optime = global.lazuriteConfig.optimeInfo;
 			//optime.nextEvent = optime.getNextEvent(null);
 			initEnhanceAck(true);
@@ -256,6 +272,14 @@ module.exports = function(RED) {
 								resolve();
 							}
 						});
+						break;
+					case 'reason':
+						let worklogs = global.lazuriteConfig.machineInfo.worklog;
+						if (worklogs[m.id].log === true) {
+							if (typeof m.reason !== 'undefined') {
+								worklogs[m.id].stopReason = parseInt(m.reason);
+							}
+						}
 						break;
 					default:
 						reject('LazuriteFactoryParams unsupported message type');
@@ -316,8 +340,8 @@ module.exports = function(RED) {
 						invert: (data[i].invert == 1)? true:false,
 						debug: (data[i].debug == 0)? false: true,
 						disp: (data[i].disp == 0)? false: true,
-						lowPower: data[i].low_power || 0,
-						stopReason: data[i].stop_reason || 0, // 0 means 'unselected'
+						lowFreq: data[i].lowfreq || 0,
+						stopReason: data[i].reason || 0, // 0 means 'unselected'
 						prevStopReason: null
 					}
 				}
@@ -338,7 +362,7 @@ module.exports = function(RED) {
 							invert: (data[i].invert == 1)?true:false,
 							debug: true,
 							disp: false,
-							lowPower: 0,
+							lowFreq: 0,
 							stopReason: 0,
 							prevStopReason: null
 						}
@@ -381,8 +405,8 @@ module.exports = function(RED) {
 					});
 				} else {
 					if(mode === true) {
-						// 低消費電力モードの場合は強制的にKeep Alive時間寝かせる
-						if (worklogs[i].lowPower !== 0) {
+						// 低頻度モードの場合は強制的にKeep Alive時間寝かせる
+						if (worklogs[i].lowFreq !== 0) {
 							interval = parseInt(KEEP_ALIVE / 1000);
 							enhanceAck.push({
 								addr: parseInt(i),
@@ -523,7 +547,7 @@ module.exports = function(RED) {
 								var optime = global.lazuriteConfig.optimeInfo;
 								if (worklogs[id].debug === true) { // グラフ描画を再優先
 									eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
-								} else if ((optime.nextEvent.state === false) || (worklogs[id].lowPower !== 0)) { // 稼働時間のイベントがない、低消費電力モードはKEEP ALIVE
+								} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
 									eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
 								} else { // その他は指定のインターバル
 									eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
@@ -665,7 +689,7 @@ module.exports = function(RED) {
 							var optime = global.lazuriteConfig.optimeInfo;
 							if (worklogs[id].debug === true) { // グラフ描画を再優先
 								eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
-							} else if ((optime.nextEvent.state === false) || (worklogs[id].lowPower !== 0)) { // 稼働時間のイベントがない、低消費電力モードはKEEP ALIVE
+							} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
 								eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
 							} else { // その他は指定のインターバル
 								eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
