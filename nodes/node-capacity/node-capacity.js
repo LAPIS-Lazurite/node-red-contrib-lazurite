@@ -18,6 +18,11 @@ module.exports = function(RED) {
 	let fs = require('fs');
 	const INTERVAL_GRAPH = 29*1000;
 	const INTERVAL_VBAT = 0 * 60*1000;
+	const dynamoCapLogType = {
+		v0: 'LOG_TYPE_V1', // 'log'
+		v1: 'LOG_TYPE_V1', // 'log'
+		v2: 'LOG_TYPE_V2', // `factory-iot/monitoring/log/${id}`
+	};
 	//const INTERVAL_VBAT = 60*1000;
 	function LazuriteCapacity(config) {
 		let node = this;
@@ -223,6 +228,13 @@ module.exports = function(RED) {
 			let rssi = msg.rssi;
 			let graph = global.lazuriteConfig.machineInfo.graph;
 			let vbat = global.lazuriteConfig.machineInfo.vbat;
+			let clientVer = global.lazuriteConfig.clientVer;
+			let capLogType;
+			if ((clientVer !== undefined) && dynamoCapLogType[clientVer] === 'LOG_TYPE_V2') {
+				capLogType = `factory-iot/monitoring/log/${id}`;
+			} else {
+				capLogType = 'log';
+			}
 			let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 			//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
 			//
@@ -293,7 +305,7 @@ module.exports = function(RED) {
 							timestamp: rxtime.getTime(),
 							machine: id,
 							from: sensorInfo[id].from.getTime(),
-							type: global.lazuriteConfig.logPlusId ? `log-${id}` : "log",
+							type: capLogType,
 							state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 						},
 						topic: global.lazuriteConfig.capacity.topic
@@ -325,7 +337,7 @@ module.exports = function(RED) {
 								timestamp: rxtime.getTime() ,
 								from: sensorInfo[id].from.getTime(),
 								machine: id,
-								type: global.lazuriteConfig.logPlusId ? `log-${id}` : "log",
+								type: capLogType,
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 							},
 							topic : global.lazuriteConfig.capacity.topic
@@ -345,7 +357,7 @@ module.exports = function(RED) {
 								timestamp: rxtime.getTime(),
 								from: from,
 								machine: id,
-								type: global.lazuriteConfig.logPlusId ? `log-${id}` : "log",
+								type: capLogType,
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 							},
 							topic : global.lazuriteConfig.capacity.topic

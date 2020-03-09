@@ -29,7 +29,6 @@ module.exports = function(RED) {
 	const EACK_DISCONNECT = 3;
 	const EACK_FIRMWARE_UPDATE = 0xF0;
 	const UNIT_SIZE_V2 = 6; // id,'on'or'off',value,voltage,[reason],[deltaT]
-	const logPlusIdMap = ['v2'];
 	let addr2id = {};
 	let timerThread = null;
 
@@ -150,7 +149,7 @@ module.exports = function(RED) {
 			},
 		},
 		isGatewayActive:  false,
-		logPlusId: false // if true, add machine id to primary partition key 'type'
+		clientVer: '',
 	}
 
 	try {
@@ -225,10 +224,8 @@ module.exports = function(RED) {
 					if(err) {
 						reject(err);
 					} else {
-						if (logPlusIdMap.indexOf(res.version) !== -1) {
-							global.lazuriteConfig.logPlusId = true;
-						}
-						//console.log({logPlusId:global.lazuriteConfig.logPlusId});
+						global.lazuriteConfig.clientVer = res.version;
+						//console.log({clientVer:global.lazuriteConfig.clientVer});
 						resolve(values);
 					}
 				});
