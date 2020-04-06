@@ -636,7 +636,7 @@ module.exports = function(RED) {
 											}]);			// send rxdata to log
 										}
 									}
-								},10*n);
+								},50*n);
 							})(i);
 						}
 					} else if ((rxdata.payload.length >= 3) && (rxdata.payload.length <= 5)) {
