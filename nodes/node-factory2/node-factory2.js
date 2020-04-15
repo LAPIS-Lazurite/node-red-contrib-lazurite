@@ -148,8 +148,7 @@ module.exports = function(RED) {
 				return {state:currentState};
 			},
 		},
-		isGatewayActive:  false,
-		clientVer: '',
+		isGatewayActive:  false
 	}
 
 	try {
@@ -214,18 +213,6 @@ module.exports = function(RED) {
 						reject(err);
 					} else {
 						global.lazuriteConfig.line = res.line;
-						resolve(values);
-					}
-				});
-			});
-		}).then((values) => {
-			return new Promise((resolve,reject) => {
-				getParameter(api_server_uri.pathname+'/info/gateway/version',(err,res) => {
-					if(err) {
-						reject(err);
-					} else {
-						global.lazuriteConfig.clientVer = res.version;
-						//console.log({clientVer:global.lazuriteConfig.clientVer});
 						resolve(values);
 					}
 				});
@@ -596,14 +583,9 @@ module.exports = function(RED) {
 						// multi sensor type
 						// payload format
 						// 'v2',id,'on'/'off',value,voltage,[reason],[deltaT], ...
-
-						// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
-						let real_addr = Object.keys(addr2id).find((key) => {
-							return addr2id[key] === id;
-						});
 						for (let i=0;i<(rxdata.payload.length-1)/UNIT_SIZE_V2;i++) {
 							(function(n) {
-								let index,new_id,new_rxdata;
+								let new_id,new_rxdata;
 								setTimeout(function() {
 									new_rxdata = Object.assign({},rxdata); // clone object
 									new_rxdata.payload = [];
