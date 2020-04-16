@@ -296,7 +296,7 @@ module.exports = function(RED) {
 			var worklog = global.lazuriteConfig.machineInfo.worklog;
 			var graph = global.lazuriteConfig.machineInfo.graph;
 			for(var i in data) {
-				let addr;
+				let addr,stopReason,prevStopReason;
 				if ((!isNaN(parseInt("0x"+data[i].addr)) && (data[i].addr.length == 16))){
 					addr = parseInt("0x"+data[i].addr);
 					addr = addr & 0xffff;
@@ -310,6 +310,13 @@ module.exports = function(RED) {
 					} else {
 						continue;
 					}
+				}
+				stopReason = data[i].reason || 0; // 0 means 'unselected'
+				// restore saved previous stop reason
+				if (typeof worklog[data[i].id] !== 'undefined') {
+					prevStopReason = worklog[data[i].id].prevStopReason;
+				} else {
+					prevStopReason = stopReason;
 				}
 				if(data[i].type.match(/worklog/)) {
 					//console.log({id: data[i].id,type: "worklog"});
@@ -325,8 +332,8 @@ module.exports = function(RED) {
 						debug: (data[i].debug == 0)? false: true,
 						disp: (data[i].disp == 0)? false: true,
 						lowFreq: data[i].lowfreq || 0,
-						stopReason: data[i].reason || 0, // 0 means 'unselected'
-						prevStopReason: null
+						stopReason: stopReason,
+						prevStopReason: prevStopReason
 					}
 				}
 				if(data[i].type.match(/graph/)) {
@@ -347,8 +354,8 @@ module.exports = function(RED) {
 							debug: true,
 							disp: false,
 							lowFreq: 0,
-							stopReason: 0,
-							prevStopReason: null
+							stopReason: stopReason,
+							prevStopReason: prevStopReason
 						}
 					}
 				} else {
