@@ -100,8 +100,7 @@ module.exports = function(RED) {
 		},
 		optimeInfo: {
 			Items:[],
-			getNextEvent: function(currentStatus) {
-				let data = {};
+			getNextEvent: function() {
 				let alertTime = [];
 				let now = new Date();
 				let currentState = null;
@@ -140,7 +139,7 @@ module.exports = function(RED) {
 				}
 				*/
 				for(let a of alertTime) {
-					if(currentState === null) {currentState = a.state};
+					if(currentState === null) {currentState = a.state}
 					//console.log({currentState: currentState, state: a.state, time: a.time.toLocaleString(), now: now.toLocaleString()});
 					if((now < a.time) && (a.state !== currentState)) return {state:currentState, time: a.time};
 					currentState = a.state;
@@ -217,8 +216,8 @@ module.exports = function(RED) {
 					}
 				});
 			});
-		}).then((values) => {
-			let optime = global.lazuriteConfig.optimeInfo;
+		}).then(() => {
+			//let optime = global.lazuriteConfig.optimeInfo;
 			//optime.nextEvent = optime.getNextEvent(null);
 			initEnhanceAck(true);
 			global.lazuriteConfig.isGatewayActive = true;
@@ -232,7 +231,7 @@ module.exports = function(RED) {
 				timerThread = null;
 			}
 			new Promise((resolve,reject) => {
-				var m = JSON.parse(msg.payload);
+				let m = JSON.parse(msg.payload);
 				switch(m.type) {
 					case 'machine':
 						getParameter(api_server_uri.pathname+'/info/machine',(err,res) => {
@@ -257,7 +256,7 @@ module.exports = function(RED) {
 							}
 						});
 						break;
-					case 'reason':
+					case 'reason': {
 						let worklogs = global.lazuriteConfig.machineInfo.worklog;
 						if (worklogs[m.id].log === true) {
 							if (typeof m.reason !== 'undefined') {
@@ -265,12 +264,13 @@ module.exports = function(RED) {
 							}
 						}
 						break;
+					}
 					default:
 						reject('LazuriteFactoryParams unsupported message type');
 						break;
 				}
 			}).then(() => {
-				var optime = global.lazuriteConfig.optimeInfo;
+				//let optime = global.lazuriteConfig.optimeInfo;
 				//optime.nextEvent = optime.getNextEvent();
 				initEnhanceAck(true);
 			}).catch((err) => {
@@ -293,9 +293,9 @@ module.exports = function(RED) {
 		function genAddressMap(data) {
 			global.lazuriteConfig.machineInfo.worklog = {};
 			addr2id = {};
-			var worklog = global.lazuriteConfig.machineInfo.worklog;
-			var graph = global.lazuriteConfig.machineInfo.graph;
-			for(var i in data) {
+			let worklog = global.lazuriteConfig.machineInfo.worklog;
+			let graph = global.lazuriteConfig.machineInfo.graph;
+			for(let i in data) {
 				let addr,stopReason,prevStopReason;
 				if ((!isNaN(parseInt("0x"+data[i].addr)) && (data[i].addr.length == 16))){
 					addr = parseInt("0x"+data[i].addr);
@@ -369,9 +369,9 @@ module.exports = function(RED) {
 			// mode: true		DBが更新された時
 			// mode: false	DBが更新されていない時(timer割り込み時)
 			global.lazuriteConfig.enhanceAck = [];
-			var optime = global.lazuriteConfig.optimeInfo;
-			var enhanceAck = global.lazuriteConfig.enhanceAck;
-			var worklogs = global.lazuriteConfig.machineInfo.worklog;
+			let optime = global.lazuriteConfig.optimeInfo;
+			let enhanceAck = global.lazuriteConfig.enhanceAck;
+			let worklogs = global.lazuriteConfig.machineInfo.worklog;
 			let interval;
 			//イベントを更新
 			optime.nextEvent = optime.getNextEvent();
@@ -382,7 +382,7 @@ module.exports = function(RED) {
 			}
 			// 次のenhanceAckを作成
 			//console.log({initEnhanceAck:mode,optime: optime.nextEvent});
-			for(var i in worklogs) {
+			for(let i in worklogs) {
 				// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
 				let real_addr = Object.keys(addr2id).find((key) => {
 					return addr2id[key] === parseInt(i);
@@ -434,7 +434,7 @@ module.exports = function(RED) {
 			node.send([,,{payload: global.lazuriteConfig.enhanceAck}]);
 
 			// setTrigger
-			var now = new Date();
+			let now = new Date();
 			if(timerThread) {
 				clearTimeout(timerThread);
 				timerThread = null;
@@ -452,11 +452,11 @@ module.exports = function(RED) {
 				*/
 		}
 		function getParameter(path,callback) {
-			var retry = 0;
+			let retry = 0;
 			function loop () {
 				new Promise((resolve,reject) => {
 					try {
-						var body = "";
+						let body = "";
 						httpOptions.path = path;
 						//console.log(httpOptions);
 						https.get(httpOptions,(res) => {
@@ -502,11 +502,11 @@ module.exports = function(RED) {
 	 */
 	function LazuriteDeviceManager(config) {
 		RED.nodes.createNode(this,config);
-		var node = this;
+		let node = this;
 		node.on('input', function (msg) {
 			if(global.lazuriteConfig.isGatewayActive === true) {
 				if(Array.isArray(msg.payload)) {
-					for(var i in msg.payload) {
+					for(let i in msg.payload) {
 						checkRxData(msg.payload[i]);
 					}
 				} else {
@@ -518,11 +518,11 @@ module.exports = function(RED) {
 			if(global.lazuriteConfig.machineInfo.worklog === undefined) {
 				return;
 			}
-			var worklogs = global.lazuriteConfig.machineInfo.worklog;
+			let worklogs = global.lazuriteConfig.machineInfo.worklog;
+			rxdata.payload = rxdata.payload.split(",");
 			if(rxdata.dst_panid == global.gateway.panid) {
-				rxdata.payload = rxdata.payload.split(",");
 				if(rxdata.payload[0] === "update") {
-					var id = rxdata.src_addr[0];
+					let id = rxdata.src_addr[0];
 					// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
 					let real_addr = Object.keys(addr2id).find((key) => {
 						return addr2id[key] === id;
@@ -532,10 +532,10 @@ module.exports = function(RED) {
 						return ((key ^ real_addr) & 0xffff) === 0;
 					});
 					if(worklogs[id]){
-						for(var eack of global.lazuriteConfig.enhanceAck) {
+						for(let eack of global.lazuriteConfig.enhanceAck) {
 							if(eack.addr === id) {
 								// update enhanceAck
-								var optime = global.lazuriteConfig.optimeInfo;
+								let optime = global.lazuriteConfig.optimeInfo;
 								if (worklogs[id].debug === true) { // グラフ描画を再優先
 									eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
 								} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
@@ -585,14 +585,15 @@ module.exports = function(RED) {
 					});
 				} else {
 					// state information
-					var id = rxdata.src_addr[0];
+					let id = rxdata.src_addr[0];
 					if ((rxdata.payload[0] === 'v2') && ((rxdata.payload.length-1)%UNIT_SIZE_V2 === 0)) {
 						// multi sensor type
 						// payload format
 						// 'v2',id,'on'/'off',value,voltage,[reason],[deltaT], ...
-						for (let i=0;i<(rxdata.payload.length-1)/UNIT_SIZE_V2;i++) {
-							(function(n) {
-								let new_id,new_rxdata;
+						let new_id,new_rxdata;
+						let p = Promise.resolve();
+						let delayedSend = function(n) {
+							return new Promise((resolve,reject) => {
 								setTimeout(function() {
 									new_rxdata = Object.assign({},rxdata); // clone object
 									new_rxdata.payload = [];
@@ -625,8 +626,12 @@ module.exports = function(RED) {
 											}]);			// send rxdata to log
 										}
 									}
-								},50*n);
-							})(i);
+									resolve();
+								},50);
+							});
+						}
+						for (let i=0;i<(rxdata.payload.length-1)/UNIT_SIZE_V2;i++) {
+							p = p.then(delayedSend.bind(null,i));
 						}
 					} else if ((rxdata.payload.length >= 3) && (rxdata.payload.length <= 5)) {
 						// single sensor type
@@ -662,17 +667,17 @@ module.exports = function(RED) {
 				// state information
 				// broadcast
 				//console.log({rxdata:rxdata});
-				var id = addr2id[rxdata.src_addr[0]];
+				let id = addr2id[rxdata.src_addr[0]];
 				// 下4桁が同一のMACアドレスを持つキーの配列
 				let multi_addrs = Object.keys(addr2id).filter((key) => {
 					return ((parseInt(key) ^ rxdata.src_addr[0]) & 0xffff) === 0;
 				});
 				//console.log({id:id, src: rxdata.src_addr[0]});
 				if(worklogs[id]){
-					for(var eack of global.lazuriteConfig.enhanceAck) {
+					for(let eack of global.lazuriteConfig.enhanceAck) {
 						if(eack.addr === id) {
 							// update enhanceAck
-							var optime = global.lazuriteConfig.optimeInfo;
+							let optime = global.lazuriteConfig.optimeInfo;
 							if (worklogs[id].debug === true) { // グラフ描画を再優先
 								eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
 							} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
@@ -704,7 +709,7 @@ module.exports = function(RED) {
 						}
 					}
 					//console.log(rxdata.payload);
-					let payload = rxdata.payload.split(",");
+					let payload = rxdata.payload;
 					let prog_sensor;
 					if (payload.length >= 3) {
 						if (payload[1] === 'CT_Sensor_vDet2') {
@@ -753,13 +758,13 @@ module.exports = function(RED) {
 					res.setEncoding("utf8");
 					res.on('data',(chunk) => {
 						body += chunk;
-						//		console.log("[activate] "+chunk);
+						//		console.log("[activate] "+body);
 					});
 					res.on('end',() => {
 					});
-					res.on('error',(e) => {
-						//		console.log("[activate] " + e);
-					});
+				});
+				req.on('error',(e) => {
+					//		console.log("[activate] " + e);
 				});
 				req.write(JSON.stringify(postData));
 				req.end();
