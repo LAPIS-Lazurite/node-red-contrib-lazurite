@@ -600,10 +600,13 @@ module.exports = function(RED) {
 									new_id = rxdata.payload[1+UNIT_SIZE_V2*n];
 									if(worklogs[new_id]){
 										new_rxdata.src_addr[0] = parseInt(new_id);
-										new_rxdata.payload[0] = rxdata.payload[2+UNIT_SIZE_V2*n];
-										new_rxdata.payload[1] = rxdata.payload[3+UNIT_SIZE_V2*n];
-										new_rxdata.payload[2] = rxdata.payload[4+UNIT_SIZE_V2*n];
-										new_rxdata.payload[3] = rxdata.payload[5+UNIT_SIZE_V2*n];
+										new_rxdata.payload[0] = rxdata.payload[2+UNIT_SIZE_V2*n]; // "on" or "off"
+										new_rxdata.payload[1] = rxdata.payload[3+UNIT_SIZE_V2*n]; // value
+										new_rxdata.payload[2] = rxdata.payload[4+UNIT_SIZE_V2*n]; // voltage
+										if ((rxdata.payload[5+UNIT_SIZE_V2*n] !== undefined) &&
+											(rxdata.payload[5+UNIT_SIZE_V2*n] !== "")) {
+											new_rxdata.payload[3] = rxdata.payload[5+UNIT_SIZE_V2*n]; // reason
+										}
 										new_rxdata.nsec += 1000000 * n; // 1msずらす
 										if(worklogs[new_id].invert === true) {
 											new_rxdata.payload[0] = (new_rxdata.payload[0] === "on") ? "off" : "on";
@@ -643,6 +646,9 @@ module.exports = function(RED) {
 								rxdata.sec = parseInt((time_nsec - rxdata.nsec)/(1000*1000*1000));
 							}
 							rxdata.payload.pop();
+						}
+						if ((rxdata.payload.length === 4) && (rxdata.payload[3] === '')) {
+							rxdata.payload.pop(); // no reason
 						}
 						if(worklogs[id]){
 							if(worklogs[id].invert === true) {
