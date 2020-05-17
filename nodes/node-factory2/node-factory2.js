@@ -42,6 +42,7 @@ module.exports = function(RED) {
 			graph: {},
 			vbat: {}
 		},
+		bridgeInfo: [],
 		sendLogMessage: function(msg,callback) {
 			//check network
 			//console.log(this);
@@ -150,6 +151,70 @@ module.exports = function(RED) {
 		isGatewayActive:  false
 	}
 
+	function genBridgePayload(type,param) {
+		let worklogs = global.lazuriteConfig.machineInfo.worklog;
+		let optime = global.lazuriteConfig.optimeInfo;
+		let bridges = global.lazuriteConfig.bridgeInfo;
+		let arr = [];
+		if ((type === 'sensor') && (param !== undefined)) {
+			let addr,payload_str = '';
+			for (let id of param.node) {
+				let thres_str = '', eack_str = '';
+				for (let key in addr2id) {
+					if (addr2id[key] === id) {
+						addr = key;
+						break;
+					}
+				}
+				if ((addr !== undefined) && (parseInt(addr) !== 0xffff)) {
+					thres_str += `:${addr}:${id}:${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
+					if (worklogs[id].debug === true) { // グラフ描画を再優先
+						eack_str += `:${EACK_DEBUG},${(MEAS_INTERVAL/1000) & 0x00FF},${((MEAS_INTERVAL/1000) >> 8) & 0x00FF}`;
+					} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
+						eack_str += `:${EACK_DEBUG},${(KEEP_ALIVE/1000) & 0x00FF},${((KEEP_ALIVE/1000) >> 8) & 0x00FF}`;
+					} else { // その他は指定のインターバル
+						eack_str += `:${EACK_NOP},${(worklogs[id].interval/1000) & 0x00FF},${((worklogs[id].interval/1000) >> 8) & 0x00FF}`;
+					}
+					payload_str += thres_str+eack_str;
+				}
+			}
+			if (payload_str.length != 0) arr.push({ dst_panid: 0xffff, dst_addr: param.addr64, payload: type+payload_str });
+		} else if (type === 'eack') {
+			for (let b of bridges) {
+				let eack_str = '';
+				for (let id of b.node) {
+					if (typeof worklogs[id] !== 'undefined') {
+						eack_str +=`:${id}`;
+						if (worklogs[id].debug === true) { // グラフ描画を再優先
+							eack_str += `:${EACK_DEBUG},${(MEAS_INTERVAL/1000) & 0x00FF},${((MEAS_INTERVAL/1000) >> 8) & 0x00FF}`;
+						} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
+							eack_str += `:${EACK_DEBUG},${(KEEP_ALIVE/1000) & 0x00FF},${((KEEP_ALIVE/1000) >> 8) & 0x00FF}`;
+						} else { // その他は指定のインターバル
+							eack_str += `:${EACK_NOP},${(worklogs[id].interval/1000) & 0x00FF},${((worklogs[id].interval/1000) >> 8) & 0x00FF}`;
+						}
+					}
+				}
+				if (eack_str !== '') arr.push({ dst_panid: 0xffff, dst_addr: b.addr64, payload: type+eack_str });
+			}
+		} else if (type === 'init') {
+			for (let b of bridges) {
+				arr.push({ dst_panid: 0xffff, dst_addr: b.addr64, payload: type });
+			}
+		}
+		return arr;
+	}
+
+	function genBridgeInfo(items) {
+		global.lazuriteConfig.bridgeInfo = items.map((x)=> {
+			let addr64 = [];
+			addr64.push(parseInt(x.addr64.slice(12,16),16));
+			addr64.push(parseInt(x.addr64.slice( 8,12),16));
+			addr64.push(parseInt(x.addr64.slice( 4, 8),16));
+			addr64.push(parseInt(x.addr64.slice( 0, 4),16));
+			return { addr64:addr64, node:x.machine.split('|').map(x => parseInt(x)) };
+		});
+	}
+
 	try {
 		fs.statSync('/home/pi/.lazurite/tmp/lazuriteConfigMachineInfo.json');
 		global.lazuriteConfig.machineInfo = JSON.parse(fs.readFileSync('/home/pi/.lazurite/tmp/lazuriteConfigMachineInfo.json','utf8'));
@@ -205,6 +270,21 @@ module.exports = function(RED) {
 					}
 				});
 			});
+		}).then(() => {
+			return new Promise((resolve,reject) => {
+				getParameter(api_server_uri.pathname+'/info/bridge',(err,res) => {
+					if(err){
+						reject(err);
+					} else {
+						if (res.success === false) {
+							//console.log(res);
+						} else {
+							genBridgeInfo(res.Items);
+						}
+						resolve();
+					}
+				});
+			});
 		}).then((values) => {
 			return new Promise((resolve,reject) => {
 				getParameter(api_server_uri.pathname+'/info/gateway/line',(err,res) => {
@@ -252,6 +332,20 @@ module.exports = function(RED) {
 								node.send([,{payload:res}]);
 								global.lazuriteConfig.optimeInfo.Items = res.Items;
 								//console.log(JSON.stringify(global.lazuriteConfig.optimeInfo,null,"  "));
+								resolve();
+							}
+						});
+						break;
+					case 'bridge':
+						getParameter(api_server_uri.pathname+'/info/bridge',(err,res) => {
+							if(err){
+								reject(err);
+							} else {
+								if (res.success === false) {
+									//console.log(res);
+								} else {
+									genBridgeInfo(res.Items);
+								}
 								resolve();
 							}
 						});
@@ -444,6 +538,25 @@ module.exports = function(RED) {
 					initEnhanceAck(false);
 				},optime.nextEvent.time - now);
 			}
+			let payload_type;
+			if (mode === true) payload_type = 'init';
+			else payload_type = 'eack';
+			let delayedSend = function(a) {
+				return new Promise((resolve,reject) => {
+					setTimeout(function() {
+						node.send([,,,,{
+							dst_panid: a.dst_panid,
+							dst_addr: a.dst_addr,
+							payload: a.payload
+						}]);
+						resolve();
+					}, 50);
+				});
+			}
+			let p = Promise.resolve();
+			for (let a of genBridgePayload(payload_type)) {
+				p = p.then(delayedSend.bind(null,a));
+			}
 			/*
 			console.log({msg: "hello",
 				state: optime.nextEvent.state,
@@ -519,6 +632,7 @@ module.exports = function(RED) {
 				return;
 			}
 			let worklogs = global.lazuriteConfig.machineInfo.worklog;
+			let bridges = global.lazuriteConfig.bridgeInfo;
 			rxdata.payload = rxdata.payload.split(",");
 			if(rxdata.dst_panid == global.gateway.panid) {
 				if(rxdata.payload[0] === "update") {
@@ -672,68 +786,180 @@ module.exports = function(RED) {
 			} else if((rxdata.dst_panid == 0xffff) && (rxdata.dst_addr[0] == 0xffff)) {
 				// state information
 				// broadcast
+				// from sensor or bridge
 				//console.log({rxdata:rxdata});
-				let id = addr2id[rxdata.src_addr[0]];
-				// 下4桁が同一のMACアドレスを持つキーの配列
-				let multi_addrs = Object.keys(addr2id).filter((key) => {
-					return ((parseInt(key) ^ rxdata.src_addr[0]) & 0xffff) === 0;
-				});
-				//console.log({id:id, src: rxdata.src_addr[0]});
-				if(worklogs[id]){
-					for(let eack of global.lazuriteConfig.enhanceAck) {
-						if(eack.addr === id) {
-							// update enhanceAck
-							let optime = global.lazuriteConfig.optimeInfo;
-							if (worklogs[id].debug === true) { // グラフ描画を再優先
-								eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
-							} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
-								eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
-							} else { // その他は指定のインターバル
-								eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
-							}
-							if (multi_addrs.length > 1) {
-								// multi sensor type
-								let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr}`;
-								for (let addr of multi_addrs) {
-									let new_id = addr2id[addr];
-									if (worklogs[new_id]) {
-										payload += `,${new_id},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
-									}
+				if(rxdata.payload[0] === "factory-iot") {
+					let id = addr2id[rxdata.src_addr[0]];
+					// sensorがbridgeされていたら抜ける
+					for (let b of bridges) {
+						if (b.node.includes(id) === true) return;
+					}
+					// 下4桁が同一のMACアドレスを持つキーの配列
+					let multi_addrs = Object.keys(addr2id).filter((key) => {
+						return ((parseInt(key) ^ rxdata.src_addr[0]) & 0xffff) === 0;
+					});
+					//console.log({id:id, src: rxdata.src_addr[0]});
+					if(worklogs[id]){
+						for(let eack of global.lazuriteConfig.enhanceAck) {
+							if(eack.addr === id) {
+								// update enhanceAck
+								let optime = global.lazuriteConfig.optimeInfo;
+								if (worklogs[id].debug === true) { // グラフ描画を再優先
+									eack.data = [EACK_DEBUG,(MEAS_INTERVAL/1000) & 0x00FF, ((MEAS_INTERVAL/1000) >> 8) & 0x00FF];
+								} else if ((optime.nextEvent.state === false) || (worklogs[id].lowFreq !== 0)) { // 稼働時間のイベントがない、低頻度モードはKEEP ALIVE
+									eack.data = [EACK_DEBUG,KEEP_ALIVE/1000 & 0x00FF, ((KEEP_ALIVE/1000) >> 8) & 0x00FF];
+								} else { // その他は指定のインターバル
+									eack.data = [EACK_NOP,(worklogs[id].interval/1000) & 0x00FF, ((worklogs[id].interval/1000) >> 8) & 0x00FF];
 								}
-								node.send([{dst_panid: 0xffff,
-									dst_addr: rxdata.src_addr,
-									payload: payload
-								},,,{payload: global.lazuriteConfig.enhanceAck}]);
-							} else {
-								// single sensor type
-								node.send([{dst_panid: 0xffff,
-									dst_addr: rxdata.src_addr,
-									payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
-								},,,{payload: global.lazuriteConfig.enhanceAck}]);
+								if (multi_addrs.length > 1) {
+									// multi sensor type
+									let payload = `activate,${global.gateway.panid},${global.gateway.shortaddr}`;
+									for (let addr of multi_addrs) {
+										let new_id = addr2id[addr];
+										if (worklogs[new_id]) {
+											payload += `,${new_id},${worklogs[new_id].thres0},${worklogs[new_id].detect0},${worklogs[new_id].thres1},${worklogs[new_id].detect1}`;
+										}
+									}
+									node.send([{dst_panid: 0xffff,
+										dst_addr: rxdata.src_addr,
+										payload: payload
+									},,,{payload: global.lazuriteConfig.enhanceAck}]);
+								} else {
+									// single sensor type
+									node.send([{dst_panid: 0xffff,
+										dst_addr: rxdata.src_addr,
+										payload: `activate,${global.gateway.panid},${global.gateway.shortaddr},${id},${worklogs[id].thres0},${worklogs[id].detect0},${worklogs[id].thres1},${worklogs[id].detect1}`
+									},,,{payload: global.lazuriteConfig.enhanceAck}]);
+								}
+								break;
 							}
-							break;
 						}
-					}
-					//console.log(rxdata.payload);
-					let payload = rxdata.payload;
-					let prog_sensor;
-					if (payload.length >= 3) {
-						if (payload[1] === 'CT_Sensor_vDet2') {
-							prog_sensor = 'CTSensor2_'+payload[2];
+						//console.log(rxdata.payload);
+						let payload = rxdata.payload;
+						let prog_sensor;
+						if (payload.length >= 3) {
+							if (payload[1] === 'CT_Sensor_vDet2') {
+								prog_sensor = 'CTSensor2_'+payload[2];
+							} else {
+								prog_sensor = payload[1]+"_"+payload[2];
+							}
+						} else if (payload.length === 2) {
+							prog_sensor = payload[1];
+						}
+						if (multi_addrs.length > 1) {
+							// multi sensor type
+							multi_addrs.forEach((v,i) => {
+								setTimeout(postActivate,100*i,addr2id[v],prog_sensor);
+							});
 						} else {
-							prog_sensor = payload[1]+"_"+payload[2];
+							// single sensor type
+							postActivate(id,prog_sensor);
 						}
-					} else if (payload.length === 2) {
-						prog_sensor = payload[1];
 					}
-					if (multi_addrs.length > 1) {
-						// multi sensor type
-						multi_addrs.forEach((v,i) => {
-							setTimeout(postActivate,100*i,addr2id[v],prog_sensor);
-						});
-					} else {
-						// single sensor type
+				} else if (rxdata.payload[0] === "factory-iot-bridge") {
+					let b = bridges.find(x => x.addr64.toString() === rxdata.src_addr.toString());
+					if (b !== undefined) {
+						let delayedSend = function(a) {
+							return new Promise((resolve,reject) => {
+								setTimeout(function() {
+									node.send([{
+										dst_panid: a.dst_panid,
+										dst_addr: a.dst_addr,
+										payload: a.payload
+									}]);
+									resolve();
+								}, 50);
+							});
+						}
+						let p = Promise.resolve();
+						for (let a of genBridgePayload('sensor', b)) {
+							p = p.then(delayedSend.bind(null,a));
+						}
+					}
+				}
+			} else {
+				// not broadcast
+				// find bridge
+				let b = bridges.find(x => x.addr64.toString() === rxdata.src_addr.toString());
+				if (b !== undefined) {
+					if (rxdata.payload[0] === "factory-iot") {
+						let id = addr2id[parseInt(rxdata.payload[3])];
+						let prog_sensor = rxdata.payload[1]+"_"+rxdata.payload[2];
 						postActivate(id,prog_sensor);
+					} else if (rxdata.payload[0] === "error") {
+						if (rxdata.payload[1] === "activate") {
+							console.log("[nodered] activation error: "+rxdata.payload[2]);
+						} else {
+							let delayedSend = function(a) {
+								return new Promise((resolve,reject) => {
+									setTimeout(function() {
+										node.send([{
+											dst_panid: a.dst_panid,
+											dst_addr: a.dst_addr,
+											payload: a.payload
+										}]);
+										resolve();
+									}, 50);
+								});
+							}
+							let p = Promise.resolve();
+							for (let a of genBridgePayload('init')) {
+								p = p.then(delayedSend.bind(null,a));
+							}
+							setTimeout(function () {
+								let msg = `[nodered] Lazurite Enhance ACK ERROR\n`;
+								msg += `DATE: ${(new Date).toLocaleString()}\n`;
+								msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`
+								msg += `SRC_ADDR: ${"0x"+("0000"+rxdata.src_addr[0].toString(16)).slice(-4)}\n`;
+								msg += `MSG: ${rxdata.payload}\n`;
+								console.log(msg);
+								return;
+								global.lazuriteConfig.sendLogMessage(msg,(err) => {
+									if(err) {
+										msg += `ERR: ${JSON.stringify(err,null,"  ")}\n`;
+										fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
+									}
+									execSync("sudo reboot");
+								});
+							},1000);
+						}
+					} else if ((rxdata.payload[0] === 'v2') && ((rxdata.payload.length-1)%UNIT_SIZE_V2 === 0)) {
+						// state information
+						// single sensor type
+						// payload format
+						// 'v2',id,'on'/'off',value,voltage,[reason],[deltaT]
+						let id = parseInt(rxdata.payload[1]);
+						let deltaT = rxdata.payload[6];
+						if (deltaT) {
+							let time_nsec = rxdata.sec*1000*1000*1000 + rxdata.nsec - parseInt(deltaT*1000*1000);
+							rxdata.nsec = time_nsec%(1000*1000*1000);
+							rxdata.sec = parseInt((time_nsec - rxdata.nsec)/(1000*1000*1000));
+						}
+						if (worklogs[id]){
+							rxdata.src_addr[0] = id;
+							rxdata.src_addr[1] = 0;
+							rxdata.src_addr[2] = 0;
+							rxdata.src_addr[3] = 0;
+							if ((rxdata.payload[5] !== undefined) && (rxdata.payload[5] !== "")) {
+								rxdata.payload = rxdata.payload.slice(2,6); // reason exists
+							} else {
+								rxdata.payload = rxdata.payload.slice(2,5); // no reason
+							}
+							if (worklogs[id].invert === true) {
+								rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
+							}
+							node.send([,,rxdata]);											// send capacity information
+							if (worklogs[id].disp) {
+								node.send([,,,,{
+									payload: {
+										a: rxdata.src_addr,
+										t: parseInt(rxdata.sec*1000+rxdata.nsec/1000000),
+										d: rxdata.payload
+									},
+									topic: global.lazuriteConfig.log.topic
+								}]);			// send rxdata to log
+							}
+						}
 					}
 				}
 			}

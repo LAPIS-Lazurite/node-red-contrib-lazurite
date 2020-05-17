@@ -48,8 +48,8 @@ RED.nodes.registerType('lazurite-factory-params', {
 	},
 	inputs: 1,
 	inputLabels: "MQTT",
-	outputs: 4,
-	outputLabels:["装置情報","稼働日情報","to SetEnhanceACK","エラー情報"],
+	outputs: 5,
+	outputLabels:["装置情報","稼働日情報","to SetEnhanceACK","エラー情報","to lazurite-tx64"],
 	icon: "lazurite.png",
 	label: function() {
 		return this.mode||"lazurite-factory-params";
