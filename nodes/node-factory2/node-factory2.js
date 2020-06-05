@@ -633,6 +633,9 @@ module.exports = function(RED) {
 			}
 			let worklogs = global.lazuriteConfig.machineInfo.worklog;
 			let bridges = global.lazuriteConfig.bridgeInfo;
+			let dst_addr64 = [];
+			for (let i=0;i<4;i++) dst_addr64.unshift(('000'+rxdata.dst_addr[i].toString(16)).slice(-4));
+			dst_addr64 = parseInt('0x'+dst_addr64.join(''));
 			rxdata.payload = rxdata.payload.split(",");
 			if(rxdata.dst_panid == global.gateway.panid) {
 				if(rxdata.payload[0] === "update") {
@@ -783,7 +786,7 @@ module.exports = function(RED) {
 						}
 					}
 				}
-			} else if((rxdata.dst_panid == 0xffff) && (rxdata.dst_addr[0] == 0xffff)) {
+			} else if((rxdata.dst_panid == 0xffff) && ((rxdata.dst_addr[0] == 0xffff) || (dst_addr64 === global.gateway.macaddr))) {
 				// state information
 				// broadcast
 				// from sensor or bridge
