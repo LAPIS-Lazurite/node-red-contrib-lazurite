@@ -403,7 +403,8 @@ module.exports = function(RED) {
 								type: `graph-${id}-hour`,
 								min: graph[id].hour.min,
 								max: graph[id].hour.max
-							}
+							},
+							topic : global.lazuriteConfig.capacity.topic
 						});
 						graph[id].hour.min = current;
 						graph[id].hour.max = current;
