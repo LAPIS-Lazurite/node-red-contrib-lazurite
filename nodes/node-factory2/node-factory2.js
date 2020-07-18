@@ -314,14 +314,37 @@ module.exports = function(RED) {
 				let m = JSON.parse(msg.payload);
 				switch(m.type) {
 					case 'machine':
-						getParameter(api_server_uri.pathname+'/info/machine',(err,res) => {
-							if(err){
-								reject(err);
-							} else {
-								node.send({payload:res});
-								genAddressMap(res.Items);
-								resolve();
-							}
+					case 'bridge':
+						Promise.all([
+							new Promise((res0,rej0) => {
+								getParameter(api_server_uri.pathname+'/info/machine',(err,res) => {
+									if(err){
+										rej0(err);
+									} else {
+										node.send({payload:res});
+										genAddressMap(res.Items);
+										res0();
+									}
+								});
+							}),
+							new Promise((res1,rej1) => {
+								getParameter(api_server_uri.pathname+'/info/bridge',(err,res) => {
+									if(err){
+										rej1(err);
+									} else {
+										if (res.success === false) {
+											//console.log(res);
+										} else {
+											genBridgeInfo(res.Items);
+										}
+										res1();
+									}
+								});
+							})
+						]).then(() => {
+							resolve();
+						}).catch((err) => {
+							reject(err);
 						});
 						break;
 					case 'optime':
@@ -332,20 +355,6 @@ module.exports = function(RED) {
 								node.send([,{payload:res}]);
 								global.lazuriteConfig.optimeInfo.Items = res.Items;
 								//console.log(JSON.stringify(global.lazuriteConfig.optimeInfo,null,"  "));
-								resolve();
-							}
-						});
-						break;
-					case 'bridge':
-						getParameter(api_server_uri.pathname+'/info/bridge',(err,res) => {
-							if(err){
-								reject(err);
-							} else {
-								if (res.success === false) {
-									//console.log(res);
-								} else {
-									genBridgeInfo(res.Items);
-								}
 								resolve();
 							}
 						});
@@ -538,31 +547,27 @@ module.exports = function(RED) {
 					initEnhanceAck(false);
 				},optime.nextEvent.time - now);
 			}
-			let payload_type;
-			if (mode === true) payload_type = 'init';
-			else payload_type = 'eack';
-			let delayedSend = function(a) {
-				return new Promise((resolve,reject) => {
-					setTimeout(function() {
-						node.send([,,,,{
-							dst_panid: a.dst_panid,
-							dst_addr: a.dst_addr,
-							payload: a.payload
-						}]);
-						resolve();
-					}, 50);
-				});
+			if (global.lazuriteConfig.bridgeInfo.length !== 0) {
+				let payload_type;
+				if (mode === true) payload_type = 'init';
+				else payload_type = 'eack';
+				let delayedSend = function(a) {
+					return new Promise((resolve,reject) => {
+						setTimeout(function() {
+							node.send([,,,,{
+								dst_panid: a.dst_panid,
+								dst_addr: a.dst_addr,
+								payload: a.payload
+							}]);
+							resolve();
+						}, 50);
+					});
+				}
+				let p = Promise.resolve();
+				for (let a of genBridgePayload(payload_type)) {
+					p = p.then(delayedSend.bind(null,a));
+				}
 			}
-			let p = Promise.resolve();
-			for (let a of genBridgePayload(payload_type)) {
-				p = p.then(delayedSend.bind(null,a));
-			}
-			/*
-			console.log({msg: "hello",
-				state: optime.nextEvent.state,
-				nextEvent: optime.nextEvent.time.toLocaleString(),
-				now: (new Date()).toLocaleString()});
-				*/
 		}
 		function getParameter(path,callback) {
 			let retry = 0;
@@ -637,7 +642,14 @@ module.exports = function(RED) {
 			for (let i=0;i<4;i++) dst_addr64.unshift(('000'+rxdata.dst_addr[i].toString(16)).slice(-4));
 			dst_addr64 = parseInt('0x'+dst_addr64.join(''));
 			rxdata.payload = rxdata.payload.split(",");
-			if(rxdata.dst_panid == global.gateway.panid) {
+			let dataFromBridge = false;
+			if (bridges.length !== 0) {
+				if (dst_addr64 === global.gateway.macaddr) {
+					let b = bridges.find(x => x.addr64.toString() === rxdata.src_addr.toString());
+					if (b !== undefined) dataFromBridge = true;
+				}
+			}
+			if ((rxdata.dst_panid == global.gateway.panid) || (dataFromBridge === true)) {
 				if(rxdata.payload[0] === "update") {
 					let id = rxdata.src_addr[0];
 					// 変換後のショートアドレス(id)から下4桁のMACアドレスを逆引き
@@ -717,6 +729,9 @@ module.exports = function(RED) {
 									new_id = rxdata.payload[1+UNIT_SIZE_V2*n];
 									if(worklogs[new_id]){
 										new_rxdata.src_addr[0] = parseInt(new_id);
+										new_rxdata.src_addr[1] = 0;
+										new_rxdata.src_addr[2] = 0;
+										new_rxdata.src_addr[3] = 0;
 										new_rxdata.payload[0] = rxdata.payload[2+UNIT_SIZE_V2*n]; // "on" or "off"
 										new_rxdata.payload[1] = rxdata.payload[3+UNIT_SIZE_V2*n]; // value
 										new_rxdata.payload[2] = rxdata.payload[4+UNIT_SIZE_V2*n]; // voltage
@@ -735,7 +750,7 @@ module.exports = function(RED) {
 											new_rxdata.sec = parseInt((time_nsec - new_rxdata.nsec)/(1000*1000*1000));
 										}
 										node.send([,,new_rxdata]);											// send capacity information
-										if(worklogs[id].disp) {
+										if(worklogs[new_id].disp) {
 											node.send([,,,,{
 												payload: {
 													a: new_id,
@@ -786,7 +801,7 @@ module.exports = function(RED) {
 						}
 					}
 				}
-			} else if((rxdata.dst_panid == 0xffff) && ((rxdata.dst_addr[0] == 0xffff) || (dst_addr64 === global.gateway.macaddr))) {
+			} else if ((rxdata.dst_panid == 0xffff) && (rxdata.dst_addr[0] == 0xffff)) {
 				// state information
 				// broadcast
 				// from sensor or bridge
@@ -794,8 +809,10 @@ module.exports = function(RED) {
 				if(rxdata.payload[0] === "factory-iot") {
 					let id = addr2id[rxdata.src_addr[0]];
 					// sensorがbridgeされていたら抜ける
-					for (let b of bridges) {
-						if (b.node.includes(id) === true) return;
+					if (bridges.length !== 0) {
+						for (let b of bridges) {
+							if (b.node.includes(id) === true) return;
+						}
 					}
 					// 下4桁が同一のMACアドレスを持つキーの配列
 					let multi_addrs = Object.keys(addr2id).filter((key) => {
@@ -883,84 +900,86 @@ module.exports = function(RED) {
 			} else {
 				// not broadcast
 				// find bridge
-				let b = bridges.find(x => x.addr64.toString() === rxdata.src_addr.toString());
-				if (b !== undefined) {
-					if (rxdata.payload[0] === "factory-iot") {
-						let id = addr2id[parseInt(rxdata.payload[3])];
-						let prog_sensor = rxdata.payload[1]+"_"+rxdata.payload[2];
-						postActivate(id,prog_sensor);
-					} else if (rxdata.payload[0] === "error") {
-						if (rxdata.payload[1] === "activate") {
-							console.log("[nodered] activation error: "+rxdata.payload[2]);
-						} else {
-							let delayedSend = function(a) {
-								return new Promise((resolve,reject) => {
-									setTimeout(function() {
-										node.send([{
-											dst_panid: a.dst_panid,
-											dst_addr: a.dst_addr,
-											payload: a.payload
-										}]);
-										resolve();
-									}, 50);
-								});
-							}
-							let p = Promise.resolve();
-							for (let a of genBridgePayload('init')) {
-								p = p.then(delayedSend.bind(null,a));
-							}
-							setTimeout(function () {
-								let msg = `[nodered] Lazurite Enhance ACK ERROR\n`;
-								msg += `DATE: ${(new Date).toLocaleString()}\n`;
-								msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`
-								msg += `SRC_ADDR: ${"0x"+("0000"+rxdata.src_addr[0].toString(16)).slice(-4)}\n`;
-								msg += `MSG: ${rxdata.payload}\n`;
-								console.log(msg);
-								return;
-								global.lazuriteConfig.sendLogMessage(msg,(err) => {
-									if(err) {
-										msg += `ERR: ${JSON.stringify(err,null,"  ")}\n`;
-										fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
-									}
-									execSync("sudo reboot");
-								});
-							},1000);
-						}
-					} else if ((rxdata.payload[0] === 'v2') && ((rxdata.payload.length-1)%UNIT_SIZE_V2 === 0)) {
-						// state information
-						// single sensor type
-						// payload format
-						// 'v2',id,'on'/'off',value,voltage,[reason],[deltaT]
-						let id = parseInt(rxdata.payload[1]);
-						let deltaT = rxdata.payload[6];
-						if (deltaT) {
-							let time_nsec = rxdata.sec*1000*1000*1000 + rxdata.nsec - parseInt(deltaT*1000*1000);
-							rxdata.nsec = time_nsec%(1000*1000*1000);
-							rxdata.sec = parseInt((time_nsec - rxdata.nsec)/(1000*1000*1000));
-						}
-						if (worklogs[id]){
-							rxdata.src_addr[0] = id;
-							rxdata.src_addr[1] = 0;
-							rxdata.src_addr[2] = 0;
-							rxdata.src_addr[3] = 0;
-							if ((rxdata.payload[5] !== undefined) && (rxdata.payload[5] !== "")) {
-								rxdata.payload = rxdata.payload.slice(2,6); // reason exists
+				if (bridges.length !== 0) {
+					let b = bridges.find(x => x.addr64.toString() === rxdata.src_addr.toString());
+					if (b !== undefined) {
+						if (rxdata.payload[0] === "factory-iot") {
+							let id = addr2id[parseInt(rxdata.payload[3])];
+							let prog_sensor = rxdata.payload[1]+"_"+rxdata.payload[2];
+							postActivate(id,prog_sensor);
+						} else if (rxdata.payload[0] === "error") {
+							if (rxdata.payload[1] === "activate") {
+								console.log("[nodered] activation error: "+rxdata.payload[2]);
 							} else {
-								rxdata.payload = rxdata.payload.slice(2,5); // no reason
+								let delayedSend = function(a) {
+									return new Promise((resolve,reject) => {
+										setTimeout(function() {
+											node.send([{
+												dst_panid: a.dst_panid,
+												dst_addr: a.dst_addr,
+												payload: a.payload
+											}]);
+											resolve();
+										}, 50);
+									});
+								}
+								let p = Promise.resolve();
+								for (let a of genBridgePayload('init')) {
+									p = p.then(delayedSend.bind(null,a));
+								}
+								setTimeout(function () {
+									let msg = `[nodered] Lazurite Enhance ACK ERROR\n`;
+									msg += `DATE: ${(new Date).toLocaleString()}\n`;
+									msg += `GW NAME: ${global.lazuriteConfig.awsiotConfig.name}\n`
+									msg += `SRC_ADDR: ${"0x"+("0000"+rxdata.src_addr[0].toString(16)).slice(-4)}\n`;
+									msg += `MSG: ${rxdata.payload}\n`;
+									console.log(msg);
+									return;
+									global.lazuriteConfig.sendLogMessage(msg,(err) => {
+										if(err) {
+											msg += `ERR: ${JSON.stringify(err,null,"  ")}\n`;
+											fs.writeFileSync("/home/pi/.lazurite/error.log",msg);
+										}
+										execSync("sudo reboot");
+									});
+								},1000);
 							}
-							if (worklogs[id].invert === true) {
-								rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
+						} else if ((rxdata.payload[0] === 'v2') && ((rxdata.payload.length-1)%UNIT_SIZE_V2 === 0)) {
+							// state information
+							// single sensor type
+							// payload format
+							// 'v2',id,'on'/'off',value,voltage,[reason],[deltaT]
+							let id = parseInt(rxdata.payload[1]);
+							let deltaT = rxdata.payload[6];
+							if (deltaT) {
+								let time_nsec = rxdata.sec*1000*1000*1000 + rxdata.nsec - parseInt(deltaT*1000*1000);
+								rxdata.nsec = time_nsec%(1000*1000*1000);
+								rxdata.sec = parseInt((time_nsec - rxdata.nsec)/(1000*1000*1000));
 							}
-							node.send([,,rxdata]);											// send capacity information
-							if (worklogs[id].disp) {
-								node.send([,,,,{
-									payload: {
-										a: rxdata.src_addr,
-										t: parseInt(rxdata.sec*1000+rxdata.nsec/1000000),
-										d: rxdata.payload
-									},
-									topic: global.lazuriteConfig.log.topic
-								}]);			// send rxdata to log
+							if (worklogs[id]){
+								rxdata.src_addr[0] = id;
+								rxdata.src_addr[1] = 0;
+								rxdata.src_addr[2] = 0;
+								rxdata.src_addr[3] = 0;
+								if ((rxdata.payload[5] !== undefined) && (rxdata.payload[5] !== "")) {
+									rxdata.payload = rxdata.payload.slice(2,6); // reason exists
+								} else {
+									rxdata.payload = rxdata.payload.slice(2,5); // no reason
+								}
+								if (worklogs[id].invert === true) {
+									rxdata.payload[0] = (rxdata.payload[0] === "on") ? "off" : "on";
+								}
+								node.send([,,rxdata]);											// send capacity information
+								if (worklogs[id].disp) {
+									node.send([,,,,{
+										payload: {
+											a: rxdata.src_addr,
+											t: parseInt(rxdata.sec*1000+rxdata.nsec/1000000),
+											d: rxdata.payload
+										},
+										topic: global.lazuriteConfig.log.topic
+									}]);			// send rxdata to log
+								}
 							}
 						}
 					}
