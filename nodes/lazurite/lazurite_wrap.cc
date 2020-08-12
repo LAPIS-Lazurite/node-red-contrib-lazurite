@@ -30,6 +30,7 @@
 #include <v8.h>
 #include "liblazurite.h"
 
+/*
 #if (V8_MAJOR_VERSION >= 6)
 #define V8_VER_6
 #elif (V8_MAJOR_VERSION >= 4)
@@ -37,6 +38,7 @@
 #else
 #define V8_VER_0
 #endif
+*/
 
 using namespace v8;
 using namespace lazurite;
@@ -151,7 +153,7 @@ static void init(const FunctionCallbackInfo<Value>& args) {
 
 static void begin(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	Local<Context> context = isolate->GetCurrentContext();
 #endif
 	if(!began) {
@@ -166,7 +168,7 @@ static void begin(const FunctionCallbackInfo<Value>& args) {
 			return;
 		}
 
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 		uint8_t  ch    = args[0]->NumberValue(context).FromMaybe(0);
 		uint16_t panid = args[1]->NumberValue(context).FromMaybe(0);
 		uint8_t  rate  = args[2]->NumberValue(context).FromMaybe(0);
@@ -193,7 +195,7 @@ static void begin(const FunctionCallbackInfo<Value>& args) {
 static void setRxMode(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 
-	latest = args[0]->BooleanValue();
+	latest = args[0]->BooleanValue(isolate);
 	args.GetReturnValue().Set(Boolean::New(isolate,true));
 	return;
 }
@@ -248,7 +250,7 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 		return;
 	}
 
-	bool binary = args[0]->BooleanValue();;
+	bool binary = args[0]->BooleanValue(isolate);
 	char tmpdata[256];
 	char data[256];
 	SUBGHZ_MAC mac;
@@ -373,7 +375,7 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 
 static void send(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	Local<Context> context = isolate->GetCurrentContext();
 #endif
 	if(args.Length() < 3) {
@@ -388,7 +390,7 @@ static void send(const FunctionCallbackInfo<Value>& args) {
 	}
 
 	int result = -1;
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	uint16_t dst_panid = args[0]->NumberValue(context).FromMaybe(0);
 	uint16_t dst_addr  = args[1]->NumberValue(context).FromMaybe(0);
 	if(args[2]->IsString() == true) {
@@ -424,7 +426,7 @@ static void send(const FunctionCallbackInfo<Value>& args) {
 
 static void send64le(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	Local<Context> context = isolate->GetCurrentContext();
 #endif
 
@@ -445,7 +447,7 @@ static void send64le(const FunctionCallbackInfo<Value>& args) {
 		return;
 	}
 	uint8_t dst_addr[8];
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	dst_addr[0] = arr->Get(0)->NumberValue(context).FromMaybe(0);
 	dst_addr[1] = arr->Get(1)->NumberValue(context).FromMaybe(0);
 	dst_addr[2] = arr->Get(2)->NumberValue(context).FromMaybe(0);
@@ -466,7 +468,7 @@ static void send64le(const FunctionCallbackInfo<Value>& args) {
 #endif
 
 	int result;
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	if(args[1]->IsString() == true) {
 		String::Utf8Value payload(isolate,args[1]->ToString(context).ToLocalChecked());
 		result = sendfunc64le(dst_addr, ToCString(payload), payload.length()+1);
@@ -499,7 +501,7 @@ static void send64le(const FunctionCallbackInfo<Value>& args) {
 
 static void send64be(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	Local<Context> context = isolate->GetCurrentContext();
 #endif
 
@@ -520,7 +522,7 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 		return;
 	}
 	uint8_t dst_addr[8];
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	dst_addr[0] = arr->Get(0)->NumberValue(context).FromMaybe(0);
 	dst_addr[1] = arr->Get(1)->NumberValue(context).FromMaybe(0);
 	dst_addr[2] = arr->Get(2)->NumberValue(context).FromMaybe(0);
@@ -541,7 +543,7 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 #endif
 
 	int result;
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	if(args[1]->IsString() == true) {
 		String::Utf8Value payload(isolate,args[1]->ToString(context).ToLocalChecked());
 		result = sendfunc64be(dst_addr, ToCString(payload), payload.length()+1);
@@ -587,7 +589,7 @@ static void setAckReq(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
-	bool ackreq = args[0]->BooleanValue();;
+	bool ackreq = args[0]->BooleanValue(isolate);
 	if(setackreq(ackreq) != 0){
 		fprintf (stderr, "lazurite_setAckReq exe error.\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
@@ -600,7 +602,7 @@ static void setAckReq(const FunctionCallbackInfo<Value>& args) {
 
 static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	Local<Context> context = isolate->GetCurrentContext();
 #endif
 
@@ -616,7 +618,7 @@ static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 	}
 
 	Local<Array> payload = Local<Array>::Cast(args[0]);
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	uint16_t size = args[1]->IsUint32() ? args[1]->Uint32Value(context).FromMaybe(0) : 0;
 #else
 	uint16_t size  = args[1]->NumberValue();;
@@ -627,7 +629,7 @@ static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 
 	//  fprintf (stderr, "DEBUG lazurite_wrap: Size:%d\n",size);
 	for (i=0;i<size;i++){
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 		data[i] = payload->Get(i)->NumberValue(context).FromMaybe(0);
 #else
 		data[i] = payload->Get(i)->NumberValue();
@@ -690,7 +692,7 @@ static void setBroadcastEnb(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
-	bool broadcast = args[0]->BooleanValue();;
+	bool broadcast = args[0]->BooleanValue(isolate);;
 	if(setbroadcast(broadcast) != 0){
 		fprintf (stderr, "lazurite_setBroadcastEnb exe error.\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
@@ -702,7 +704,7 @@ static void setBroadcastEnb(const FunctionCallbackInfo<Value>& args) {
 
 static void setMyAddress(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	Local<Context> context = isolate->GetCurrentContext();
 #endif
 	if(args.Length() < 1) {
@@ -715,7 +717,7 @@ static void setMyAddress(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
 	uint16_t myaddress = args[0]->IsUndefined() ?
 		0 : args[0]->NumberValue(context).FromMaybe(0);
 	printf("setMyAddress:: %04X\n",myaddress);
@@ -772,7 +774,9 @@ static void setKey(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
-#ifdef V8_VER_6
+#if (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
+	String::Utf8Value key(isolate,args[0]->ToString(isolate));
+#elif (V8_MAJOR_VERSION == 6)
 	String::Utf8Value key(isolate,args[0]->ToString());
 #else
 	String::Utf8Value key(args[0]->ToString());
