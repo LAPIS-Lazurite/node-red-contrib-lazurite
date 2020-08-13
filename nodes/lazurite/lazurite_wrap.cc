@@ -244,6 +244,11 @@ static void rxDisable(const FunctionCallbackInfo<Value>& args) {
 
 static void read(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
+
+#if (V8_MAJOR_VERSION == 8)
+	Local<Context> context = isolate->GetCurrentContext();
+#endif
+
 	if(!readfunc) {
 		fprintf (stderr, "lazurite_read fail.\n");
 		args.GetReturnValue().Set(Undefined(isolate));
@@ -285,12 +290,30 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 				int tmp;
 				tmp = (unsigned char)mac.dst_addr[i*2+1];
 				tmp = (tmp << 8) + (unsigned char)mac.dst_addr[i*2];
+#if (V8_MAJOR_VERSION >= 8)
+				dst_addr->Set(context,Integer::New(isolate,i),Integer::New(isolate,tmp));
+#else
 				dst_addr->Set(i,Integer::New(isolate,tmp));
+#endif
 				tmp = (unsigned char)mac.src_addr[i*2+1];
 				tmp = (tmp << 8) + (unsigned char)mac.src_addr[i*2];
+#if (V8_MAJOR_VERSION >= 8)
+				src_addr->Set(context,Integer::New(isolate,i),Integer::New(isolate,tmp));
+#else
 				src_addr->Set(i,Integer::New(isolate,tmp));
+#endif
 			}
 
+#if (V8_MAJOR_VERSION >= 8)
+			obj->Set(context,String::NewFromUtf8(isolate,"header").ToLocalChecked(),Integer::New(isolate,mac.header));
+			obj->Set(context,String::NewFromUtf8(isolate,"seq_num").ToLocalChecked(),Integer::New(isolate,mac.seq_num));
+			obj->Set(context,String::NewFromUtf8(isolate,"dst_panid").ToLocalChecked(),Integer::New(isolate,mac.dst_panid));
+			obj->Set(context,String::NewFromUtf8(isolate,"dst_addr").ToLocalChecked(),dst_addr);
+			obj->Set(context,String::NewFromUtf8(isolate,"src_panid").ToLocalChecked(),Integer::New(isolate,mac.src_panid));
+			obj->Set(context,String::NewFromUtf8(isolate,"src_addr").ToLocalChecked(),src_addr);
+			obj->Set(context,String::NewFromUtf8(isolate,"sec").ToLocalChecked(),Uint32::New(isolate,sec));
+			obj->Set(context,String::NewFromUtf8(isolate,"nsec").ToLocalChecked(),Uint32::New(isolate,nsec));
+#else
 			obj->Set(String::NewFromUtf8(isolate,"header"),Integer::New(isolate,mac.header));
 			obj->Set(String::NewFromUtf8(isolate,"seq_num"),Integer::New(isolate,mac.seq_num));
 			obj->Set(String::NewFromUtf8(isolate,"dst_panid"),Integer::New(isolate,mac.dst_panid));
@@ -299,20 +322,38 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 			obj->Set(String::NewFromUtf8(isolate,"src_addr"),src_addr);
 			obj->Set(String::NewFromUtf8(isolate,"sec"),Uint32::New(isolate,sec));
 			obj->Set(String::NewFromUtf8(isolate,"nsec"),Uint32::New(isolate,nsec));
+#endif
 			if(binary == false) {
 				char str[256];
 				snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
+#if (V8_MAJOR_VERSION >= 8)
+				obj->Set(context,String::NewFromUtf8(isolate,"payload").ToLocalChecked(),String::NewFromUtf8(isolate,str).ToLocalChecked());
+#else
 				obj->Set(String::NewFromUtf8(isolate,"payload"),String::NewFromUtf8(isolate,str));
+#endif
 			} else {
 				*(data+mac.payload_offset+mac.payload_len) = 0;
 				Local<ArrayBuffer> ab = ArrayBuffer::New(isolate,(size_t)mac.payload_len);
 				memcpy(ab->GetContents().Data(),data+mac.payload_offset,mac.payload_len);
+#if (V8_MAJOR_VERSION >= 8)
+				obj->Set(context,String::NewFromUtf8(isolate,"payload").ToLocalChecked(),Uint8Array::New(ab,0,ab->ByteLength()));
+#else
 				obj->Set(String::NewFromUtf8(isolate,"payload"),Uint8Array::New(ab,0,ab->ByteLength()));
+#endif
 			}
+#if (V8_MAJOR_VERSION >= 8)
+			obj->Set(context,String::NewFromUtf8(isolate,"rssi").ToLocalChecked(),Integer::New(isolate,rssi));
+			obj->Set(context,String::NewFromUtf8(isolate,"length").ToLocalChecked(),Integer::New(isolate,mac.payload_len));
+#else
 			obj->Set(String::NewFromUtf8(isolate,"rssi"),Integer::New(isolate,rssi));
 			obj->Set(String::NewFromUtf8(isolate,"length"),Integer::New(isolate,mac.payload_len));
+#endif
 		} else {
+#if (V8_MAJOR_VERSION >= 8)
+			obj->Set(context,String::NewFromUtf8(isolate,"length").ToLocalChecked(),Integer::New(isolate,0));
+#else
 			obj->Set(String::NewFromUtf8(isolate,"length"),Integer::New(isolate,0));
+#endif
 		}
 
 	} else {
@@ -335,11 +376,30 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 				int tmp;
 				tmp = (unsigned char)mac.dst_addr[i*2+1];
 				tmp = (tmp << 8) + (unsigned char)mac.dst_addr[i*2];
+#if (V8_MAJOR_VERSION >= 8)
+				dst_addr->Set(context,Integer::New(isolate,i),Integer::New(isolate,tmp));
+#else
 				dst_addr->Set(i,Integer::New(isolate,tmp));
+#endif
 				tmp = (unsigned char)mac.src_addr[i*2+1];
 				tmp = (tmp << 8) + (unsigned char)mac.src_addr[i*2];
+#if (V8_MAJOR_VERSION >= 8)
+				src_addr->Set(context,Integer::New(isolate,i),Integer::New(isolate,tmp));
+#else
 				src_addr->Set(i,Integer::New(isolate,tmp));
+#endif
 			}
+#if (V8_MAJOR_VERSION >= 8)
+			packet->Set(context,String::NewFromUtf8(isolate,"tag").ToLocalChecked(),Integer::New(isolate,tag));
+			packet->Set(context,String::NewFromUtf8(isolate,"header").ToLocalChecked(),Integer::New(isolate,mac.header));
+			packet->Set(context,String::NewFromUtf8(isolate,"seq_num").ToLocalChecked(),Integer::New(isolate,mac.seq_num));
+			packet->Set(context,String::NewFromUtf8(isolate,"dst_panid").ToLocalChecked(),Integer::New(isolate,mac.dst_panid));
+			packet->Set(context,String::NewFromUtf8(isolate,"dst_addr").ToLocalChecked(),dst_addr);
+			packet->Set(context,String::NewFromUtf8(isolate,"src_panid").ToLocalChecked(),Integer::New(isolate,mac.src_panid));
+			packet->Set(context,String::NewFromUtf8(isolate,"src_addr").ToLocalChecked(),src_addr);
+			packet->Set(context,String::NewFromUtf8(isolate,"sec").ToLocalChecked(),Uint32::New(isolate,sec));
+			packet->Set(context,String::NewFromUtf8(isolate,"nsec").ToLocalChecked(),Uint32::New(isolate,nsec));
+#else
 			packet->Set(String::NewFromUtf8(isolate,"tag"),Integer::New(isolate,tag));
 			packet->Set(String::NewFromUtf8(isolate,"header"),Integer::New(isolate,mac.header));
 			packet->Set(String::NewFromUtf8(isolate,"seq_num"),Integer::New(isolate,mac.seq_num));
@@ -349,24 +409,44 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 			packet->Set(String::NewFromUtf8(isolate,"src_addr"),src_addr);
 			packet->Set(String::NewFromUtf8(isolate,"sec"),Uint32::New(isolate,sec));
 			packet->Set(String::NewFromUtf8(isolate,"nsec"),Uint32::New(isolate,nsec));
+#endif
 			if(binary == false) {
 				char str[256];
 				snprintf(str,mac.payload_len+1, "%s", data+mac.payload_offset);
+#if (V8_MAJOR_VERSION >= 8)
+				packet->Set(context,String::NewFromUtf8(isolate,"payload").ToLocalChecked(),String::NewFromUtf8(isolate,str).ToLocalChecked());
+#else
 				packet->Set(String::NewFromUtf8(isolate,"payload"),String::NewFromUtf8(isolate,str));
+#endif
 			} else {
 				*(data+mac.payload_offset+mac.payload_len) = 0;
 				Local<ArrayBuffer> ab = ArrayBuffer::New(isolate,(size_t)mac.payload_len);
 				memcpy(ab->GetContents().Data(),data+mac.payload_offset,mac.payload_len);
+#if (V8_MAJOR_VERSION >= 8)
+				packet->Set(context,String::NewFromUtf8(isolate,"payload").ToLocalChecked(),Uint8Array::New(ab,0,ab->ByteLength()));
+#else
 				packet->Set(String::NewFromUtf8(isolate,"payload"),Uint8Array::New(ab,0,ab->ByteLength()));
+#endif
 			}
+#if (V8_MAJOR_VERSION >= 8)
+			packet->Set(context,String::NewFromUtf8(isolate,"rssi").ToLocalChecked(),Integer::New(isolate,rssi));
+			packet->Set(context,String::NewFromUtf8(isolate,"length").ToLocalChecked(),Integer::New(isolate,mac.payload_len));
+			packet_array->Set(context,tag,packet);
+#else
 			packet->Set(String::NewFromUtf8(isolate,"rssi"),Integer::New(isolate,rssi));
 			packet->Set(String::NewFromUtf8(isolate,"length"),Integer::New(isolate,mac.payload_len));
 			packet_array->Set(tag,packet);
+#endif
 			tag++;
 		}
 
+#if (V8_MAJOR_VERSION >= 8)
+		obj->Set(context,String::NewFromUtf8(isolate,"payload").ToLocalChecked(),packet_array);
+		obj->Set(context,String::NewFromUtf8(isolate,"length").ToLocalChecked(),Integer::New(isolate,tag));
+#else
 		obj->Set(String::NewFromUtf8(isolate,"payload"),packet_array);
 		obj->Set(String::NewFromUtf8(isolate,"length"),Integer::New(isolate,tag));
+#endif
 	}
 
 	args.GetReturnValue().Set(obj);
@@ -447,7 +527,16 @@ static void send64le(const FunctionCallbackInfo<Value>& args) {
 		return;
 	}
 	uint8_t dst_addr[8];
-#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
+#if (V8_MAJOR_VERSION == 8)
+	dst_addr[0] = arr->Get(context,0).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[1] = arr->Get(context,1).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[2] = arr->Get(context,2).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[3] = arr->Get(context,3).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[4] = arr->Get(context,4).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[5] = arr->Get(context,5).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[6] = arr->Get(context,6).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[7] = arr->Get(context,7).ToLocalChecked().As<Uint32>()->Value();
+#elif (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7)
 	dst_addr[0] = arr->Get(0)->NumberValue(context).FromMaybe(0);
 	dst_addr[1] = arr->Get(1)->NumberValue(context).FromMaybe(0);
 	dst_addr[2] = arr->Get(2)->NumberValue(context).FromMaybe(0);
@@ -522,7 +611,16 @@ static void send64be(const FunctionCallbackInfo<Value>& args) {
 		return;
 	}
 	uint8_t dst_addr[8];
-#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
+#if (V8_MAJOR_VERSION == 8)
+	dst_addr[0] = arr->Get(context,0).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[1] = arr->Get(context,1).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[2] = arr->Get(context,2).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[3] = arr->Get(context,3).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[4] = arr->Get(context,4).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[5] = arr->Get(context,5).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[6] = arr->Get(context,6).ToLocalChecked().As<Uint32>()->Value();
+	dst_addr[7] = arr->Get(context,7).ToLocalChecked().As<Uint32>()->Value();
+#elif (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7)
 	dst_addr[0] = arr->Get(0)->NumberValue(context).FromMaybe(0);
 	dst_addr[1] = arr->Get(1)->NumberValue(context).FromMaybe(0);
 	dst_addr[2] = arr->Get(2)->NumberValue(context).FromMaybe(0);
@@ -629,7 +727,9 @@ static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 
 	//  fprintf (stderr, "DEBUG lazurite_wrap: Size:%d\n",size);
 	for (i=0;i<size;i++){
-#if (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
+#if (V8_MAJOR_VERSION == 8)
+		data[i] = payload->Get(context,i).ToLocalChecked().As<Uint32>()->Value();
+#elif (V8_MAJOR_VERSION == 6) || (V8_MAJOR_VERSION == 7)
 		data[i] = payload->Get(i)->NumberValue(context).FromMaybe(0);
 #else
 		data[i] = payload->Get(i)->NumberValue();
@@ -647,6 +747,9 @@ static void setEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 
 static void getEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
+#if (V8_MAJOR_VERSION == 8)
+	Local<Context> context = isolate->GetCurrentContext();
+#endif
 	if(!geteack) {
 		fprintf (stderr, "lazurite_getEnhanceAck fail.\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
@@ -670,11 +773,20 @@ static void getEnhanceAck(const FunctionCallbackInfo<Value>& args) {
 
 	for (i=0; i < size; i++){
 		//      fprintf (stderr, "DEBUG lazurite_wrap: Data:%x, Size:%ld\n",data[i],size);
+#if (V8_MAJOR_VERSION == 8)
+		str->Set(context,Integer::New(isolate,i),Integer::New(isolate,data[i]));
+#else
 		str->Set(i,Integer::New(isolate,data[i]));
+#endif
 	}
 
+#if (V8_MAJOR_VERSION == 8)
+	obj->Set(context,String::NewFromUtf8(isolate,"payload").ToLocalChecked(),str);
+	obj->Set(context,String::NewFromUtf8(isolate,"length").ToLocalChecked(),Integer::New(isolate,size));
+#else
 	obj->Set(String::NewFromUtf8(isolate,"payload"),str);
 	obj->Set(String::NewFromUtf8(isolate,"length"),Integer::New(isolate,size));
+#endif
 
 	args.GetReturnValue().Set(obj);
 	return;
@@ -735,6 +847,9 @@ static void setMyAddress(const FunctionCallbackInfo<Value>& args) {
 
 void getMyAddr64(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
+#if (V8_MAJOR_VERSION == 8)
+	Local<Context> context = isolate->GetCurrentContext();
+#endif
 
 	uint8_t myaddr[8];
 	if(!getmyaddr64) {
@@ -749,6 +864,17 @@ void getMyAddr64(const FunctionCallbackInfo<Value>& args) {
 	}
 
 	Local<Array> addr = Array::New(isolate,8);
+
+#if (V8_MAJOR_VERSION == 8)
+	addr->Set(context,0,Integer::New(isolate,myaddr[0]));
+	addr->Set(context,1,Integer::New(isolate,myaddr[1]));
+	addr->Set(context,2,Integer::New(isolate,myaddr[2]));
+	addr->Set(context,3,Integer::New(isolate,myaddr[3]));
+	addr->Set(context,4,Integer::New(isolate,myaddr[4]));
+	addr->Set(context,5,Integer::New(isolate,myaddr[5]));
+	addr->Set(context,6,Integer::New(isolate,myaddr[6]));
+	addr->Set(context,7,Integer::New(isolate,myaddr[7]));
+#else
 	addr->Set(0,Integer::New(isolate,myaddr[0]));
 	addr->Set(1,Integer::New(isolate,myaddr[1]));
 	addr->Set(2,Integer::New(isolate,myaddr[2]));
@@ -757,6 +883,7 @@ void getMyAddr64(const FunctionCallbackInfo<Value>& args) {
 	addr->Set(5,Integer::New(isolate,myaddr[5]));
 	addr->Set(6,Integer::New(isolate,myaddr[6]));
 	addr->Set(7,Integer::New(isolate,myaddr[7]));
+#endif
 
 	args.GetReturnValue().Set(addr);
 	return;
@@ -764,6 +891,9 @@ void getMyAddr64(const FunctionCallbackInfo<Value>& args) {
 
 static void setKey(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
+#if (V8_MAJOR_VERSION == 8)
+	Local<Context> context = isolate->GetCurrentContext();
+#endif
 	if(args.Length() < 1) {
 		fprintf (stderr, "Wrong number of arguments\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
@@ -774,7 +904,9 @@ static void setKey(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
-#if (V8_MAJOR_VERSION == 7) || (V8_MAJOR_VERSION == 8)
+#if (V8_MAJOR_VERSION == 8)
+	String::Utf8Value key(isolate,args[0]->ToString(context).ToLocalChecked());
+#elif (V8_MAJOR_VERSION == 7)
 	String::Utf8Value key(isolate,args[0]->ToString(isolate));
 #elif (V8_MAJOR_VERSION == 6)
 	String::Utf8Value key(isolate,args[0]->ToString());
