@@ -30,16 +30,6 @@
 #include <v8.h>
 #include "liblazurite.h"
 
-/*
-#if (V8_MAJOR_VERSION >= 6)
-#define V8_VER_6
-#elif (V8_MAJOR_VERSION >= 4)
-#define V8_VER_5
-#else
-#define V8_VER_0
-#endif
-*/
-
 using namespace v8;
 using namespace lazurite;
 
@@ -195,7 +185,12 @@ static void begin(const FunctionCallbackInfo<Value>& args) {
 static void setRxMode(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 
+#if (V8_MAJOR_VERSION == 6)
+	latest = args[0]->BooleanValue();
+#else
 	latest = args[0]->BooleanValue(isolate);
+#endif
+
 	args.GetReturnValue().Set(Boolean::New(isolate,true));
 	return;
 }
@@ -255,7 +250,12 @@ static void read(const FunctionCallbackInfo<Value>& args) {
 		return;
 	}
 
+#if (V8_MAJOR_VERSION == 6)
+	bool binary = args[0]->BooleanValue();
+#else
 	bool binary = args[0]->BooleanValue(isolate);
+#endif
+
 	char tmpdata[256];
 	char data[256];
 	SUBGHZ_MAC mac;
@@ -687,7 +687,12 @@ static void setAckReq(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
+#if (V8_MAJOR_VERSION == 6)
+	bool ackreq = args[0]->BooleanValue();
+#else
 	bool ackreq = args[0]->BooleanValue(isolate);
+#endif
+
 	if(setackreq(ackreq) != 0){
 		fprintf (stderr, "lazurite_setAckReq exe error.\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
@@ -804,7 +809,12 @@ static void setBroadcastEnb(const FunctionCallbackInfo<Value>& args) {
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
 		return;
 	}
+#if (V8_MAJOR_VERSION == 6)
+	bool broadcast = args[0]->BooleanValue();;
+#else
 	bool broadcast = args[0]->BooleanValue(isolate);;
+#endif
+
 	if(setbroadcast(broadcast) != 0){
 		fprintf (stderr, "lazurite_setBroadcastEnb exe error.\n");
 		args.GetReturnValue().Set(Boolean::New(isolate,false));
