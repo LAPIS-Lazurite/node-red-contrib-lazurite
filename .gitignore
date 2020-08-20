@@ -4,5 +4,5 @@ build/
 client_secret.json
 npm-debug.log
 node_modules/
-package.json
+package-lock.json
 

@@ -10,6 +10,7 @@
   "node-red": {
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
+      "lazurite-iot": "nodes/lazurite/lazurite-iot.js",
       "node-config": "nodes/node-config/node-config.js",
       "node-factory2": "nodes/node-factory2/node-factory2.js",
       "node-capacity": "nodes/node-capacity/node-capacity.js",
