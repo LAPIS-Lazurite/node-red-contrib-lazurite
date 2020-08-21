@@ -1,0 +1,75 @@
+<!-- *  file: lazurite.html
+ *
+ *  Copyright (C) 2016-17 Lapis Semiconductor Co., Ltd.
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *	  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+!-->
+
+<script type="text/x-red" data-template-name="lazurite-iot-device">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-channel"><i class="fa fa-diamond"></i> ch config</label>
+		<input type="lazurite-iot-config" id="node-input-device"></input>
+	</div>
+
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-iot-device',{
+		category: 'Lazurite',
+		paletteLabel: 'LazuriteIot Device',
+		color:"#3FADB5",
+		align: 'left',
+		inputs:0,
+		outputs:1,
+		icon: "lazurite.png",
+		label: function() {
+			return this.name || "LazuriteIot Device";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+		defaults: {
+			device: {value:"", required:true, type:"lazurite-iot-config"},
+			name   : {value:""}
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-iot-config">
+	<div class="form-row">
+		<label for="node-config-input-authMethod"><i class="fa fa-rss"></i> pwr</label>
+		<select id="node-config-input-authMethod">
+			<option value="subghz-mac">SubGHz MAC Address</option>
+			<option value="soracom-imsi">SORACOM IMSI</option>
+		</select>
+	</div>
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-iot-config',{
+		category: 'config',
+		defaults: {
+			authMethod: {value:"subghz-mac",required:true},
+		},
+		label: function() {
+			return this.authMethod;
+		}
+	});
+</script>
+

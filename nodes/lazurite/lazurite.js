@@ -21,7 +21,6 @@
 module.exports = function(RED) {
 
 	var lib = require('../../build/Release/lazurite_wrap');
-	var param = require('../../param');
 	var stream = require('stream');
 	var util = require('util');
 	var latest_rfparam_id="";
