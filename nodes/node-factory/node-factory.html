@@ -1,0 +1,254 @@
+<!--
+  Copyright 2017 Lapis Semiconductor Ltd.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<script type="text/x-red" data-template-name="lazurite-factory-viewer">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name"> </input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-config"><i class="fa fa-tag"></i> Config</label>
+		<input type="lazurite-factory-config" id="node-input-config" onChange="configChange()">
+	</div>
+</script>
+
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-factory-viewer', {
+		color: "#E2D96E",
+		category: 'Lazurite',
+		defaults: {
+			name: {value:""},
+			config: {value:"", required:true, type:"lazurite-factory-config"},
+			outputs:{value:0},
+			outlabels:{value:[]}
+		},
+		inputs: 1,
+		outputs: 0,
+		icon: "switch.png",
+		label: function() {
+			return this.name||"factory-viewer";
+		},
+		outputLabels: function(index) {
+			return this.outlabels[index];
+		},
+		oneditprepare: function() {
+			var node = this;
+			$("#node-input-config").change(function(){
+				var configValue = RED.nodes.node(document.getElementById("node-input-config").value);
+				node.outlabels = [];
+				if(configValue !== null){
+					node.outputs = configValue.rules.length * 3;
+					for(i=0;i<configValue.rules.length;i++){
+						node.outlabels.push(configValue.rules[i].machine+":status");
+						node.outlabels.push(configValue.rules[i].machine+":interval");
+						node.outlabels.push(configValue.rules[i].machine+":capacity");
+					}
+				} else {
+					node.outputs = 0;
+				}
+				console.log(node);
+			});
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-node-factory">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name"> </input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-dbName"><i class="fa fa-tag"></i> dbName</label>
+		<input type="text" id="node-input-dbName"> </input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-interval"><i class="fa fa-clock-o"></i> interval</label>
+		<select id="node-input-interval">
+			<option value=0>min</option>
+			<option value=1>hour</option>
+			<option value=2>day</option>
+			<option value=3>none</option>
+		</select>
+	</div>
+	<div class="form-row">
+		<label for="node-input-config"><i class="fa fa-tag"></i> Config</label>
+		<input type="lazurite-factory-config" id="node-input-config">
+	</div>
+</script>
+
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-node-factory', {
+		color: "#E2D96E",
+		category: 'Lazurite',
+		defaults: {
+			name: {value:""},
+			dbName: {value:""},
+			config: {value:"", required:true, type:"lazurite-factory-config"},
+			interval: {value: 1},
+			outputLabels:{value: ["現在の稼働率","稼働率","作業ログ","ワーニングメッセージ"]},
+		},
+		inputs: 1,
+		outputs: 4,			// [capacity, capacity, log, warning]
+		icon: "switch.png",
+		label: function() {
+			return this.name||"node-factory";
+		}
+	});
+</script>
+<script type="text/x-red" data-template-name="lazurite-factory-config">
+	<div class="form-row">
+		<label for="node-config-input-name"><i class="fa fa-tag"></i> </span> Name</label>
+		<input type="text" id="node-config-input-name"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-config-input-name"><i class="fa fa-tag"></i> </span> CSV</label>
+		<input type="file" id="node-config-csv-button" onchange="upload(this.files)"></input>
+	</div>
+	<div class="form-row node-config-input-rule-container-row" style= "margin-bottom:40px; width:100%; min-width:600px">
+		<label style="vertical-align:top;"><i class="fa fa-list-alt"></i> Config</label>
+			<div style="width:94%; display:inline-block; margin-left:32px">
+			<div style="width:10%; text-align:center; float:left;">ID</div>
+			<div style="width:15%; text-align:center; float:left;">Door</div>
+			<div style="width:15%; text-align:center; float:left;">CT</div>
+			<div style="width:15%; text-align:center; float:left;">Thres(mA)</div>
+			<div style="width:15%; text-align:center; float:left;">Detect(s)</div>
+			<div style="width:15%; text-align:center; float:left;">NAME</div>
+			<div style="width:10%; text-align:right; float:right;">Remove</div>
+		</div>
+		<ol id="node-config-input-rule-container"></ol>
+	</div>
+</script>
+
+<script type="text/x-red" data-help-name="lazurite-node-factory">
+	<p> About "lazurite-factory-config"</p>
+</script>
+
+<script type="text/javascript">
+	var csvData = null;
+	function upload(files){
+		var reader = new FileReader();
+		reader.onloadend = function(){
+			console.log(reader.result);
+			csvData = reader.result;
+		};
+		reader.readAsText(files[0],'utf-8');
+	};
+	RED.nodes.registerType('lazurite-factory-config', {
+		category: 'config',
+		defaults: {
+			rules: {value:[{id: 1,hall:"0xFFFF",ct:"0xFFFF",thres: "0.01", detect:"15", machine:"1号機"}]},
+			name: {value:'Default',required:true}
+		},
+		label: function() {
+			return this.name;
+		},
+		oneditprepare: function() {
+			var node = this;
+			function resizeRule(rule) {
+				var capId = rule.find(".node-config-input-cap-id");
+				var hallSensorAddr = rule.find(".node-config-input-hall-addr");
+				var ctSensorAddr = rule.find(".node-config-input-ct-addr");
+				var ctThresValue = rule.find(".node-config-input-ct-thres");
+				var ctDetectTime = rule.find(".node-config-input-ct-detect");
+				var machineName = rule.find(".node-config-input-machine-name");
+			}
+
+			$("#node-config-input-rule-container").css('min-height','250px').css('min-width','450px').editableList({
+				addItem: function(container,i,opt) {
+					var rule = opt;
+					var row = $('<div/>').appendTo(container);
+					var capId = $('<input/>',{class:"node-config-input-cap-id",type:"text",style:"width:10%;margin-left: 5px;",placeholder:"id"}).appendTo(row);
+					var hallSensorAddr = $('<input/>',{class:"node-config-input-hall-addr",type:"text",style:"width:15%;margin-left: 5px;",placeholder:"Door Sensor"}).appendTo(row);
+					var ctSensorAddr = $('<input/>',{class:"node-config-input-ct-addr",type:"text",style:"width:15%;margin-left: 5px;",placeholder:"CT Sensor"}).appendTo(row);
+					var ctThresValue = $('<input/>',{class:"node-config-input-ct-thres",type:"text",style:"width:15%;margin-left: 5px;",placeholder:"CT Threshold"}).appendTo(row);
+					var ctDetectTime = $('<input/>',{class:"node-config-input-ct-detect",type:"text",style:"width:15%;margin-left: 5px;",placeholder:"CT Detect"}).appendTo(row);
+					var machineName = $('<input/>',{class:"node-config-input-machine-name",type:"text",style:"width:15%;margin-left: 5px;",placeholder:"Machine Name"}).appendTo(row);
+					capId.val(rule.id);
+					hallSensorAddr.val(rule.hall);
+					ctSensorAddr.val(rule.ct);
+					ctThresValue.val(rule.thres);
+					ctDetectTime.val(rule.detect);
+					machineName.val(rule.machine);
+				},
+
+				removeItem: function(opt) {
+					var rules = $("#node-config-input-rule-container").editableList('items');
+					rules.each(function(i) { $(this).find(".node-config-input-rule-index").html(i+1); });
+				},
+				resizeItem: resizeRule,
+				sortItems: function(rules) {
+					var rules = $("#node-config-input-rule-container").editableList('items');
+					rules.each(function(i) { $(this).find(".node-config-input-rule-index").html(i+1); });
+				},
+				sortable: true,
+				removable: true
+			});
+
+			if(this.rules.length != undefined) {
+				for (var i=0;i<this.rules.length;i++) {
+					var rule = this.rules[i];
+					$("#node-config-input-rule-container").editableList('addItem',rule);
+				}
+			}
+		},
+		oneditsave: function() {
+			var node = this;
+			node.rules= [];
+			if(csvData == null){
+				var rules = $("#node-config-input-rule-container").editableList('items');
+				var ruleset;
+				rules.each(function(i) {
+					var rule = $(this);
+					var capId = rule.find(".node-config-input-cap-id").val();
+					var hall = rule.find(".node-config-input-hall-addr").val();
+					var ct = rule.find(".node-config-input-ct-addr").val();
+					var thres = rule.find(".node-config-input-ct-thres").val();
+					var detect = rule.find(".node-config-input-ct-detect").val();
+					var machine = rule.find(".node-config-input-machine-name").val();
+					var r = {id:capId,ct:ct,hall:hall,thres:thres,detect:detect,machine:machine};
+					node.rules.push(r);
+				});
+			} else {
+				var lines = csvData.split('\n');
+				for(index in lines){
+					var line = lines[index].split(',');
+					if(line.length >= 6){
+						console.log(lines[index]);
+						node.rules.push({
+							id: line[0],
+							machine: line[1],
+							hall: line[2],
+							ct: line[3],
+							thres: line[4],
+							detect: line[5],
+						});
+					}
+				}
+				csvData = null;
+			}
+		},
+		oneditresize: function(size) {
+			var rows = $("#dialog-form>div:not(.node-config-input-rule-container-row)");
+			var height = size.height;
+			for (var i=0;i<rows.size();i++) {
+				height -= $(rows[i]).outerHeight(true);
+			}
+			var editorRow = $("#dialog-form>div.node-config-input-rule-container-row");
+			height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+			$("#node-config-input-rule-container").editableList('height',height);
+		}
+	});
+</script>
+

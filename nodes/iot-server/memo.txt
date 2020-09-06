@@ -1,0 +1,13 @@
+■初期設定
+
+1) package.jsonに以下の2行を追加
+"google": "nodes/google/google_spreadsheet.js",
+"iot-server": "nodes/iot-server/iot-server.html",
+
+2) nodes/node-factory.js
+outputs=1をoutputs=4に変更
+
+■使用時
+1) lazurite-pre-mqtt-publisher
+使用するipアドレスを設定する
+
