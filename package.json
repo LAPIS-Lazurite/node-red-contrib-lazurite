@@ -1,19 +1,15 @@
 {
   "name": "node-red-contrib-lazurite",
-  "version": "0.0.44",
+  "version": "0.1.0",
   "description": "R/W data of Lazurite-Gateway.",
   "main": "lazurite.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "node-gyp rebuild"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "node-red": {
     "nodes": {
-      "lazurite": "nodes/lazurite/lazurite.js",
-      "lazurite-iot": "nodes/lazurite-iot/lazurite-iot.js",
-      "node-config": "nodes/node-config/node-config.js",
-      "node-factory2": "nodes/node-factory2/node-factory2.js",
-      "node-capacity": "nodes/node-capacity/node-capacity.js"
+      "lazurite": "lib/lazurite/lazurite.js",
+      "lazurite-iot": "lib/lazurite-iot/lazurite-iot.js"
     }
   },
   "repository": {
@@ -27,16 +23,11 @@
   },
   "keywords": [
     "node-red",
-    "aws-iot",
     "Lazurite"
   ],
   "dependencies": {
-    "mqtt": "2.15.1",
-    "minimist": "1.2.5",
-    "websocket-stream": "^5.0.1",
-    "crypto-js": "3.1.6",
-    "util": "",
-    "is-utf8": ""
+    "lazurite": "^0.1.1",
+    "mqtt": "^4.2.1"
   },
   "license": "Apache-2.0",
   "homepage": "https://github.com/LAPIS-Lazurite/node-red-contrib-lazurite#readme",
