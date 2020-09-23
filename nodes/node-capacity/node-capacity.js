@@ -139,7 +139,6 @@ module.exports = function(RED) {
 				let vbat = global.lazuriteConfig.machineInfo.vbat;
 				let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 				//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
-				//
 				if(vbat[id] === undefined) {
 					vbat[id] = {
 						type: "battery",
@@ -184,7 +183,7 @@ module.exports = function(RED) {
 						sensorInfo[id] = {
 							from: rxtime,
 							last: rxtime,
-							currentStatus: state,
+							currentStatus: null,
 							// average
 							on : {
 								sum: 0,
@@ -201,74 +200,57 @@ module.exports = function(RED) {
 							battery: 0,
 							rssi: rssi,
 						};
+					}
+					if ((sensorInfo[id].currentStatus !== state) || (stopReasonChanged === true)) {
+						sensorInfo[id].currentStatus = state;
+						let detect;
+						//console.log(global.lazuriteConfig.machineInfo);
+						if (sensorInfo[id].currentStatus === "on") {
+							detect = worklog.detect0;
+							sensorInfo[id].reasonId = null;
+						}else{
+							detect = worklog.detect1;
+							sensorInfo[id].reasonId = reason;
+						}
+						detect = detect * 1000;
+						sensorInfo[id].from.setTime(rxtime.getTime() - detect);
+						//console.log({rxtime: rxtime, from: sensorInfo[id].from});
+						let output = {
+							payload: {
+								dbname: node.config.dbname,
+								timestamp: sensorInfo[id].from.getTime(),
+								from: sensorInfo[id].from.getTime(),
+								machine: id,
+								type: capLogType,
+								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
+							},
+							topic : global.lazuriteConfig.capacity.topic
+						};
+						if(reason) output.payload.reasonId = reason;
+						node.send(output);
+					}
+					if ((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) || (sensorInfo[id].last.getDate() !== rxtime.getDate())) {
+						let from;
+						if (rxtime.getHours() >= 1) { // after 1:00 AM
+							from = rxtime.getTime(); // override
+						} else {
+							from = sensorInfo[id].from.getTime();
+						}
 						let output = {
 							payload: {
 								dbname: node.config.dbname,
 								timestamp: rxtime.getTime(),
+								from: from,
 								machine: id,
-								from: sensorInfo[id].from.getTime(),
 								type: capLogType,
 								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
 							},
-							topic: global.lazuriteConfig.capacity.topic
+							topic : global.lazuriteConfig.capacity.topic
 						};
-						if(reason) {
-							sensorInfo[id].reasonId = reason;
-							output.payload.reasonId = reason;
-							output.topic = global.lazuriteConfig.capacity.topic;
-						}
+						if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
 						node.send(output);
-					} else {
-						if ((sensorInfo[id].currentStatus !== state) || (stopReasonChanged === true)) {
-							sensorInfo[id].currentStatus = state;
-							let detect;
-							//console.log(global.lazuriteConfig.machineInfo);
-							if (sensorInfo[id].currentStatus === "on") {
-								detect = worklog.detect0;
-								sensorInfo[id].reasonId = null;
-							}else{
-								detect = worklog.detect1;
-								sensorInfo[id].reasonId = reason;
-							}
-							detect = detect * 1000;
-							sensorInfo[id].from.setTime(rxtime.getTime() - detect);
-							//console.log({rxtime: rxtime, from: sensorInfo[id].from});
-							let output = {
-								payload: {
-									dbname: node.config.dbname,
-									timestamp: rxtime.getTime() ,
-									from: sensorInfo[id].from.getTime(),
-									machine: id,
-									type: capLogType,
-									state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-								},
-								topic : global.lazuriteConfig.capacity.topic
-							};
-							if(reason) output.payload.reasonId = reason;
-							node.send(output);
-						} else if ((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) || (sensorInfo[id].last.getDate() !== rxtime.getDate())) {
-							let from;
-							if (rxtime.getHours() >= 1) { // after 1:00 AM
-								from = rxtime.getTime(); // override
-							} else {
-								from = sensorInfo[id].from.getTime();
-							}
-							let output = {
-								payload: {
-									dbname: node.config.dbname,
-									timestamp: rxtime.getTime(),
-									from: from,
-									machine: id,
-									type: capLogType,
-									state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-								},
-								topic : global.lazuriteConfig.capacity.topic
-							};
-							if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
-							node.send(output);
-						}
-						sensorInfo[id].last = rxtime;
 					}
+					sensorInfo[id].last = rxtime;
 					sensorInfo[id][state].sum += current;
 					sensorInfo[id][state].count += 1;
 					if( sensorInfo[id][state].min > current ) sensorInfo[id][state].min = current;
