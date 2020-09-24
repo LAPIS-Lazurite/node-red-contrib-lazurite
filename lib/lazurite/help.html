@@ -1,0 +1,118 @@
+
+Lazurite Tx
+<!-- 
+(Ex)
+{"_msgid":"8c910b35.98bce8","payload":"hello","ret":{"success":true,"rssi":255,"eack":[]}}
+-->
+
+<p><br></p>
+<p><b>INPUT</b></p>
+<p><li>msg.payload</li></p>
+<p><b>msg.payload</b> is message body. It must be string</p>
+
+<p><li>msg.dst_panid</li></p>
+<p><b>msg.dst_panid</b> is destination panid(16bit integer or the string).  When it is undefined, setting in this node is used.</p>
+
+<p><li>msg.dst_addr</li></p>
+<p><b>msg.dst_addr</b> is destination address(16bit integer or the string). When it is undefined, setting in this node is used.</p>
+
+<p><li>msg.ackreg</li></p>
+<p><b>msg.ackreq</b> is boolean value. Enable/Disable ack request. When it is undefined, setting in this node is used.</p>
+
+<p><li>msg.ret.success</li></p>
+<p><b>msg.ret.success</b> is true or false</p>
+
+<p><b>OUTPUT</b></p>
+<p><li><b>msg.ret.rssi</b></li></p>
+<p><b>msg.ret.rssi</b> is rssi of ack</p>
+
+<p><li>msg.ret.eack</li></p>
+<p><b>msg.ret.eack</b> is Uint8Array type data of enhance ack</p>
+
+<p><li>msg.ret.errcode</li></p>
+<p><b>msg.ret.errcode</b> is error code, when send is failed.</p>
+
+<p><li> msg.ret.errmsg</li></p>
+<p><b> msg.ret.errmsg</b> is error message, when send is failed.</p>
+
+
+
+
+Lazurite Tx64
+<p><br></p>
+<p><b>INPUT</b></p>
+
+<p><li>msg.payload</li></p>
+<p><b>msg.payload</b> is message body. It must be string</p>
+
+<p><li>msg.dst_addr</li></p>
+<p><b>msg.dst_addr</b> is destination address(hex string of 64bit MAC or BigInt value)</p>
+
+<p><li>msg.ackreg</li></p>
+<p><b>msg.ackreq</b> is boolean value. Enable/Disable ack request</p>
+
+<p><li>msg.ret.success</li></p>
+<p><b>msg.ret.success</b> is true or false</p>
+
+<p><br></p>
+
+<p><b>OUTPUT</b></p>
+
+<p><li>msg.ret.rssi</li></p>
+<p><b>msg.ret.rssi</b> is rssi of ack</p>
+
+<p><li>msg.ret.errcode</li></p>
+<p><b>msg.ret.errcode</b> is error code, when send is failed.</p>
+
+<p><li> msg.ret.errmsg</li></p>
+<p><b> msg.ret.errmsg</b> is error message, when send is failed.</p>
+
+
+Lazurite MAC
+<p>get MAC Address of Lazurite.</p>
+<p><br></p>
+<p><b>INPUT</b></p>
+<p>Just trigger of this process</p>
+<p><br><p>
+<p><b>OUTPUT</b></p>
+<p><b>msg.payload.mac</b> is 64bit MAC address</p>
+<p><b>msg.payload.panid</b> is panid</p>
+<p><b>msg.payload.short</b> is short address</p>
+
+
+Lazurite RX
+<p><br></p>
+<p><li>msg.payload</li></p>
+<p><b> msg.payload </b> is payload</p>
+
+<p><li>msg.header</li></p>
+<p><b>msg.header</b> is MAC header of receiving packet</p>
+
+<p><li>msg.seq_num</li></p>
+<p><b>msg.seq_num</b> is sequence number</p>
+
+<p><li>msg.dst_panid</li></p>
+<p><b> msg.dst_panid </b> is panid</p>
+
+<p><li>msg.dst_addr</li></p>
+<p><b> msg.dst_addr </b> is distination address</p>
+
+<p><li>msg.src_addr</li></p>
+<p><b> msg.src_addr </b> is source address</p>
+
+<p><li>msg.rssi</li></p>
+<p><b> msg.rssi </b> is rssi of receiving packet</p>
+
+<p><li>msg.rxtime</li></p>
+<p><b> msg.rxtime </b> is receiving time</p>
+
+<!--
+(Ex)
+{"header":43041,"seq_num":1,"dst_panid":43981,"dst_addr":36461,"src_addr":65520,"payload":"send_1","rssi":255,"length":7,"rxtime":1600396681346,"_msgid":"13bfed44.3396a3"}
+{"header":43009,"seq_num":2,"dst_panid":43981,"dst_addr":65535,"src_addr":65520,"payload":"send_2","rssi":255,"length":7,"rxtime":1600396686341,"_msgid":"4c7b66b.97d0098"}
+{"header":59393,"seq_num":3,"dst_panid":65535,"dst_addr":65535,"src_addr":8183184009494450,"payload":"send_3","rssi":255,"length":7,"rxtime":1600396691342,"_msgid":"f4ba23c7.902c8"}
+{"header":60449,"seq_num":4,"dst_panid":65535,"dst_addr":8183184009432685,"src_addr":8183184009494450,"payload":"send_4","rssi":255,"length":7,"rxtime":1600396696346,"_msgid":"9bf6fad7.7a37f8"}
+{"header":60449,"seq_num":5,"dst_panid":65535,"dst_addr":8183184009432685,"src_addr":8183184009494450,"payload":"send_5","rssi":255,"length":7,"rxtime":1600396701348,"_msgid":"9c7e31e6.c940b"}
+-->
+
+

@@ -1,4 +1,4 @@
-<!-- *  file: lazurite.html
+<!-- *  file: lazurite-iot.html
  *
  *  Copyright (C) 2016-17 Lapis Semiconductor Co., Ltd.
  *
@@ -19,183 +19,182 @@
  *
 !-->
 
-<script type="text/x-red" data-template-name="lazurite-iot-device">
+<script type="text/x-red" data-template-name="lazurite-iot-device-in">
 	<div class="form-row">
 		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
 		<input type="text" id="node-input-name">
 	</div>
 	<div class="form-row">
-		<label for="node-input-auth"><i class="fa fa-diamond"></i> auth</label>
-		<input type="lazurite-iot-auth" id="node-input-auth"></input>
+		<label for="node-input-core"><i class="fa fa-diamond"></i> channel</label>
+		<input type="lazurite-iot-core" id="node-input-core"></input>
 	</div>
 
 </script>
 <script type="text/javascript">
-	RED.nodes.registerType('lazurite-iot-device',{
+	RED.nodes.registerType('lazurite-iot-device-in',{
 		category: 'Lazurite',
-		paletteLabel: 'LazuriteIot Device',
+		paletteLabel: 'LazuriteIot Device In',
 		color:"#3FADB5",
 		align: 'left',
 		inputs:0,
 		outputs:1,
 		icon: "lazurite.png",
 		label: function() {
-			return this.name || "LazuriteIot Device";
+			return this.name || "LazuriteIot Device In";
 		},
 		labelStyle: function() {
 			return this.text?"node_label_italic":"";
 		},
 		defaults: {
-			auth: {value:"", required:true, type:"lazurite-iot-auth"},
+			core: {value:"", required:true, type:"lazurite-iot-core"},
 			name   : {value:""}
 		}
 	});
 </script>
 
-<script type="text/x-red" data-template-name="lazurite-iot-auth">
+<script type="text/x-red" data-template-name="lazurite-iot-device-out">
 	<div class="form-row">
-		<label for="node-config-input-loginMethod">Auth Info</label>
-		<select id="node-config-input-loginMethod">
-			<option value="idpass">get from ID & PASSWORD</option>
-			<option value="keytoken">KEY & TOKEN</option>
-		</select>
-	</div>
-	<div class="form-row" id="lazurite-iot-loginid-field">
-		<label for="lazurite-iot-loginid">ID</label>
-		<input type="text" id="lazurite-iot-loginid">
-	</div>
-	<div class="form-row" id="lazurite-iot-password-field">
-		<label for="lazurite-iot-password">PASSWORD</label>
-		<input type="password" id="lazurite-iot-password"></input>
-	</div>
-	<div class="form-row" id="lazurite-iot-show-field">
-		<label for="lazurite-iot-password-show"></label>
-		<input type="checkbox" id="lazurite-iot-show" style="display:inline-block; width:15px; vertical-align:baseline;">&nbsp;&nbsp;show password</input>
-	</div>
-	<div class="form-row" id="lazurite-iot-get-key-token-field">
-		<label for="lazurite-iot-auth-get-key-token"></label>
-		<button id="lazurite-iot-auth-get-key-token">get KEY & TOKEN</button>
-	</div>
-	<div class="form-row" id="lazurite-iot-key-field">
-		<label for="node-config-input-key">KEY</label>
-		<input type="text" id="node-config-input-key"></input>
-	</div>
-	<div class="form-row" id="lazurite-iot-token-field">
-		<label for="node-config-input-token">TOKEN</label>
-		<input type="text" id="node-config-input-token"></input>
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name">
 	</div>
 	<div class="form-row">
-		<label for="node-config-input-authMethod">Auth Method</label>
-		<select id="node-config-input-authMethod">
-			<option value="lazurite">Lazurite 920MHz MAC</option>
-			<option value="soracom-imsi">SORACOM IMSI</option>
+		<label for="node-input-core"><i class="fa fa-diamond"></i> channel</label>
+		<input type="lazurite-iot-core" id="node-input-core"></input>
+	</div>
+
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-iot-device-out',{
+		category: 'Lazurite',
+		paletteLabel: 'LazuriteIot Device Out',
+		color:"#3FADB5",
+		align: 'right',
+		inputs:1,
+		outputs:1,
+		icon: "lazurite.png",
+		label: function() {
+			return this.name || "LazuriteIot Device Out";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+		defaults: {
+			core: {value:"", required:true, type:"lazurite-iot-core"},
+			name   : {value:""}
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-iot-mqtt-in">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-core"><i class="fa fa-diamond"></i> channel</label>
+		<input type="lazurite-iot-core" id="node-input-core"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-qos"><i class="fa fa-empire"></i> qos</label>
+		<select id="node-input-qos">
+			<option value="0">0</option>
+			<option value="1">1</option>
 		</select>
+	</div>
+	<div class="form-row">
+		<label for="node-input-topic"><i class="fa fa-tag"></i> topic</label>
+		<input type="text" id="node-input-topic"></input>
 	</div>
 </script>
 <script type="text/javascript">
-	RED.nodes.registerType('lazurite-iot-auth',{
+	RED.nodes.registerType('lazurite-iot-mqtt-in',{
+		category: 'Lazurite',
+		paletteLabel: 'LazuriteIot MQTT In',
+		color:"#d8bfd8",
+		align: 'left',
+		inputs:0,
+		outputs:1,
+		icon: "bridge.svg",
+		label: function() {
+			return this.name || "LazuriteIot MQTT In";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+		defaults: {
+			core: {value:"", required:true, type:"lazurite-iot-core"},
+			topic: {value:"",required:true,validate: RED.validators.regex(/^(#$|(\+|[^+#]*)(\/(\+|[^+#]*))*(\/(\+|#|[^+#]*))?$)/)},
+			qos: {value: "1"},
+			name   : {value:""}
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-iot-mqtt-out">
+	<div class="form-row">
+		<label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+		<input type="text" id="node-input-name"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-core"><i class="fa fa-diamond"></i> channel</label>
+		<input type="lazurite-iot-core" id="node-input-core"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-qos"><i class="fa fa-empire"></i> qos</label>
+		<select id="node-input-qos">
+			<option value="0">0</option>
+			<option value="1">1</option>
+		</select>
+	</div>
+	<div class="form-row">
+		<label for="node-input-topic"><i class="fa fa-tag"></i> topic</label>
+		<input type="text" id="node-input-topic"></input>
+	</div>
+	<div class="form-row">
+		<label for="node-input-bufferenb"><i class="fa fa-chain"></i> Buffer</label>
+		<input type="checkbox" id="node-input-bufferenb" style="width:20px;"> Enable</input>
+	</div>
+
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-iot-mqtt-out',{
+		category: 'Lazurite',
+		paletteLabel: 'LazuriteIot MQTT Out',
+		color:"#d8bfd8",
+		align: 'right',
+		inputs:1,
+		outputs:0,
+		icon: "bridge.svg",
+		label: function() {
+			return this.name || "LazuriteIot MQTT Out";
+		},
+		labelStyle: function() {
+			return this.text?"node_label_italic":"";
+		},
+		defaults: {
+			core: {value:"", required:true, type:"lazurite-iot-core"},
+			topic: {value:""},
+			qos: {value:""},
+			bufferenb: {value:false},
+			name   : {value:""}
+		}
+	});
+</script>
+
+<script type="text/x-red" data-template-name="lazurite-iot-core">
+	<div class="form-row">
+		<label for="node-config-input-keyPath">keyPath</label>
+		<input type="text" id="node-config-input-keyPath">
+	</div>
+</script>
+<script type="text/javascript">
+	RED.nodes.registerType('lazurite-iot-core',{
 		category: 'config',
 		defaults: {
-			authMethod: {value:"lazurite",required:true},
-			loginMethod: {value:"idpass"},
-			key: {value:"",required:true},
-			token: {value:"",required:true},
+			keyPath: {value:"",required:true},
 		},
 		label: function() {
-			return this.authMethod;
-		},
-		oneditprepare: function() {
-			if(this.loginMethod === "keytoken") {
-				$("#lazurite-iot-loginid-field").hide();
-				$("#lazurite-iot-password-field").hide();
-				$("#lazurite-iot-show-field").hide();
-				$("#lazurite-iot-get-key-token-field").hide();
-			} else {
-				$("#lazurite-iot-key-field").hide();
-				$("#lazurite-iot-token-field").hide();
-			}
-			$("#lazurite-iot-show").click(function() {
-				if($("#lazurite-iot-password").attr("type") === "text") {
-					$("#lazurite-iot-password").attr("type","password");
-				} else {
-					$("#lazurite-iot-password").attr("type","text");
-				}
-			});
-			$("#lazurite-iot-auth-get-key-token").click(function() {
-				const companyid = $("#lazurite-iot-loginid").val();
-				const companypass = $("#lazurite-iot-password").val();
-				if(!companyid) {
-					alert("please enter id");
-					return;
-				}
-				if(!companypass) {
-					alert("please enter password");
-					return;
-				}
-				let options = {
-					url: "https://api2.lazurite.io/login",
-					type: 'POST',
-					contentType: 'application/json', // リクエストの Content-Type
-					dataType: 'json',
-					data: JSON.stringify({
-						companyid: companyid,
-						companypass:  companypass
-					})
-				};
-				$.ajax(options)
-					.done(function(res) {
-						if(res.success === true) {
-							$("#node-config-input-loginMethod").val("keytoken");
-							$("#lazurite-iot-loginid-field").hide();
-							$("#lazurite-iot-password-field").hide();
-							$("#lazurite-iot-show-field").hide();
-							$("#lazurite-iot-get-key-token-field").hide();
-							$("#lazurite-iot-key-field").show();
-							$("#lazurite-iot-token-field").show();
-							$("#node-config-input-key").val(res.key);
-							$("#node-config-input-token").val(res.token);
-							alert("authorization success");
-						}
-					}).fail(function(jqXHR,textStatus,errorThrown) {
-						alert("authorization fail");
-					});
-				/*
-				$.ajax({
-				};
-				 */
-			});
-			$("#node-config-input-loginMethod").change((elm) => {
-				if(elm.target.value === "keytoken") {
-					$("#lazurite-iot-loginid-field").hide();
-					$("#lazurite-iot-password-field").hide();
-					$("#lazurite-iot-show-field").hide();
-					$("#lazurite-iot-get-key-token-field").hide();
-					$("#lazurite-iot-key-field").show();
-					$("#lazurite-iot-token-field").show();
-				} else {
-					$("#lazurite-iot-loginid-field").show();
-					$("#lazurite-iot-password-field").show();
-					$("#lazurite-iot-show-field").show();
-					$("#lazurite-iot-get-key-token-field").show();
-					$("#lazurite-iot-key-field").hide();
-					$("#lazurite-iot-token-field").hide();
-				}
-			});
-		},
-		oneditdelete: function() {
-			$("#lazurite-iot-auth-get-key-token").off("click");
-			$("#node-config-input-loginMethod").off("change");
-			$("#lazurite-iot-show").off("click");
-		},
-		oneditcancel: function() {
-			$("#lazurite-iot-auth-get-key-token").off("click");
-			$("#node-config-input-loginMethod").off("change");
-			$("#lazurite-iot-show").off("click");
-		},
-		oneditsave: function() {
-			$("#lazurite-iot-auth-get-key-token").off("click");
-			$("#node-config-input-loginMethod").off("change");
-			$("#lazurite-iot-show").off("click");
+			return this.keyPath;
 		}
 	});
 </script>
