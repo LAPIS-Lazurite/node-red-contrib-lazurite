@@ -53,7 +53,10 @@ module.exports = function(RED) {
 	function connect(node) {
 		if(!isConnect) {
 			if(!lib.dlopen()) { Warn("dlopen fail"); return; }
-			if(!lib.init()) { Warn("lazurite_init fail"); return; }
+			let result = lib.init();
+			if(result === false) {
+				console.log('lazdriver is loaded in kernel. This Node-RED takes it.');
+			}
 			if(node.channel.config.defaultaddress==false) {
 				if(!lib.setMyAddress(node.channel.config.myaddr)) { Warn("lazurite_setMyAddress fail"); return; }
 			}

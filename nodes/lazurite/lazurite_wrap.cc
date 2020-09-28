@@ -87,7 +87,13 @@ static void dlopen(const FunctionCallbackInfo<Value>& args) {
 	if(!opened) {
 		handle = dlopen ("liblazurite.so", RTLD_LAZY);
 		if (!handle) {
-			fprintf (stderr, "%s\n", dlerror());
+#if (V8_MAJOR_VERSION >= 8)
+			isolate->ThrowException(Exception::TypeError(
+						String::NewFromUtf8(isolate, "liblazurite.so open fail").ToLocalChecked()));
+#else
+			isolate->ThrowException(String::NewFromUtf8(isolate, "liblazurite.so open fail"));
+#endif
+			return;
 		} else {
 			initfunc     = (int (*)(void))find(handle, "lazurite_init");
 			beginfunc    = (int (*)(uint8_t, uint16_t, uint8_t,uint8_t))find(handle, "lazurite_begin");
@@ -124,20 +130,31 @@ static void init(const FunctionCallbackInfo<Value>& args) {
 
 	if(!initialized) {
 		if(!initfunc) {
-			fprintf (stderr, "liblzgw_open fail.\n");
-			args.GetReturnValue().Set(Boolean::New(isolate,false));
+#if (V8_MAJOR_VERSION >= 8)
+			isolate->ThrowException(Exception::TypeError(
+						String::NewFromUtf8(isolate, "lazurite_init is not found").ToLocalChecked()));
+#else
+			isolate->ThrowException(String::NewFromUtf8(isolate, "lazurite_init is not found"));
+#endif
 			return;
 		}
 		int result = initfunc();
-		if(result != 0) {
-			fprintf (stderr, "liblzgw_open fail = %d\n", result);
-			args.GetReturnValue().Set(Boolean::New(isolate,false));
+		if(result < 0) {
+#if (V8_MAJOR_VERSION >= 8)
+			isolate->ThrowException(Exception::TypeError(
+						String::NewFromUtf8(isolate, "lazurite_init fail").ToLocalChecked()));
+#else
+			isolate->ThrowException(String::NewFromUtf8(isolate, "lazurite_init fail"));
+#endif
 			return;
+		} else if(result == 0) {
+			args.GetReturnValue().Set(Boolean::New(isolate,true));
+			initialized = true;
+		} else {
+			args.GetReturnValue().Set(Boolean::New(isolate,false));
+			initialized = true;
 		}
-		initialized = true;
 	}
-
-	args.GetReturnValue().Set(Boolean::New(isolate,true));
 	return;
 }
 
@@ -961,19 +978,30 @@ static void remove(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 	if(initialized) {
 		if(!removefunc) {
-			fprintf (stderr, "remove driver from kernel");
-			args.GetReturnValue().Set(Boolean::New(isolate,false));
+#if (V8_MAJOR_VERSION >= 8)
+			isolate->ThrowException(Exception::TypeError(
+						String::NewFromUtf8(isolate, "lazurite_wrap removefunc.not found").ToLocalChecked()));
+#else
+			isolate->ThrowException(String::NewFromUtf8(isolate, "lazurite_wrap removefunc.not found"));
+#endif
 			return;
 		}
 		int result = removefunc();
-		if(result != 0) {
-			fprintf (stderr, "remove driver from kernel %d", result);
-			args.GetReturnValue().Set(Boolean::New(isolate,false));
-			return;
-		}
 		initialized = false;
+		if(result < 0) {
+#if (V8_MAJOR_VERSION >= 8)
+			isolate->ThrowException(Exception::TypeError(
+						String::NewFromUtf8(isolate, "liblazurite.so rmmod fail").ToLocalChecked()));
+#else
+			isolate->ThrowException(String::NewFromUtf8(isolate, "liblazurite.so rmmod fail"));
+#endif
+			return;
+		} else if(result > 0) {
+			args.GetReturnValue().Set(Boolean::New(isolate,false));
+		} else {
+			args.GetReturnValue().Set(Boolean::New(isolate,true));
+		}
 	}
-	args.GetReturnValue().Set(Boolean::New(isolate,true));
 	return;
 }
 
