@@ -320,6 +320,7 @@ module.exports = function(RED) {
 			//optime.nextEvent = optime.getNextEvent(null);
 			initEnhanceAck(true);
 			global.lazuriteConfig.isGatewayActive = true;
+			console.log("init done");
 		}).catch((err) => {
 			node.send([,,,{payload:err}]);
 		});
@@ -418,7 +419,7 @@ module.exports = function(RED) {
 			let worklog = global.lazuriteConfig.machineInfo.worklog;
 			let graph = global.lazuriteConfig.machineInfo.graph;
 			for(let i in data) {
-				let addr,stopReason,prevStopReason;
+				let addr,stopReason;
 				if ((!isNaN(parseInt("0x"+data[i].addr)) && (data[i].addr.length == 16))){
 					addr = parseInt("0x"+data[i].addr);
 					addr = addr & 0xffff;
@@ -435,11 +436,6 @@ module.exports = function(RED) {
 				}
 				stopReason = data[i].reason || 0; // 0 means 'unselected'
 				// restore saved previous stop reason
-				if (typeof worklog[data[i].id] !== 'undefined') {
-					prevStopReason = worklog[data[i].id].prevStopReason;
-				} else {
-					prevStopReason = stopReason;
-				}
 				if(data[i].type.match(/worklog/)) {
 					//console.log({id: data[i].id,type: "worklog"});
 					addr2id[addr] = data[i].id;
@@ -455,7 +451,6 @@ module.exports = function(RED) {
 						disp: BOOL(data[i].disp),
 						lowFreq: BOOL(data[i].lowfreq),
 						stopReason: stopReason,
-						prevStopReason: prevStopReason
 					}
 				}
 				if(data[i].type.match(/graph/)) {
@@ -477,7 +472,6 @@ module.exports = function(RED) {
 							disp: false,
 							lowFreq: false,
 							stopReason: stopReason,
-							prevStopReason: prevStopReason
 						}
 					}
 				} else {

@@ -125,6 +125,15 @@ module.exports = function(RED) {
 		node.on('input', function (msg) {
 			// check data
 			let capLogType = 'log';
+			if(msg.topic !== undefined) {
+				if(topicFilter("+/browser/log/update",msg.topic)) {
+					rxMqttLogUpdate(msg);
+					return;
+				} else if(topicFilter("+/browser/event/req",msg.topic)) {
+					rxMqttEventReq(msg);
+					return;
+				}
+			}
 			if(Array.isArray(msg.payload)) {
 				if((msg.payload[0] != "off") && (msg.payload[0] != "on")){
 					return;
@@ -137,7 +146,7 @@ module.exports = function(RED) {
 				let rssi = msg.rssi;
 				let graph = global.lazuriteConfig.machineInfo.graph;
 				let vbat = global.lazuriteConfig.machineInfo.vbat;
-				let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
+				let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): 0;
 				//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
 				if(vbat[id] === undefined) {
 					vbat[id] = {
@@ -165,20 +174,6 @@ module.exports = function(RED) {
 				// worklog
 				let worklog = global.lazuriteConfig.machineInfo.worklog[id];
 				if (worklog.log === true) {
-					// override state to off
-					let stopReasonChanged = false;
-					if (state === 'off') {
-						if (worklog.stopReason !== 0) {
-							reason = worklog.stopReason;
-						} else {
-							if (reason === null) reason = 0;
-						}
-						if (reason !== worklog.prevStopReason) {
-							stopReasonChanged = true;
-						}
-						worklog.prevStopReason = reason;
-						//console.log({reason:reason,worklog:worklog});
-					}
 					if(sensorInfo[id] === undefined ) {
 						sensorInfo[id] = {
 							from: rxtime,
@@ -201,63 +196,166 @@ module.exports = function(RED) {
 							rssi: rssi,
 						};
 					}
-					if ((sensorInfo[id].currentStatus !== state) || (stopReasonChanged === true)) {
-						sensorInfo[id].currentStatus = state;
-						let detect;
-						//console.log(global.lazuriteConfig.machineInfo);
-						if (sensorInfo[id].currentStatus === "on") {
-							detect = worklog.detect0;
-							sensorInfo[id].reasonId = null;
-						}else{
-							detect = worklog.detect1;
-							sensorInfo[id].reasonId = reason;
-						}
-						detect = detect * 1000;
-						sensorInfo[id].from.setTime(rxtime.getTime() - detect);
-						//console.log({rxtime: rxtime, from: sensorInfo[id].from});
-						let output = {
-							payload: {
-								dbname: node.config.dbname,
-								timestamp: sensorInfo[id].from.getTime(),
-								from: sensorInfo[id].from.getTime(),
-								machine: id,
-								type: capLogType,
-								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-							},
-							topic : global.lazuriteConfig.capacity.topic
-						};
-						if(reason) output.payload.reasonId = reason;
-						node.send(output);
-					}
-					if ((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) || (sensorInfo[id].last.getDate() !== rxtime.getDate())) {
-						let from;
-						if (rxtime.getHours() >= 1) { // after 1:00 AM
-							from = rxtime.getTime(); // override
+					let output;
+					if(worklog.lowFreq === false) { // 通常動作
+						sensorInfo[id].lowFreq = false;
+						if((state === 'on') && (sensorInfo[id].currentStatus !== "on")){
+							sensorInfo[id].currentStatus = 'on';
+							delete	sensorInfo[id].reasonId;
+							delete sensorInfo[id].nameId;
+							delete sensorInfo[id].note;
+							sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect0*1000);
+							output = {
+								payload: {
+									dbname: node.config.dbname,
+									timestamp: sensorInfo[id].from.getTime(),
+									from: sensorInfo[id].from.getTime(),
+									machine: id,
+									type: capLogType,
+									state: "act"
+								},
+								topic : global.lazuriteConfig.capacity.topic
+							};
+						} else if((state === 'off') && (sensorInfo[id].currentStatus !== "off")){
+							sensorInfo[id].currentStatus = 'off';
+							if(reason) {
+								sensorInfo[id].reasonId = reason;
+							} else {
+								sensorInfo[id].reasonId = worklog.stopReason;
+							}
+							delete sensorInfo[id].nameId;
+							delete sensorInfo[id].note;
+							sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect1*1000);
+							output = {
+								payload: {
+									dbname: node.config.dbname,
+									timestamp: sensorInfo[id].from.getTime(),
+									from: sensorInfo[id].from.getTime(),
+									machine: id,
+									reasonId: sensorInfo[id].reasonId,
+									type: capLogType,
+									state: "stop"
+								},
+								topic : global.lazuriteConfig.capacity.topic
+							};
+						} else if(sensorInfo[id].reasonId !== reason) {
+							if(reason){
+								console.log("state 3-1");
+								sensorInfo[id].reasonId = reason;
+								delete sensorInfo[id].nameId;
+								delete sensorInfo[id].note;
+								sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect1*1000);
+								output = {
+									payload: {
+										dbname: node.config.dbname,
+										timestamp: rxtime.getTime(),
+										from: rxtime.getTime(),
+										machine: id,
+										reasonId: sensorInfo[id].reasonId,
+										type: capLogType,
+										state: "stop"
+									},
+									topic : global.lazuriteConfig.capacity.topic
+								};
+							} else {
+								console.log("state 3-2");
+							}
 						} else {
-							from = sensorInfo[id].from.getTime();
+							console.log("state 4");
 						}
-						let output = {
-							payload: {
-								dbname: node.config.dbname,
-								timestamp: rxtime.getTime(),
-								from: from,
-								machine: id,
-								type: capLogType,
-								state: (sensorInfo[id].currentStatus === "on" ? "act":"stop")
-							},
-							topic : global.lazuriteConfig.capacity.topic
-						};
-						if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
-						node.send(output);
+					} else {												// 低速動作
+						if((state === 'on') && (sensorInfo[id].currentStatus !== 'on')){
+							console.log("state 5");
+							sensorInfo[id].currentStatus = 'on';
+							delete	sensorInfo[id].reasonId;
+							delete sensorInfo[id].nameId;
+							delete sensorInfo[id].note;
+							sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect0*1000);
+							output = {
+								payload: {
+									dbname: node.config.dbname,
+									timestamp: sensorInfo[id].from.getTime(),
+									from: sensorInfo[id].from.getTime(),
+									machine: id,
+									type: capLogType,
+									state: "act"
+								},
+								topic : global.lazuriteConfig.capacity.topic
+							};
+						} else if(((state === 'off') && (sensorInfo[id].currentStatus !== 'off')) ||
+							((state === 'off') && (sensorInfo[id].currentStatus === "off") && (sensorInfo[id].lowFreq === false) && (sensorInfo[id].reasonId !== worklog.stopReason))) {
+							if(sensorInfo[id].currentStatus !== "off") {
+								console.log("state 6");
+							} else {
+								console.log("state 7");
+							}
+							sensorInfo[id].lowFreq = true;
+							sensorInfo[id].reasonId = worklog.stopReason;
+							delete sensorInfo[id].nameId;
+							delete sensorInfo[id].note;
+							sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect1*1000);
+							output = {
+								payload: {
+									dbname: node.config.dbname,
+									timestamp: rxtime.getTime(),
+									from: rxtime.getTime(),
+									machine: id,
+									reasonId: sensorInfo[id].reasonId,
+									type: capLogType,
+									state: "stop"
+								},
+								topic : global.lazuriteConfig.capacity.topic
+							};
+						} else {
+							console.log("state 8");
+						}
 					}
+					if ((!output) &&
+						((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) ||
+							(sensorInfo[id].last.getDate() !== rxtime.getDate()))) {
+						if (rxtime.getHours() >= 1) { // after 1:00 AM
+							sensorInfo[id].from.setTime(rxtime.getTime()); // override
+						}
+						switch(sensorInfo[id].currentStatus) {
+							case "on":
+								output = {
+									payload: {
+										dbname: node.config.dbname,
+										timestamp: rxtime.getTime(),
+										from: sensorInfo[id].from.getTime(),
+										machine: id,
+										type: capLogType,
+										state: "act",
+									},
+									topic : global.lazuriteConfig.capacity.topic
+								};
+								break;
+							case "off":
+								output = {
+									payload: {
+										dbname: node.config.dbname,
+										timestamp: rxtime.getTime(),
+										from: sensorInfo[id].from.getTime(),
+										machine: id,
+										type: capLogType,
+										state: "stop",
+									},
+									topic : global.lazuriteConfig.capacity.topic
+								};
+								if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
+								if(sensorInfo[id].nameId) output.payload.nameId = sensorInfo[id].nameId;
+								if(sensorInfo[id].note) output.payload.note = sensorInfo[id].note;
+								break;
+						}
+					}
+					if(output) node.send(output);
 					sensorInfo[id].last = rxtime;
 					sensorInfo[id][state].sum += current;
 					sensorInfo[id][state].count += 1;
 					if( sensorInfo[id][state].min > current ) sensorInfo[id][state].min = current;
 					if( sensorInfo[id][state].max < current ) sensorInfo[id][state].max = current;
 					sensorInfo[id].battery = battery;
-					if(sensorInfo[id].rssi === undefined) sensorInfo[id].rssi = rssi;
-					else if(sensorInfo[id].rssi > rssi) sensorInfo[id].rssi = rssi;
+					sensorInfo[id].rssi = ((sensorInfo[id].rssi || 0)< rssi ) ? rssi : sensorInfo[id].rssi;
 				}
 				// data output for graph
 				if(graph[id].enabled ===true) {
@@ -314,17 +412,80 @@ module.exports = function(RED) {
 						//console.log({payload: msg.payload, graph: graph[id]});
 					}
 				}
-			} else {
+			}
+			function rxMqttLogUpdate(msg) {
 				try {
 					let m = JSON.parse(msg.payload);
-					if (m.type !== 'stop') return;
-					let now = new Date().getTime();
-					let id = m.machineId;
+					console.log(m);
+					let id = m.machine;
 					let worklog = global.lazuriteConfig.machineInfo.worklog[id];
 					if ((worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
-						sensorInfo[id].from.setTime(now);
-						sensorInfo[id].last.setTime(now);
-						sensorInfo[id].reasonId = m.reasonId;
+						if(sensorInfo[id].from.getTime() > m.from) {
+							console.log("old data");
+							return;
+						} else if(sensorInfo[id].from.getTime() < m.from) {
+							console.log("new object");
+							sensorInfo[id].from = new Date(m.from);
+						} else {
+							console.log("from is same");
+						}
+						if(m.reasonId !== undefined) {
+							sensorInfo[id].reasonId = m.reasonId;
+						} else {
+							sensorInfo[id].reasonId = 0;
+						}
+						if(m.nameId !== undefined) {
+							sensorInfo[id].nameId = m.nameId;
+						} else {
+							delete sensorInfo[id].nameId;
+						}
+						if(m.note !== undefined) {
+							sensorInfo[id].note = m.note;
+						} else {
+							delete sensorInfo[id].note;
+						}
+						/*
+							console.log({
+							type: 'sensorState update',
+							msg: m.lastItem.payload,
+							sensorInfo: sensorInfo[id],
+							from: {
+								msg: m.lastItem.payload.from,
+								sensorInfo: sensorInfo[id].from.getTime()
+							}
+						});
+						*/
+					}
+				} catch(e) {
+					console.log(e);
+				}
+			}
+			function rxMqttEventReq(msg) {
+				try {
+					let m = JSON.parse(msg.payload);
+					//console.log(m);
+					if (m.state !== 'stop') return;
+					let id = m.machine;
+					let worklog = global.lazuriteConfig.machineInfo.worklog[id];
+					if ((worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
+						sensorInfo[id].from.setTime(m.from);
+						sensorInfo[id].last.setTime(m.timestamp);
+						if(m.reasonId !== undefined) {
+							sensorInfo[id].reasonId = m.reasonId;
+						} else {
+							delete sensorInfo[id].reasonId;
+						}
+						if(m.nameId !== undefined) {
+							sensorInfo[id].nameId = m.nameId;
+						} else {
+							delete sensorInfo[id].nameId;
+						}
+						if(m.note !== undefined) {
+							sensorInfo[id].note = m.note;
+						} else {
+							delete sensorInfo[id].note;
+						}
+						/*
 						let output = {
 							payload: {
 								dbname: node.config.dbname,
@@ -334,14 +495,15 @@ module.exports = function(RED) {
 								type: capLogType,
 								state: 'stop',
 								reasonId: m.reasonId,
-								nameId: m.nameId
+								nameId: m.nameId,
 							},
 							topic: global.lazuriteConfig.capacity.topic
 						};
-						if (m.note !== undefined) output.payload.note = m.note;
 						node.send(output);
+						*/
 					}
 				} catch(e) {
+					console.log(e);
 				}
 			}
 		});
@@ -359,6 +521,26 @@ module.exports = function(RED) {
 			},null,"  "));
 			done();
 		});
+		function topicFilter(ts,t) {
+			if (ts == "#") {
+				return true;
+			}
+			/* The following allows shared subscriptions (as in MQTT v5)
+					 http://docs.oasis-open.org/mqtt/mqtt/v5.0/cs02/mqtt-v5.0-cs02.html#_Toc514345522
+
+					 4.8.2 describes shares like:
+					 $share/{ShareName}/{filter}
+					 $share is a literal string that marks the Topic Filter as being a Shared Subscription Topic Filter.
+					 {ShareName} is a character string that does not include "/", "+" or "#"
+					 {filter} The remainder of the string has the same syntax and semantics as a Topic Filter in a non-shared subscription. Refer to section 4.7.
+					 */
+			else if(ts.startsWith("$share")){
+				ts = ts.replace(/^\$share\/[^#+/]+\/(.*)/g,"$1");
+
+			}
+			var re = new RegExp("^"+ts.replace(/([\[\]\?\(\)\\\\$\^\*\.|])/g,"\\$1").replace(/\+/g,"[^/]+").replace(/\/#$/,"(\/.*)?")+"$");
+					return re.test(t);
+				}
 	}
 	RED.nodes.registerType("lazurite-capacity", LazuriteCapacity);
 }
