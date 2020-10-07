@@ -200,6 +200,7 @@ module.exports = function(RED) {
 					if(worklog.lowFreq === false) { // 通常動作
 						sensorInfo[id].lowFreq = false;
 						if((state === 'on') && (sensorInfo[id].currentStatus !== "on")){
+							//console.log(`state 1-1 ${(new Date()).toLocaleString()}`);
 							sensorInfo[id].currentStatus = 'on';
 							delete	sensorInfo[id].reasonId;
 							delete sensorInfo[id].nameId;
@@ -219,8 +220,10 @@ module.exports = function(RED) {
 						} else if((state === 'off') && (sensorInfo[id].currentStatus !== "off")){
 							sensorInfo[id].currentStatus = 'off';
 							if(reason) {
+								//console.log(`state 2-1 ${(new Date()).toLocaleString()}`);
 								sensorInfo[id].reasonId = reason;
 							} else {
+								//console.log(`state 2-2 ${(new Date()).toLocaleString()}`);
 								sensorInfo[id].reasonId = worklog.stopReason;
 							}
 							delete sensorInfo[id].nameId;
@@ -240,7 +243,7 @@ module.exports = function(RED) {
 							};
 						} else if(sensorInfo[id].reasonId !== reason) {
 							if(reason){
-								console.log("state 3-1");
+								//console.log(`state 3-1 ${(new Date()).toLocaleString()}`);
 								sensorInfo[id].reasonId = reason;
 								delete sensorInfo[id].nameId;
 								delete sensorInfo[id].note;
@@ -258,14 +261,14 @@ module.exports = function(RED) {
 									topic : global.lazuriteConfig.capacity.topic
 								};
 							} else {
-								console.log("state 3-2");
+								//console.log(`state 3-2 ${(new Date()).toLocaleString()}`);
 							}
 						} else {
-							console.log("state 4");
+							//console.log("state 4");
 						}
 					} else {												// 低速動作
 						if((state === 'on') && (sensorInfo[id].currentStatus !== 'on')){
-							console.log("state 5");
+							//console.log(`state 5-1 ${(new Date()).toLocaleString()}`);
 							sensorInfo[id].currentStatus = 'on';
 							delete	sensorInfo[id].reasonId;
 							delete sensorInfo[id].nameId;
@@ -285,11 +288,11 @@ module.exports = function(RED) {
 						} else if(((state === 'off') && (sensorInfo[id].currentStatus !== 'off')) ||
 							((state === 'off') && (sensorInfo[id].currentStatus === "off") && (sensorInfo[id].lowFreq === false) && (sensorInfo[id].reasonId !== worklog.stopReason))) {
 							if(sensorInfo[id].currentStatus !== "off") {
-								console.log("state 6");
+								//console.log(`state 6-1 ${(new Date()).toLocaleString()}`);
 							} else {
-								console.log("state 7");
+								//console.log(`state 7-1 ${(new Date()).toLocaleString()}`);
 							}
-							sensorInfo[id].lowFreq = true;
+							sensorInfo[id].currentStatus = 'off';
 							sensorInfo[id].reasonId = worklog.stopReason;
 							delete sensorInfo[id].nameId;
 							delete sensorInfo[id].note;
@@ -307,8 +310,9 @@ module.exports = function(RED) {
 								topic : global.lazuriteConfig.capacity.topic
 							};
 						} else {
-							console.log("state 8");
+							//console.log("state 8");
 						}
+						sensorInfo[id].lowFreq = true;
 					}
 					if ((!output) &&
 						((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) ||
@@ -356,6 +360,7 @@ module.exports = function(RED) {
 					if( sensorInfo[id][state].max < current ) sensorInfo[id][state].max = current;
 					sensorInfo[id].battery = battery;
 					sensorInfo[id].rssi = ((sensorInfo[id].rssi || 0)< rssi ) ? rssi : sensorInfo[id].rssi;
+					//console.log(sensorInfo[id]);
 				}
 				// data output for graph
 				if(graph[id].enabled ===true) {
@@ -416,18 +421,18 @@ module.exports = function(RED) {
 			function rxMqttLogUpdate(msg) {
 				try {
 					let m = JSON.parse(msg.payload);
-					console.log(m);
+					//console.log(m);
 					let id = m.machine;
 					let worklog = global.lazuriteConfig.machineInfo.worklog[id];
 					if ((worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
 						if(sensorInfo[id].from.getTime() > m.from) {
-							console.log("old data");
+							//console.log("old data");
 							return;
 						} else if(sensorInfo[id].from.getTime() < m.from) {
-							console.log("new object");
+							//console.log("new object");
 							sensorInfo[id].from = new Date(m.from);
 						} else {
-							console.log("from is same");
+							//console.log("from is same");
 						}
 						if(m.reasonId !== undefined) {
 							sensorInfo[id].reasonId = m.reasonId;
