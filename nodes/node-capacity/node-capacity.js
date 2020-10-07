@@ -198,7 +198,6 @@ module.exports = function(RED) {
 					}
 					let output;
 					if(worklog.lowFreq === false) { // 通常動作
-						sensorInfo[id].lowFreq = false;
 						if((state === 'on') && (sensorInfo[id].currentStatus !== "on")){
 							//console.log(`state 1-1 ${(new Date()).toLocaleString()}`);
 							sensorInfo[id].currentStatus = 'on';
@@ -241,9 +240,55 @@ module.exports = function(RED) {
 								},
 								topic : global.lazuriteConfig.capacity.topic
 							};
+						} else if((state === 'off') && (sensorInfo[id].lowFreq === true)) {
+							if(reason){
+								if(sensorInfo[id].reasonId !== reason) {
+									//console.log(`state 3-1 ${(new Date()).toLocaleString()}`);
+									sensorInfo[id].reasonId = reason;
+									delete sensorInfo[id].nameId;
+									delete sensorInfo[id].note;
+									sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect1*1000);
+									output = {
+										payload: {
+											dbname: node.config.dbname,
+											timestamp: sensorInfo[id].from.getTime(),
+											from: sensorInfo[id].from.getTime(),
+											machine: id,
+											reasonId: sensorInfo[id].reasonId,
+											type: capLogType,
+											state: "stop"
+										},
+										topic : global.lazuriteConfig.capacity.topic
+									};
+								} else {
+									//console.log(`state 3-2 ${(new Date()).toLocaleString()}`);
+								}
+							} else {
+								if(sensorInfo[id].reasonId !== worklog.stopReason) {
+									//console.log(`state 3-3 ${(new Date()).toLocaleString()}`);
+									sensorInfo[id].reasonId = worklog.stopReason;
+									delete sensorInfo[id].nameId;
+									delete sensorInfo[id].note;
+									sensorInfo[id].from.setTime(rxtime.getTime() - worklog.detect1*1000);
+									output = {
+										payload: {
+											dbname: node.config.dbname,
+											timestamp: sensorInfo[id].from.getTime(),
+											from: sensorInfo[id].from.getTime(),
+											machine: id,
+											reasonId: sensorInfo[id].reasonId,
+											type: capLogType,
+											state: "stop"
+										},
+										topic : global.lazuriteConfig.capacity.topic
+									};
+								} else {
+									//console.log(`state 3-4 ${(new Date()).toLocaleString()}`);
+								}
+							}
 						} else if(sensorInfo[id].reasonId !== reason) {
 							if(reason){
-								//console.log(`state 3-1 ${(new Date()).toLocaleString()}`);
+								//console.log(`state 4-1 ${(new Date()).toLocaleString()}`);
 								sensorInfo[id].reasonId = reason;
 								delete sensorInfo[id].nameId;
 								delete sensorInfo[id].note;
@@ -251,8 +296,8 @@ module.exports = function(RED) {
 								output = {
 									payload: {
 										dbname: node.config.dbname,
-										timestamp: rxtime.getTime(),
-										from: rxtime.getTime(),
+										timestamp: sensorInfo[id].from.getTime(),
+										from: sensorInfo[id].from.getTime(),
 										machine: id,
 										reasonId: sensorInfo[id].reasonId,
 										type: capLogType,
@@ -261,14 +306,15 @@ module.exports = function(RED) {
 									topic : global.lazuriteConfig.capacity.topic
 								};
 							} else {
-								//console.log(`state 3-2 ${(new Date()).toLocaleString()}`);
+								//console.log(`state 4-2 ${(new Date()).toLocaleString()}`);
 							}
 						} else {
-							//console.log("state 4");
+							//console.log("state 5");
 						}
+						sensorInfo[id].lowFreq = false;
 					} else {												// 低速動作
 						if((state === 'on') && (sensorInfo[id].currentStatus !== 'on')){
-							//console.log(`state 5-1 ${(new Date()).toLocaleString()}`);
+							//console.log(`state 6-1 ${(new Date()).toLocaleString()}`);
 							sensorInfo[id].currentStatus = 'on';
 							delete	sensorInfo[id].reasonId;
 							delete sensorInfo[id].nameId;
@@ -288,9 +334,9 @@ module.exports = function(RED) {
 						} else if(((state === 'off') && (sensorInfo[id].currentStatus !== 'off')) ||
 							((state === 'off') && (sensorInfo[id].currentStatus === "off") && (sensorInfo[id].lowFreq === false) && (sensorInfo[id].reasonId !== worklog.stopReason))) {
 							if(sensorInfo[id].currentStatus !== "off") {
-								//console.log(`state 6-1 ${(new Date()).toLocaleString()}`);
-							} else {
 								//console.log(`state 7-1 ${(new Date()).toLocaleString()}`);
+							} else {
+								//console.log(`state 8-1 ${(new Date()).toLocaleString()}`);
 							}
 							sensorInfo[id].currentStatus = 'off';
 							sensorInfo[id].reasonId = worklog.stopReason;
@@ -300,8 +346,8 @@ module.exports = function(RED) {
 							output = {
 								payload: {
 									dbname: node.config.dbname,
-									timestamp: rxtime.getTime(),
-									from: rxtime.getTime(),
+									timestamp: sensorInfo[id].from.getTime(),
+									from: sensorInfo[id].from.getTime(),
 									machine: id,
 									reasonId: sensorInfo[id].reasonId,
 									type: capLogType,
@@ -310,7 +356,7 @@ module.exports = function(RED) {
 								topic : global.lazuriteConfig.capacity.topic
 							};
 						} else {
-							//console.log("state 8");
+							//console.log("state 9");
 						}
 						sensorInfo[id].lowFreq = true;
 					}
