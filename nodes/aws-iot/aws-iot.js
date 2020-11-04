@@ -184,12 +184,11 @@ module.exports = function(RED) {
 					if ((init_flag === true) && (typeof global.lazuriteConfig !== "undefined")) {
 						console.log('node-red-start');
 						node.publish({
-							topic: global.lazuriteConfig.capacity.topic,
+							topic: `${global.lazuriteConfig.capacity.topic}/monitor/${global.lazuriteConfig.gwid}`,
 							payload: {
-								type: "monitor",
 								timestamp: new Date().getTime(),
 								event: "node-red-start",
-								gateway: global.lazuriteConfig.gwid
+								//gateway: global.lazuriteConfig.gwid
 							},
 							qos: 1
 						});

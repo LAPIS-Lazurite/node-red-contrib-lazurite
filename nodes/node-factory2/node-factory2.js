@@ -250,7 +250,7 @@ module.exports = function(RED) {
 
 		global.lazuriteConfig.awsiotConfig = JSON.parse(fs.readFileSync(config.awsiotConfig,'utf8'));
 		global.lazuriteConfig.log = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/log'};
-		global.lazuriteConfig.capacity = {topic: global.lazuriteConfig.awsiotConfig.topic.split('/')[0]+'/capacity'};
+		global.lazuriteConfig.capacity = {topic: `${global.lazuriteConfig.awsiotConfig.topic.split('/')[0]}/data/factory-iot`};
 		global.lazuriteConfig.gwid = parseInt((global.lazuriteConfig.awsiotConfig.name).slice(-3));
 
 		//node.config = config;
