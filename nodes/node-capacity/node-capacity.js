@@ -224,7 +224,7 @@ module.exports = function(RED) {
 									//type: capLogType,
 									state: "act"
 								},
-								topic : `${global.lazuriteConfig.capacity.topic}/log/${id}`
+								topic : `${global.lazuriteConfig.capacity.topic}/monitoring/log/${id}`
 							};
 						} else if((state === 'off') && (sensorInfo[id].currentStatus !== "off")){
 							sensorInfo[id].currentStatus = 'off';
