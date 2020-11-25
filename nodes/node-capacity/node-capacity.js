@@ -16,7 +16,7 @@
  **/
 module.exports = function(RED) {
 	let fs = require('fs');
-	const inspect = require("util").inspect;
+	const util = require("util");
 	const INTERVAL_GRAPH = 29*1000;
 	const INTERVAL_VBAT = 0 * 60*1000;
 	//const INTERVAL_VBAT = 60*1000;
@@ -55,75 +55,39 @@ module.exports = function(RED) {
 		}
 		RED.nodes.createNode(this,config);
 		node.config = config;
-		let now = new Date();
 		//sensorInfo.reported = now;
 		// check timing to send capacity data to cloud
-		let timer = setInterval(function() {
-			now = new Date();
-			//now = new Date(now.getTime()-1300*1000);
-			//console.log(now);
-			if(hour.reported === undefined) {
-				hour.reported = now;
-				hour.checked = now;
-			}
-			if ((hour.reported.getMonth() != now.getMonth()) || (hour.reported.getDate() != now.getDate()) || (hour.reported.getHours() != now.getHours())) {
-				let timestamp = new Date(hour.reported.getFullYear(), hour.reported.getMonth(), hour.reported.getDate(),hour.reported.getHours()+1);
-				let payload = {
-					timestamp : timestamp.getTime()+global.lazuriteConfig.gwid,
-					capacity: {},
-					vbat: {},
-					rssi: {},
-				};
+		let now = new Date();
+		hour.start = new Date(hour.start);
+		hour.end = new Date(hour.end);
 
-				let count = 0;
-				for(let id in hourCapacity) {
-					if((sensorInfo[id].active === true) && ((hour.checked - sensorInfo[id].last) <3600*1000)) {
-						// generate hour capacity data
-						payload.capacity[id] = parseInt(hourCapacity[id].ontime/hourCapacity[id].meastime*1000)/10;
-						payload.vbat[id] = sensorInfo[id].battery;
-						payload.rssi[id] = sensorInfo[id].rssi;
-						count+=1;
-						delete payload.rssi[id].battery;
-						delete payload.rssi[id].rssi;
-					}
-				}
-				if(count > 0) {
-					node.send({
-						payload:payload,
-						topic: `${global.lazuriteConfig.capacity.topic}/monitoring/hour/${global.lazuriteConfig.gwid}`
-					});
-				}
-				hour = { reported: now };
-				hourCapacity = {};
-				// update temprary file
-				try {
-					fs.statSync('/home/pi/.lazurite/tmp');
-				} catch(e) {
-					fs.mkdirSync('/home/pi/.lazurite/tmp');
-				}
-				fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
-					sensorInfo : sensorInfo,
-					hourCapacity: hourCapacity,
-					hour: hour,
-				},null,"  "));
-			}
-			for (let id in sensorInfo) {
-				if((now - sensorInfo[id].last)<3600*1000)  {
-					if(hourCapacity[id] === undefined){
-						hourCapacity[id] = {
-							ontime: 0,
-							meastime: 0
-						};
-					} else {
-						if(sensorInfo[id].currentStatus === 'on') {
-							hourCapacity[id].ontime += (now - hour.checked);
-						}
-						hourCapacity[id].meastime += (now - hour.checked);
-					}
-				}
-			}
-			hour.checked = now;
-		}, 1000);
+		if(isNaN(hour.start.getTime()) || isNaN(hour.end.getTime()) ||
+			(hour.start.getTime() != (new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours())).getTime())) {
+			console.log("hour isNaN");
+			hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
+			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
+			//hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes()+1); // debug
+			hourCapacity = {};
+			hourCapacity.total = 0;
+		}
+		hour.update = new Date(now);
+		/*
+		console.log({
+			start: hour.start.toLocaleString(),
+			end: hour.end.toLocaleString(),
+			update: hour.update.toLocaleString(),
+			hourCapacity: hourCapacity
+		});
+		*/
+			let timer = setTimeout(calHourCapacity ,hour.end.getTime() - now.getTime());
+		function calHourCapacity() {
+			now = new Date();
+			updateCapacity(now);
+			hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
+			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
+			//hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes()+1); // debug
+			timer = setTimeout(calHourCapacity,hour.end.getTime() - now.getTime())
+		}
 
 		node.on('input', function (msg) {
 			// check data
@@ -154,6 +118,7 @@ module.exports = function(RED) {
 				let vbat = global.lazuriteConfig.machineInfo.vbat;
 				let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 				//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
+				updateCapacity(rxtime);
 				if(vbat[id] === undefined) {
 					vbat[id] = {
 						timestamp: id,
@@ -265,7 +230,7 @@ module.exports = function(RED) {
 											from: sensorInfo[id].from.getTime(),
 											machine: id,
 											reasonId: sensorInfo[id].reasonId,
-										//	type: capLogType,
+											//	type: capLogType,
 											state: "stop"
 										},
 										topic : `${global.lazuriteConfig.capacity.topic}/monitoring/log/${id}`
@@ -525,6 +490,7 @@ module.exports = function(RED) {
 			function rxMqttEventReq(msg) {
 				try {
 					let m = JSON.parse(msg.payload);
+					updateCapacity(new Date(m.timestamp));
 					//console.log(m);
 					if (m.state !== 'stop') return;
 					let id = m.machine;
@@ -554,6 +520,7 @@ module.exports = function(RED) {
 			}
 			function rxMqttDataLog(msg) {
 				let payload = JSON.parse(msg.payload);
+				updateCapacity(new Date(payload.timestamp))
 				let id = payload.machine;
 				if(sensorInfo[id] === undefined) {
 					sensorInfo[id] = {
@@ -581,7 +548,7 @@ module.exports = function(RED) {
 					sensorInfo[id].from = new Date(payload.from);
 					sensorInfo[id].last = new Date(payload.timestamp);
 					sensorInfo[id].active = false;
-					sensorInfo[id].state = payload.state;
+					sensorInfo[id].currentStatus = payload.state;
 					if(payload.state === "off") {
 						sensorInfo[id].reasonId = payload.reasonId || 0;
 						delete sensorInfo[id].nameId;
@@ -614,22 +581,96 @@ module.exports = function(RED) {
 			},null,"  "));
 			done();
 		});
+		function updateCapacity(time) {
+			/*
+			console.log({
+				end:	hour.end.toLocaleString(),
+				time:	time.toLocaleString(),
+				result: (hour.end.getTime() < time.getTime())
+			});
+			*/
+
+			// 前の時間を集計して送信する
+			let cal_time = time.getTime() > hour.end.getTime() ? hour.end.getTime() : time.getTime();
+			let add_time = cal_time - hour.update.getTime();
+			hourCapacity.total = (hourCapacity.total||0)+ add_time;
+
+			for(let id in sensorInfo) {
+				if(!hourCapacity[id]) hourCapacity[id] = {};
+				if(sensorInfo[id].currentStatus === "act") {
+					hourCapacity[id].ontime = (hourCapacity[id].ontime||0) + add_time;
+				}
+				hourCapacity[id].meastime = (hourCapacity[id].meastime||0) + add_time;
+			}
+			// 集計時間が過ぎていたら送信する
+			if(hour.end.getTime() < time.getTime()) {
+				let ts = hour.start.getTime()+global.lazuriteConfig.gwid;
+				let payload = {
+					timestamp: ts,
+					capacity: {},
+					vbat: {},
+					rssi: {}
+				}
+				let isSend = false;
+				for(let id in hourCapacity) {
+					if(sensorInfo[id] === undefined) continue;
+					if((hourCapacity[id].meastime !== 0) && (sensorInfo[id].active === true)) {
+						payload.capacity[id] = parseInt((hourCapacity[id].ontime||0) /hourCapacity[id].meastime*1000)/10;
+						payload.vbat[id] = sensorInfo[id].battery;
+						payload.rssi[id] = sensorInfo[id].rssi;
+						isSend = true;
+					}
+				}
+				console.log(util.inspect({
+					end:	hour.end.toLocaleString(),
+					time:	time.toLocaleString(),
+					hourCapacity: hourCapacity,
+					sensorInfo: sensorInfo
+				},{depth:null,colors:true}));
+				// 該当時間の送信を行う
+				if(isSend) {
+					console.log({isSend: payload});
+					node.send({
+						payload: payload,
+						topic: `${global.lazuriteConfig.capacity.topic}/monitoring/hour/${global.lazuriteConfig.gwid}`
+					});
+				}
+				// 送信後は集計をリセットする
+				hourCapacity = {};
+				hourCapacity.total = 0;
+				for(let id in sensorInfo) {
+					sensorInfo[id].on.sum = 0;
+					sensorInfo[id].on.count = 0;
+					sensorInfo[id].off.sum = 0;
+					sensorInfo[id].off.count = 0;
+					sensorInfo[id].battery = 0;
+					sensorInfo[id].rssi = 0;
+				}
+			}
+			hour.update.setTime(cal_time);
+			/*
+			console.log(util.inspect({
+				time: time,
+				hourCapacity: hourCapacity,
+				sensorInfo: sensorInfo
+			},{depth:null,colors:true}));
+			*/
+		}
 		function topicFilter(ts,t) {
 			if (ts == "#") {
 				return true;
 			}
 			/* The following allows shared subscriptions (as in MQTT v5)
-					 http://docs.oasis-open.org/mqtt/mqtt/v5.0/cs02/mqtt-v5.0-cs02.html#_Toc514345522
+			 http://docs.oasis-open.org/mqtt/mqtt/v5.0/cs02/mqtt-v5.0-cs02.html#_Toc514345522
 
-					 4.8.2 describes shares like:
-					 $share/{ShareName}/{filter}
-					 $share is a literal string that marks the Topic Filter as being a Shared Subscription Topic Filter.
-					 {ShareName} is a character string that does not include "/", "+" or "#"
-					 {filter} The remainder of the string has the same syntax and semantics as a Topic Filter in a non-shared subscription. Refer to section 4.7.
-					 */
+			 4.8.2 describes shares like:
+			 $share/{ShareName}/{filter}
+			 $share is a literal string that marks the Topic Filter as being a Shared Subscription Topic Filter.
+			 {ShareName} is a character string that does not include "/", "+" or "#"
+			 {filter} The remainder of the string has the same syntax and semantics as a Topic Filter in a non-shared subscription. Refer to section 4.7.
+			 */
 			else if(ts.startsWith("$share")){
 				ts = ts.replace(/^\$share\/[^#+/]+\/(.*)/g,"$1");
-
 			}
 			var re = new RegExp("^"+ts.replace(/([\[\]\?\(\)\\\\$\^\*\.|])/g,"\\$1").replace(/\+/g,"[^/]+").replace(/\/#$/,"(\/.*)?")+"$");
 					return re.test(t);
