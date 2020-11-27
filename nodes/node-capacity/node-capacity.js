@@ -15,6 +15,7 @@
  * limitations under the License.
  **/
 module.exports = function(RED) {
+	const debug = false;
 	let fs = require('fs');
 	const util = require("util");
 	const INTERVAL_GRAPH = 29*1000;
@@ -59,34 +60,97 @@ module.exports = function(RED) {
 		// check timing to send capacity data to cloud
 		let now = new Date();
 		hour.start = new Date(hour.start);
-		hour.end = new Date(hour.end);
 
-		if(isNaN(hour.start.getTime()) || isNaN(hour.end.getTime()) ||
-			(hour.start.getTime() != (new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours())).getTime())) {
-			console.log("hour isNaN");
-			hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
-			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
-			//hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes()+1); // debug
+		if(isNaN(hour.start.getTime()) ||
+			((hour.start.getMinutes() !== now.getMinutes())&&debug) ||							// debug
+			(hour.start.getFullYear() !== now.getFullYear()) ||
+			(hour.start.getMonth() !== now.getMonth()) ||
+			(hour.start.getHours() !== now.getHours())) {
+			if(debug) {
+				console.log('reset hourCapacity');
+				hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes());		// debug
+			} else {
+				hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
+			}
 			hourCapacity = {};
 			hourCapacity.total = 0;
 		}
+		if(debug) {
+			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes()+1); // debug
+		} else {
+			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
+		}
 		hour.update = new Date(now);
-		/*
 		console.log({
 			start: hour.start.toLocaleString(),
 			end: hour.end.toLocaleString(),
 			update: hour.update.toLocaleString(),
 			hourCapacity: hourCapacity
 		});
-		*/
-			let timer = setTimeout(calHourCapacity ,hour.end.getTime() - now.getTime());
+		let timer = setTimeout(calHourCapacity ,hour.end.getTime() - now.getTime());
 		function calHourCapacity() {
-			now = new Date();
+			let now = new Date();
 			updateCapacity(now);
-			hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
-			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
-			//hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes()+1); // debug
+			if(debug) {
+				hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes());
+				hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes()+1); // debug
+			} else {
+				hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
+				hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
+			}
 			timer = setTimeout(calHourCapacity,hour.end.getTime() - now.getTime())
+			if((now.getHours() === 0) &&
+				((debug !== true) || (now.getMinutes() == 0))) {
+				setTimeout(() => {
+					changeDate();
+				}, 30*3600*1000+global.lazuriteConfig.gwid*10000);
+			}
+		}
+		function changeDate() {
+			let now = new Date();
+			for(let id in sensorInfo) {
+				if((sensorInfo[id].active === true) &&
+					(sensorInfo[id].last.getDate() !== now.getDate())) {
+					sensorInfo[id].last = new Date(now.getTime());
+					let output;
+					switch(sensorInfo[id].currentStatus) {
+						case "on":
+							output = {
+								payload: {
+									//dbname: node.config.dbname,
+									timestamp: now.getTime(),
+									from: sensorInfo[id].from.getTime(),
+									machine: id,
+									//type: capLogType,
+									state: "act",
+								},
+								topic : `${global.lazuriteConfig.capacity.topic}/monitoring/log/${id}`
+							};
+							break;
+						case "off":
+							output = {
+								payload: {
+									//dbname: node.config.dbname,
+									timestamp: now.getTime(),
+									from: sensorInfo[id].from.getTime(),
+									machine: id,
+									//type: capLogType,
+									state: "stop",
+								},
+								topic : `${global.lazuriteConfig.capacity.topic}/monitoring/log/${id}`
+							};
+							if(sensorInfo[id].reasonId) output.payload.reasonId = sensorInfo[id].reasonId;
+							if(sensorInfo[id].nameId) output.payload.nameId = sensorInfo[id].nameId;
+							if(sensorInfo[id].note) output.payload.note = sensorInfo[id].note;
+							break;
+					}
+					node.send(output);
+					setTimeout(() => {
+						changeDate();
+					},10000)
+					return;
+				}
+			}
 		}
 
 		node.on('input', function (msg) {
@@ -95,14 +159,12 @@ module.exports = function(RED) {
 			if(msg.topic !== undefined) {
 				if(topicFilter("+/browser/log/update",msg.topic)) {
 					rxMqttLogUpdate(msg);
-					return;
 				} else if(topicFilter("+/browser/event/req",msg.topic)) {
 					rxMqttEventReq(msg);
-					return;
 				} else if(topicFilter("+/data/factory-iot/monitoring/log/+",msg.topic)) {
 					rxMqttDataLog(msg);
-					return;
 				}
+				return;
 			}
 			if(Array.isArray(msg.payload)) {
 				if((msg.payload[0] != "off") && (msg.payload[0] != "on")){
@@ -119,7 +181,7 @@ module.exports = function(RED) {
 				let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 				//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
 				updateCapacity(rxtime);
-				if(vbat[id] === undefined) {
+				if((vbat[id] === undefined) ||((rxtime.getTime() - vbat[id].time) > INTERVAL_VBAT)) {
 					vbat[id] = {
 						timestamp: id,
 						vbat: battery,
@@ -130,19 +192,6 @@ module.exports = function(RED) {
 						payload: vbat[id],
 						topic: `${global.lazuriteConfig.capacity.topic}/battery/log/${id}`
 					});
-				} else {
-					if((rxtime.getTime() - vbat[id].time) > INTERVAL_VBAT) {
-						vbat[id] = {
-							timestamp: id,
-							vbat: battery,
-							rssi: rssi,
-							time: rxtime.getTime()
-						};
-						node.send({
-							payload: vbat[id],
-							topic: `${global.lazuriteConfig.capacity.topic}/battery/${id}`
-						});
-					}
 				}
 				//console.log(vbat);
 				// first data
@@ -335,6 +384,7 @@ module.exports = function(RED) {
 						}
 						sensorInfo[id].lowFreq = true;
 					}
+					// 日マタギの処理
 					if ((!output) &&
 						((sensorInfo[id].last.getMonth() !== rxtime.getMonth()) ||
 							(sensorInfo[id].last.getDate() !== rxtime.getDate()))) {
@@ -582,31 +632,29 @@ module.exports = function(RED) {
 			done();
 		});
 		function updateCapacity(time) {
-			/*
-			console.log({
-				end:	hour.end.toLocaleString(),
-				time:	time.toLocaleString(),
-				result: (hour.end.getTime() < time.getTime())
-			});
-			*/
+			let tt = time.getTime();
+			let hs = hour.start.getTime();
+			let he = hour.end.getTime();
+			let hu = hour.update.getTime();
+
+			if(tt < hu) return;		// 更新時刻より前のデータは無視する (mqtt受信時の遅延など)
 
 			// 前の時間を集計して送信する
-			let cal_time = time.getTime() > hour.end.getTime() ? hour.end.getTime() : time.getTime();
-			let add_time = cal_time - hour.update.getTime();
+			let cal_time = tt > he ? he : tt;
+			let add_time = cal_time - hu;
 			hourCapacity.total = (hourCapacity.total||0)+ add_time;
 
 			for(let id in sensorInfo) {
 				if(!hourCapacity[id]) hourCapacity[id] = {};
-				if(sensorInfo[id].currentStatus === "act") {
+				if(sensorInfo[id].currentStatus === "on") {
 					hourCapacity[id].ontime = (hourCapacity[id].ontime||0) + add_time;
 				}
 				hourCapacity[id].meastime = (hourCapacity[id].meastime||0) + add_time;
 			}
 			// 集計時間が過ぎていたら送信する
-			if(hour.end.getTime() < time.getTime()) {
-				let ts = hour.start.getTime()+global.lazuriteConfig.gwid;
+			if(he < tt) {
 				let payload = {
-					timestamp: ts,
+					timestamp: hs + global.lazuriteConfig.gwid,
 					capacity: {},
 					vbat: {},
 					rssi: {}
@@ -622,6 +670,7 @@ module.exports = function(RED) {
 					}
 				}
 				console.log(util.inspect({
+					total: hourCapacity.total,
 					end:	hour.end.toLocaleString(),
 					time:	time.toLocaleString(),
 					hourCapacity: hourCapacity,
@@ -629,11 +678,14 @@ module.exports = function(RED) {
 				},{depth:null,colors:true}));
 				// 該当時間の送信を行う
 				if(isSend) {
-					console.log({isSend: payload});
-					node.send({
-						payload: payload,
-						topic: `${global.lazuriteConfig.capacity.topic}/monitoring/hour/${global.lazuriteConfig.gwid}`
-					});
+					if(debug) {
+						console.log({isSend: payload});
+					} else {
+						node.send({
+							payload: payload,
+							topic: `${global.lazuriteConfig.capacity.topic}/monitoring/hour/${global.lazuriteConfig.gwid}`
+						});
+					}
 				}
 				// 送信後は集計をリセットする
 				hourCapacity = {};
