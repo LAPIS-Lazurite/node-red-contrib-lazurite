@@ -19,6 +19,7 @@ module.exports = function(RED) {
 	let fs = require('fs');
 	const INTERVAL_GRAPH = 29*1000;
 	const INTERVAL_VBAT = 0 * 60*1000;
+	const util = require("util");
 	//const INTERVAL_VBAT = 60*1000;
 	function LazuriteCapacity(config) {
 		let node = this;
@@ -100,7 +101,7 @@ module.exports = function(RED) {
 				hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
 			}
 			timer1 = setTimeout(calHourCapacity,hour.end.getTime() - now.getTime())
-			if(( (now.getHours() === 0) && (now.getMinutes() === 0))||
+			if(( (now.getHours() === 12) && (now.getMinutes() === 0))||
 				((debug === true) && (now.getHours() == 32) && (now.getMinutes() == 32)
 				)) {
 				console.log("setTimeout(changeDate())")
@@ -164,6 +165,12 @@ module.exports = function(RED) {
 		node.on('input', function (msg) {
 			// check data
 			//let capLogType = 'log';
+			if(msg.payload === "dump") {
+				console.log(util.inspect({
+					sensorInfo: sensorInfo
+				},{depth:null,colors:true}));
+				return;
+			}
 			if(msg.topic !== undefined) {
 				if(topicFilter("+/browser/log/update",msg.topic)) {
 					rxMqttLogUpdate(msg);
@@ -616,12 +623,6 @@ module.exports = function(RED) {
 						delete sensorInfo[id].nameId;
 						delete sensorInfo[id].note;
 					}
-				} else {
-					console.log({
-						type: 'sensor active',
-						sensorInfo: sensorInfo[payload.machine],
-						msg: msg
-					});
 				}
 			}
 		});
