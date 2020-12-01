@@ -17,7 +17,6 @@
 module.exports = function(RED) {
 	const debug = false;
 	let fs = require('fs');
-	const util = require("util");
 	const INTERVAL_GRAPH = 29*1000;
 	const INTERVAL_VBAT = 0 * 60*1000;
 	//const INTERVAL_VBAT = 60*1000;
@@ -26,6 +25,7 @@ module.exports = function(RED) {
 		let sensorInfo = {};
 		let hourCapacity = {};
 		let hour = {};
+		let timer1,timer2;
 		/*
 		 * Restore previous data
 		 */
@@ -87,8 +87,9 @@ module.exports = function(RED) {
 			update: hour.update.toLocaleString(),
 			hourCapacity: hourCapacity
 		});
-		let timer = setTimeout(calHourCapacity ,hour.end.getTime() - now.getTime());
+		timer1 = setTimeout(calHourCapacity ,hour.end.getTime() - now.getTime());
 		function calHourCapacity() {
+			console.log("calHourCapacity");
 			let now = new Date();
 			updateCapacity(now);
 			if(debug) {
@@ -98,15 +99,18 @@ module.exports = function(RED) {
 				hour.start = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours());
 				hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
 			}
-			timer = setTimeout(calHourCapacity,hour.end.getTime() - now.getTime())
-			if((now.getHours() === 0) &&
-				((debug !== true) || (now.getMinutes() == 0))) {
-				setTimeout(() => {
+			timer1 = setTimeout(calHourCapacity,hour.end.getTime() - now.getTime())
+			if(( (now.getHours() === 0) && (now.getMinutes() === 0))||
+				((debug === true) && (now.getHours() == 32) && (now.getMinutes() == 32)
+				)) {
+				console.log("setTimeout(changeDate())")
+				timer2 = setTimeout(() => {
 					changeDate();
-				}, 30*3600*1000+global.lazuriteConfig.gwid*10000);
+				}, 30*60*1000+global.lazuriteConfig.gwid*10000);
 			}
 		}
 		function changeDate() {
+			console.log(`changeDate   at ${(new Date()).toLocaleString()}`);
 			let now = new Date();
 			for(let id in sensorInfo) {
 				if((sensorInfo[id].active === true) &&
@@ -144,10 +148,14 @@ module.exports = function(RED) {
 							if(sensorInfo[id].note) output.payload.note = sensorInfo[id].note;
 							break;
 					}
-					node.send(output);
-					setTimeout(() => {
+					if(debug) {
+						console.log(output);
+					} else {
+						node.send(output);
+					}
+					timer2 = setTimeout(() => {
 						changeDate();
-					},10000)
+					},1000)
 					return;
 				}
 			}
@@ -618,7 +626,8 @@ module.exports = function(RED) {
 			}
 		});
 		node.on('close',function(done) {
-			clearInterval(timer);
+			clearTimeout(timer1);
+			clearTimeout(timer2);
 			try {
 				fs.statSync('/home/pi/.lazurite/tmp');
 			} catch(e) {
@@ -669,6 +678,7 @@ module.exports = function(RED) {
 						isSend = true;
 					}
 				}
+				/*
 				console.log(util.inspect({
 					total: hourCapacity.total,
 					end:	hour.end.toLocaleString(),
@@ -676,6 +686,7 @@ module.exports = function(RED) {
 					hourCapacity: hourCapacity,
 					sensorInfo: sensorInfo
 				},{depth:null,colors:true}));
+				*/
 				// 該当時間の送信を行う
 				if(isSend) {
 					if(debug) {
