@@ -101,7 +101,7 @@ module.exports = function(RED) {
 				hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
 			}
 			timer1 = setTimeout(calHourCapacity,hour.end.getTime() - now.getTime())
-			if(( (now.getHours() === 12) && (now.getMinutes() === 0))||
+			if((now.getHours() === 0)||
 				((debug === true) && (now.getHours() == 32) && (now.getMinutes() == 32)
 				)) {
 				console.log("setTimeout(changeDate())")
