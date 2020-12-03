@@ -82,15 +82,8 @@ module.exports = function(RED) {
 			hour.end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours()+1);
 		}
 		hour.update = new Date(now);
-		console.log({
-			start: hour.start.toLocaleString(),
-			end: hour.end.toLocaleString(),
-			update: hour.update.toLocaleString(),
-			hourCapacity: hourCapacity
-		});
 		timer1 = setTimeout(calHourCapacity ,hour.end.getTime() - now.getTime());
 		function calHourCapacity() {
-			console.log("calHourCapacity");
 			let now = new Date();
 			updateCapacity(now);
 			if(debug) {
@@ -104,14 +97,12 @@ module.exports = function(RED) {
 			if((now.getHours() === 0)||
 				((debug === true) && (now.getHours() == 32) && (now.getMinutes() == 32)
 				)) {
-				console.log("setTimeout(changeDate())")
 				timer2 = setTimeout(() => {
 					changeDate();
 				}, 30*60*1000+global.lazuriteConfig.gwid*10000);
 			}
 		}
 		function changeDate() {
-			console.log(`changeDate   at ${(new Date()).toLocaleString()}`);
 			let now = new Date();
 			for(let id in sensorInfo) {
 				if((sensorInfo[id].active === true) &&
