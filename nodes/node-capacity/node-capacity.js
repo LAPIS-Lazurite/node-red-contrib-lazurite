@@ -655,7 +655,7 @@ module.exports = function(RED) {
 			// 集計時間が過ぎていたら送信する
 			if(he < tt) {
 				let payload = {
-					timestamp: hs + global.lazuriteConfig.gwid,
+					timestamp: he + global.lazuriteConfig.gwid,
 					capacity: {},
 					vbat: {},
 					rssi: {}
