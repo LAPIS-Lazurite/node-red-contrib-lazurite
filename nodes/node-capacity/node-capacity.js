@@ -186,6 +186,12 @@ module.exports = function(RED) {
 				let vbat = global.lazuriteConfig.machineInfo.vbat;
 				let reason = msg.payload.length === 4 ? parseInt(msg.payload[3]): null;
 				//console.log({id:id,state:state,current:current, battery:battery,rssi:msg.rssi});
+				if((reason !== null) && (reason !== 0) && (!global.lazuriteConfig.reason.find((elm) => {
+					return elm.id === reason;
+				}))) {
+					console.log(`invalid reason = ${reason}`);
+					return;
+				}
 				updateCapacity(rxtime);
 				if((vbat[id] === undefined) ||((rxtime.getTime() - vbat[id].time) > INTERVAL_VBAT)) {
 					vbat[id] = {

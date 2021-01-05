@@ -291,6 +291,18 @@ module.exports = function(RED) {
 			});
 		}).then(() => {
 			return new Promise((resolve,reject) => {
+				getParameter(api_server_uri.pathname+'/info/reason',(err,res) => {
+					if(err){
+						reject(err);
+					} else {
+						global.lazuriteConfig.reason = res.Items;
+						console.log(global.lazuriteConfig.reason);
+						resolve();
+					}
+				});
+			});
+		}).then(() => {
+			return new Promise((resolve,reject) => {
 				getParameter(api_server_uri.pathname+'/info/bridge',(err,res) => {
 					if(err){
 						reject(err);
