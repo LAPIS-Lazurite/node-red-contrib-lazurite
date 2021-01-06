@@ -445,6 +445,7 @@ module.exports = function(RED) {
 					sensorInfo[id].battery = battery;
 					sensorInfo[id].rssi = ((sensorInfo[id].rssi || 0)< rssi ) ? rssi : sensorInfo[id].rssi;
 					//console.log(sensorInfo[id]);
+					saveFile();
 				}
 				// data output for graph
 				if(graph[id].enabled ===true) {
@@ -533,6 +534,7 @@ module.exports = function(RED) {
 						} else {
 							delete sensorInfo[id].note;
 						}
+						saveFile();
 						/*
 							console.log({
 							type: 'sensorState update',
@@ -575,6 +577,7 @@ module.exports = function(RED) {
 						} else {
 							delete sensorInfo[id].note;
 						}
+						saveFile();
 					}
 				} catch(e) {
 					console.log(e);
@@ -620,22 +623,14 @@ module.exports = function(RED) {
 						delete sensorInfo[id].nameId;
 						delete sensorInfo[id].note;
 					}
+					saveFile();
 				}
 			}
 		});
 		node.on('close',function(done) {
 			clearTimeout(timer1);
 			clearTimeout(timer2);
-			try {
-				fs.statSync('/home/pi/.lazurite/tmp');
-			} catch(e) {
-				fs.mkdirSync('/home/pi/.lazurite/tmp');
-			}
-			fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
-				sensorInfo : sensorInfo,
-				hourCapacity: hourCapacity,
-				hour: hour,
-			},null,"  "));
+			saveFile();
 			done();
 		});
 		function updateCapacity(time) {
@@ -716,6 +711,18 @@ module.exports = function(RED) {
 				sensorInfo: sensorInfo
 			},{depth:null,colors:true}));
 			*/
+		}
+		function saveFile() {
+			try {
+				fs.statSync('/home/pi/.lazurite/tmp');
+			} catch(e) {
+				fs.mkdirSync('/home/pi/.lazurite/tmp');
+			}
+			fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
+				sensorInfo : sensorInfo,
+				hourCapacity: hourCapacity,
+				hour: hour,
+			},null,"  "));
 		}
 		function topicFilter(ts,t) {
 			if (ts == "#") {
