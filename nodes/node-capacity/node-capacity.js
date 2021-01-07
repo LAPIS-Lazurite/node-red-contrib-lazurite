@@ -613,8 +613,8 @@ module.exports = function(RED) {
 					sensorInfo[id].from = new Date(payload.from);
 					sensorInfo[id].last = new Date(payload.timestamp);
 					sensorInfo[id].active = false;
-					sensorInfo[id].currentStatus = (payload.state === "act") ? "on" : "off",
-					if(payload.state === "off") {
+					sensorInfo[id].currentStatus = (payload.state === "act") ? "on" : "off";
+					if(payload.state === "stop") {
 						sensorInfo[id].reasonId = payload.reasonId || 0;
 						delete sensorInfo[id].nameId;
 						delete sensorInfo[id].note;
