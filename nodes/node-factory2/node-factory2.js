@@ -296,7 +296,6 @@ module.exports = function(RED) {
 						reject(err);
 					} else {
 						global.lazuriteConfig.reason = res.Items;
-						console.log(global.lazuriteConfig.reason);
 						resolve();
 					}
 				});
