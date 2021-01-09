@@ -405,6 +405,7 @@ module.exports = function(RED) {
 						}
 						switch(sensorInfo[id].currentStatus) {
 							case "on":
+							case "act":
 								output = {
 									payload: {
 										//dbname: node.config.dbname,
@@ -418,6 +419,7 @@ module.exports = function(RED) {
 								};
 								break;
 							case "off":
+							case "stop":
 								output = {
 									payload: {
 										//dbname: node.config.dbname,
