@@ -164,11 +164,16 @@ module.exports = function(RED) {
 			}
 			if(msg.topic !== undefined) {
 				if(topicFilter("+/browser/log/update",msg.topic)) {
+					//console.log("rxMqttLogUpdate");
 					rxMqttLogUpdate(msg);
 				} else if(topicFilter("+/browser/event/req",msg.topic)) {
+					//console.log("rxMqttEventReq");
 					rxMqttEventReq(msg);
 				} else if(topicFilter("+/data/factory-iot/monitoring/log/+",msg.topic)) {
+					//console.log("rxMqttDataLog");
 					rxMqttDataLog(msg);
+				} else {
+					console.log("other topic");
 				}
 				return;
 			}
@@ -437,7 +442,10 @@ module.exports = function(RED) {
 								break;
 						}
 					}
-					if(output) node.send(output);
+					if(output){
+						output.payload.gwid = global.lazuriteConfig.gwid,
+						node.send(output);
+					}
 					sensorInfo[id].last = rxtime;
 					sensorInfo[id].active = true;
 					sensorInfo[id][state].sum += current;
@@ -508,10 +516,12 @@ module.exports = function(RED) {
 			function rxMqttLogUpdate(msg) {
 				try {
 					let m = JSON.parse(msg.payload);
+					//console.log({rxMqttLogUpdate: m});
 					//console.log(m);
 					let id = m.machine;
 					let worklog = global.lazuriteConfig.machineInfo.worklog[id];
-					if ((worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
+					if ((m.gwid  !== global.lazuriteConfig.gwid) &&
+						(worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
 						if(sensorInfo[id].from.getTime() > m.from) {
 							//console.log("old data");
 							return;
@@ -556,12 +566,14 @@ module.exports = function(RED) {
 			function rxMqttEventReq(msg) {
 				try {
 					let m = JSON.parse(msg.payload);
+					//console.log({rxMqttEventReq: m});
 					updateCapacity(new Date(m.timestamp));
 					//console.log(m);
 					if (m.state !== 'stop') return;
 					let id = m.machine;
 					let worklog = global.lazuriteConfig.machineInfo.worklog[id];
-					if ((worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
+					if ((m.gwid  !== global.lazuriteConfig.gwid) &&
+						(worklog.log === true) && (sensorInfo[id].currentStatus === 'off')) {
 						sensorInfo[id].from.setTime(m.from);
 						sensorInfo[id].last.setTime(m.timestamp);
 						if(m.reasonId !== undefined) {
@@ -587,6 +599,7 @@ module.exports = function(RED) {
 			}
 			function rxMqttDataLog(msg) {
 				let payload = JSON.parse(msg.payload);
+				//console.log({rxMqttDataLog:payload});
 				updateCapacity(new Date(payload.timestamp))
 				let id = payload.machine;
 				if(sensorInfo[id] === undefined) {
@@ -611,10 +624,12 @@ module.exports = function(RED) {
 						sensorInfo[id].reasonId = payload.reasonId || 0;
 					}
 				}
-				if(payload.timestamp !== sensorInfo[id].last.getTime()) {
+				if(payload.gwid  !== global.lazuriteConfig.gwid) {
 					sensorInfo[id].from = new Date(payload.from);
 					sensorInfo[id].last = new Date(payload.timestamp);
-					sensorInfo[id].active = false;
+					if(isNaN(payload.gwid) === false) {
+						sensorInfo[id].active = false;
+					}
 					sensorInfo[id].currentStatus = (payload.state === "act") ? "on" : "off";
 					if(payload.state === "stop") {
 						sensorInfo[id].reasonId = payload.reasonId || 0;
@@ -720,6 +735,11 @@ module.exports = function(RED) {
 			} catch(e) {
 				fs.mkdirSync('/home/pi/.lazurite/tmp');
 			}
+			/*
+			console.log(util.inspect({
+				saveFile: sensorInfo
+			},{colors:true,depth:null}));
+			*/
 			fs.writeFileSync('/home/pi/.lazurite/tmp/capacity.json',JSON.stringify({
 				sensorInfo : sensorInfo,
 				hourCapacity: hourCapacity,
