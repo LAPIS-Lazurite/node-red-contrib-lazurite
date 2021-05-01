@@ -44,7 +44,7 @@ module.exports = (msg,machines) => {
 		],
 		v2: [
 			{
-				key: "timestamp",
+				key: "id",
 				validation:(d) => {
 					if(isNaN(d)) {
 						throw new Error(`id(${d}) is not number`)
@@ -118,7 +118,7 @@ module.exports = (msg,machines) => {
 		let new_payload = [];
 		let timestamp = parseInt(msg.sec*1000 + msg.nsec/1000000);
 		let data = {};
-		data.timestamp = msg.machine.id;
+		data.id = msg.machine.id;
 		data.site = msg.machine.site;
 		keys["v1"].forEach((elm,j) => {
 			let d = elm.validation(payload[j]);
@@ -126,8 +126,8 @@ module.exports = (msg,machines) => {
 				data[elm.key] = d;
 			}
 		});
-		if((data.timestamp >= 0) && (data.timestamp <= 0xFFFC)){
-			data.time = timestamp;
+		if((data.id >= 0) && (data.id <= 0xFFFC)){
+			data.timestamp = timestamp;
 			if(msg.machine.invert === true) {
 				data.state = (data.state === "on") ? "off" : "on";
 			}
@@ -147,11 +147,14 @@ module.exports = (msg,machines) => {
 					data[elm.key] = d;
 				}
 			});
-			if((data.timestamp >= 0) && (data.timestamp <= 0xFFFC)){
+			if((data.id >= 0) && (data.id <= 0xFFFC)){
+				let m = msg.machine.group.find((elm) => elm.id === data.id);
+				if(!m) continue;
+				data.site = m.site;
 				if(msg.machine.invert === true) {
 					data.state = (data.state === "on") ? "off" : "on";
 				}
-				data.time = timestamp - (data.deltaT || 0);
+				data.timestamp = timestamp - (data.deltaT || 0);
 				new_payload.push(data);
 			}
 		}
