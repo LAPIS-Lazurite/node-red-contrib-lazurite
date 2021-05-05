@@ -155,6 +155,7 @@ module.exports = (msg,machines) => {
 					data.state = (data.state === "on") ? "off" : "on";
 				}
 				data.timestamp = timestamp - (data.deltaT || 0);
+				data.rssi = msg.rssi;
 				new_payload.push(data);
 			}
 		}
