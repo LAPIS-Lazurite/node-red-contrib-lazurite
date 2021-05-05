@@ -34,24 +34,27 @@ module.exports = function(RED) {
 	let apiServer = url.parse(global.lazurite.config.domain.api);
 	const https = require(apiServer.protocol.slice(0,-1));
 
-	fs.readFile('/home/pi/.lazurite/database/machine.json',(err,data) => {
-		if(err) {
-			console.log(err);
-		} else {
-			global.lazurite.db.machine = remap_machine(JSON.parse(data.toString()));
-		}
-	});
-	fs.readFile('/home/pi/.lazurite/database/reason.json',(err,data) => {
-		if(err) {
-			console.log(err);
-		} else {
-			global.lazurite.db.reason = JSON.parse(data.toString());
-		}
-	});
-
 	function LazuriteFactoryParams(config) {
 		RED.nodes.createNode(this,config);
 		let node = this;
+
+		fs.readFile('/home/pi/.lazurite/database/machine.json',(err,data) => {
+			if(err) {
+				console.log(err);
+			} else {
+				global.lazurite.db.machine = remap_machine(JSON.parse(data.toString()));
+				global.lazurite.eack = eack.init(global.lazurite.db.machine);
+				node.send({payload:global.lazurite.eack});
+			}
+		});
+		fs.readFile('/home/pi/.lazurite/database/reason.json',(err,data) => {
+			if(err) {
+				console.log(err);
+			} else {
+				global.lazurite.db.reason = JSON.parse(data.toString());
+			}
+		});
+
 
 		function getDatabase(db,done) {
 			loop();
@@ -92,12 +95,12 @@ module.exports = function(RED) {
 							if(backoff > 60000) backoff = 60000;
 						}
 					});
-					res.on("error",(err) => {
-						console.log(err);
-						setTimeout(loop,backoff);
-						backoff = backoff*2;
-						if(backoff > 60000) backoff = 60000;
-					});
+				});
+				req.on("error",(err) => {
+					console.log(err);
+					setTimeout(loop,backoff);
+					backoff = backoff*2;
+					if(backoff > 60000) backoff = 60000;
 				});
 				req.end();
 			}
@@ -124,7 +127,7 @@ module.exports = function(RED) {
 			})
 		]).then(() => {
 			global.lazurite.eack = eack.init(global.lazurite.db.machine);
-			node.send([,,global.lazurite.eack]);
+			node.send({payload:global.lazurite.eack});
 			console.log("init done");
 		}).catch((err) => {
 			console.log(err);
@@ -142,7 +145,7 @@ module.exports = function(RED) {
 								if(msg.payload.type === "machine") {
 									global.lazurite.db.machine = remap_machine(data);
 									global.lazurite.eack = eack.init(global.lazurite.db.machine);
-									node.send([,,global.lazurite.eack]);
+									node.send({payload:global.lazurite.eack});
 								}
 							}
 						});
@@ -176,7 +179,11 @@ module.exports = function(RED) {
 						dst_panid: rxdata.dst_panid,
 						dst_addr: rxdata.src_addr,
 						payload: message,
-					},,,{payload: global.lazurite.eack}]);
+					},,{
+						topic: `${global.lazurite.mqtt.topic}/data/activate/${rxdata.machine.id}`,
+						payload: {id: rxdata.machine.id,prog_sensor: `${payload[1]}_${payload[2]}`}
+					},
+						{payload: global.lazurite.eack}]);
 				}
 				//if(((broadcast === true ) && (payload[0] === "factory-iot")) || ((unicast === true) && (payload[0] === "update"))) {
 			} else if(payload[0] === "update") {
@@ -191,17 +198,43 @@ module.exports = function(RED) {
 			} else {
 				let message = parseMessage(rxdata,global.lazurite.db.machine);
 				let promise = Promise.resolve();
+				console.log(rxdata);
 				for(let m of message) {
-					promise.then(() => {
-						return new Promise((resolve) => {
-							let topic = `${global.lazurite.mqtt.topic}/lastest/${m.site}/${m.id}`,
-							node.send([,,{
-								topic: `${global.lazurite.mqtt.topic}/lastest/`,
-								payload: m
-							}]);
-							resolve();
+					if(rxdata.machine.debug === true) {
+						/*
+						if(rxdata.machine.multi === false) {
+							promise.then(() => {
+								return new Promise((resolve) => {
+									node.send([,,{
+										topic: `${global.lazurite.mqtt.topic}/data/log/${m.id}`,
+										payload: m
+									}]);
+									resolve();
+								});
+							});
+						} else {
+							promise.then(() => {
+								return new Promise((resolve) => {
+									node.send([,,{
+										topic: `${global.lazurite.mqtt.topic}/data/log/${m.id}`,
+										payload: m
+									}]);
+									resolve();
+								});
+							});
+						}
+						*/
+					} else {
+						promise.then(() => {
+							return new Promise((resolve) => {
+								node.send([,,{
+									topic: `${global.lazurite.mqtt.topic}/data/latest/${m.id}`,
+									payload: m
+								}]);
+								resolve();
+							});
 						});
-					});
+					}
 				}
 				promise.then(() => {
 					node.send([,,,,rxdata]);

@@ -21,10 +21,8 @@
 module.exports = function(RED) {
 
 	var lib = require('../../build/Release/lazurite_wrap');
-	var param = require('../../param');
 	var stream = require('stream');
 	var util = require('util');
-	var latest_rfparam_id="";
 	var isConnect = false;
 	const lazurite_err = {
 		14: "TX FAIL",
@@ -64,11 +62,7 @@ module.exports = function(RED) {
 				if(!lib.setKey(node.channel.config.key)) { Warn("lazurite_setKey fail"); return; }
 			}
 			var lo = lib.getMyAddr64();
-			param.loa = [];
-			param.lot = "";
 			for(var i=0;i<8;i++) {
-				param.loa.push(lo[i]);
-				param.lot += (lo[i] < 16 ? "0":"") + lo[i].toString(16);
 			}
 			var panid;
 			if((node.panid === 0xffff)||(node.panid === 0xfffe)) {
@@ -78,17 +72,11 @@ module.exports = function(RED) {
 			}
 			global.gateway = {
 				panid: panid,
-				macaddr: parseInt('0x'+param.lot),
 				shortaddr: node.channel.config.myaddr
 			}
 			if(!lib.begin(node.ch, panid, node.rate, node.pwr)) { Warn("lazurite_begin fail"); return; }
 		}
-		if(node.channel.config.status === true) {
-			node.status({fill:"green",shape:"dot",text:"connected"},true);
-		} else {
-			node.status({fill:"yellow",shape:"dot",text:"connected"},true);
-			node.warn("Different LazuriteConfigNode is loaded\nUsing the parameters\n"+JSON.stringify(node.channel.config,null,"  "))
-		}
+		node.status({fill:"green",shape:"dot",text:"connected"},true);
 		isConnect = true;
 		return isConnect;
 	}
@@ -183,11 +171,7 @@ module.exports = function(RED) {
 
 	function LazuriteTxNode(config) {
 		RED.nodes.createNode(this,config);
-		if(latest_rfparam_id==""){
-			this.channel  = RED.nodes.getNode(config.channel);
-		} else {
-			this.channel  = RED.nodes.getNode(latest_rfparam_id);
-		}
+		this.channel  = RED.nodes.getNode(config.channel);
 		this.ch	   = this.channel  ? this.channel.config.ch				: 36;
 		this.panid	= this.channel  ? this.channel.config.panid			 : 0xabcd;
 		this.rate	 = this.channel  ? this.channel.config.rate			  : 100;
@@ -216,7 +200,7 @@ module.exports = function(RED) {
 			}
 			setAckReq(msg.ackreq || node.ackreq);
 			if(typeof msg.payload === 'string') {
-					msg.result = lib.send(dst_panid, dst_addr, msg.payload.toString());
+				msg.result = lib.send(dst_panid, dst_addr, msg.payload.toString());
 			} else if (msg.payload instanceof Buffer) {
 				var payload = new Uint8Array(msg.payload);
 				msg.result = lib.send(dst_panid, dst_addr, payload);
@@ -245,11 +229,7 @@ module.exports = function(RED) {
 
 	function LazuriteTx64Node(config) {
 		RED.nodes.createNode(this,config);
-		if(latest_rfparam_id==""){
-			this.channel  = RED.nodes.getNode(config.channel);
-		} else {
-			this.channel  = RED.nodes.getNode(latest_rfparam_id);
-		}
+		this.channel = RED.nodes.getNode(config.channel);
 		this.ch	   = this.channel  ? this.channel.config.ch				: 36;
 		this.panid	= this.channel  ? this.channel.config.panid			 : 0xabcd;
 		this.rate	 = this.channel  ? this.channel.config.rate			  : 100;
@@ -382,37 +362,17 @@ module.exports = function(RED) {
 	}
 	RED.nodes.registerType("SetEnhanceACK",SetEnhanceACKNode);
 
-	var configParams = null;
 	function LazuriteChannelNode(config) {
 		RED.nodes.createNode(this,config);
-		if(configParams === null) {
-			var key = "";
-			if(typeof config.key == 'string') {
-				if (config.key.length == 32) {
-					key = config.key;
-				}
-			}
-			this.config = {
-				ch: config.ch,
-				panid: parseInt(config.panid),
-				rate: config.rate,
-				pwr: config.pwr,
-				defaultaddress: config.defaultaddress,
-				myaddr: parseInt(config.myaddr),
-				key: key,
-				status: true
-			}
-			configParams = this.config;
-		} else {
-			this.config = {}
-			for(var key in configParams) {
-				this.config[key] = configParams[key];
-			}
-			this.config.status = false;
+		this.config = {
+			ch: config.ch,
+			panid: parseInt(config.panid),
+			rate: config.rate,
+			pwr: config.pwr,
+			defaultaddress: config.defaultaddress,
+			myaddr: parseInt(config.myaddr),
+			key: config.key || "",
 		}
-		this.on("close",()=> {
-			configParams = null;
-		});
 	}
 	RED.nodes.registerType("lazurite-channel",LazuriteChannelNode);
 }

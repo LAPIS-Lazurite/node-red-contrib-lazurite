@@ -7,10 +7,14 @@ module.exports = (machines) => {
 			console.log(e);
 		}
 	}
-	let new_machines = machines.filter((elm) => elm.hasOwnProperty("multi"));
+	let new_machines = machines.filter((elm) => elm.hasOwnProperty("multi")).map((elm) => {
+	});
+
+	/*
 	new_machines.filter((elm) => elm.multi === true).forEach((elm) => {
 		linkGroup(machines,elm);
 	});
+	*/
 	return new_machines;
 	function genAddress(m) {
 		let tmp = m.addr.split("_");

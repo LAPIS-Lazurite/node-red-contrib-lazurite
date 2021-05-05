@@ -10,11 +10,8 @@
   "node-red": {
     "nodes": {
       "lazurite": "nodes/lazurite/lazurite.js",
-      "node-config": "nodes/node-config/node-config.js",
-      "node-factory2": "nodes/node-factory2/node-factory2.js",
-      "node-capacity": "nodes/node-capacity/node-capacity.js",
-      "aws-iot": "nodes/aws-iot/aws-iot.js",
-      "calcurator": "nodes/calculator/calculator.js"
+      "node-factory": "nodes/node-factory3/node-factory3.js",
+      "node-capacity": "nodes/node-capacity/node-capacity.js"
     }
   },
   "repository": {
@@ -31,14 +28,7 @@
     "aws-iot",
     "Lazurite"
   ],
-  "dependencies": {
-    "mqtt": "2.15.1",
-    "minimist": "1.2.5",
-    "websocket-stream": "^5.0.1",
-    "crypto-js": "3.1.6",
-    "util": "",
-    "is-utf8": ""
-  },
+  "dependencies": {},
   "license": "Apache-2.0",
   "homepage": "https://github.com/LAPIS-Lazurite/node-red-contrib-lazurite#readme",
   "devDependencies": {}

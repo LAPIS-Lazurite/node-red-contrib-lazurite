@@ -66,6 +66,7 @@ module.exports = {
 			default:
 				return null;
 		}
+		if(machine === undefined) return null;
 		let eack_data = eack.find((elm) => elm.addr === machine.id);
 		if (machine.debug === true) {
 			let interval = machine.interval < MEAS_INTERVAL ? MEAS_INTERVAL : machine.interval;
