@@ -198,10 +198,8 @@ module.exports = function(RED) {
 			} else {
 				let message = parseMessage(rxdata,global.lazurite.db.machine);
 				let promise = Promise.resolve();
-				console.log(rxdata);
 				for(let m of message) {
 					if(rxdata.machine.debug === true) {
-						/*
 						if(rxdata.machine.multi === false) {
 							promise.then(() => {
 								return new Promise((resolve) => {
@@ -213,17 +211,18 @@ module.exports = function(RED) {
 								});
 							});
 						} else {
-							promise.then(() => {
-								return new Promise((resolve) => {
-									node.send([,,{
-										topic: `${global.lazurite.mqtt.topic}/data/log/${m.id}`,
-										payload: m
-									}]);
-									resolve();
+							if(rxdata.machine.group.find((elm) => elm.id === m.id).debug === true) {
+								promise.then(() => {
+									return new Promise((resolve) => {
+										node.send([,,{
+											topic: `${global.lazurite.mqtt.topic}/data/log/${m.id}`,
+											payload: m
+										}]);
+										resolve();
+									});
 								});
-							});
+							}
 						}
-						*/
 					} else {
 						promise.then(() => {
 							return new Promise((resolve) => {

@@ -16,6 +16,8 @@ module.exports = (machines) => {
 				multi: true,
 				addr: elm.addr,
 				address: elm.address,
+				lowfreq: elm.lowfreq,
+				interval: elm.interval,
 			};
 			linkGroup(machines,d);
 			return d;
