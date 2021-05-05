@@ -8,8 +8,19 @@ module.exports = (machines) => {
 		}
 	}
 	let new_machines = machines.filter((elm) => elm.hasOwnProperty("multi")).map((elm) => {
+		if(elm.multi === false) {
+			return elm;
+		} else {
+			let d = {
+				id: elm.id,
+				multi: true,
+				addr: elm.addr,
+				address: elm.address,
+			};
+			linkGroup(machines,d);
+			return d;
+		}
 	});
-
 	/*
 	new_machines.filter((elm) => elm.multi === true).forEach((elm) => {
 		linkGroup(machines,elm);
@@ -36,6 +47,7 @@ module.exports = (machines) => {
 		}
 	}
 	function linkGroup(list,master) {
+		master.debug = false;
 		let group = list.filter((elm) => {
 			let result = elm.address.find((elm,i) => {
 				if(i === 0) {
@@ -63,6 +75,7 @@ module.exports = (machines) => {
 		for(let i = 0; i <= max.index ; i ++) {
 			let d = group.find((elm) => elm.index === i);
 			if(d) {
+				if(d.debug === true) master.debug = true;
 				master.group.push(d);
 			} else {
 				master.group.push({
